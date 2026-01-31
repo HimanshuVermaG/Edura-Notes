@@ -4,6 +4,7 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 
 import authRoutes from './routes/authRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import folderRoutes from './routes/folderRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
@@ -24,6 +25,7 @@ app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/folders', folderRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/public', publicRoutes);

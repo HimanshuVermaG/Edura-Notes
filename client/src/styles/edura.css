@@ -826,3 +826,86 @@ body {
   flex: 1;
   min-height: 0;
 }
+
+/* Admin panel */
+.admin-panel {
+  display: flex;
+  min-height: 100vh;
+}
+.admin-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #1a1a1a;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+.admin-sidebar-brand {
+  font-weight: 700;
+  font-size: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #333;
+}
+.admin-sidebar-nav {
+  flex: 1;
+  padding: 0.75rem 0;
+}
+.admin-sidebar-link {
+  display: block;
+  padding: 0.5rem 1.25rem;
+  color: #ccc;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+.admin-sidebar-link:hover,
+.admin-sidebar-link:focus {
+  color: #fff;
+  background: #333;
+}
+.admin-sidebar-footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #333;
+}
+.admin-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+}
+.admin-topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+.admin-topbar-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+.admin-topbar-user {
+  font-size: 0.875rem;
+  color: #666;
+}
+.admin-content {
+  flex: 1;
+  overflow: auto;
+}
+.admin-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.admin-card.card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.admin-login-page {
+  padding: 1rem;
+}
+.admin-login-card .card-body {
+  border-radius: 8px;
+}

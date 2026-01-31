@@ -38,6 +38,8 @@ Server runs at `http://localhost:5001` (5001 avoids conflict with macOS AirPlay 
 - **Email:** `demo@example.com`
 - **Password:** `demo123456`
 
+**Admin panel:** Create an admin user by setting `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `server/.env`, then from the `server` folder run `npm run seed:admin`. Sign in at `/admin/login` with that email and password to access the admin panel. The admin can view all users, see each user's files, delete users (and their files), and delete specific or multiple files.
+
 ### 3. Client
 
 ```bash

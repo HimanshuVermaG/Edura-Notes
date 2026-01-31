@@ -1,7 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import SignUp from './pages/SignUp';
 import SignIn from './pages/SignIn';
+import AdminLogin from './pages/AdminLogin';
 import Homepage from './pages/Homepage';
 import Manage from './pages/Manage';
 import EditNote from './pages/EditNote';
@@ -10,12 +12,22 @@ import FullScreenPdfView from './pages/FullScreenPdfView';
 import PublicProfile from './pages/PublicProfile';
 import PublicNoteView from './pages/PublicNoteView';
 import Explore from './pages/Explore';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminUserDetail from './pages/admin/AdminUserDetail';
 
 export default function App() {
   return (
     <Routes>
       <Route path="/signup" element={<SignUp />} />
       <Route path="/signin" element={<SignIn />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin" element={<AdminRoute />}>
+        <Route index element={<Navigate to="users" replace />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="users/:userId" element={<AdminUserDetail />} />
+      </Route>
       <Route path="/profile/:userId" element={<PublicProfile />} />
       <Route path="/view/note/:id" element={<PublicNoteView />} />
       <Route path="/explore" element={<Explore />} />

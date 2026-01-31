@@ -4,15 +4,9 @@ import Note from '../models/Note.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { uploadPdf, getUploadPath } from '../middleware/uploadMiddleware.js';
 import cloudinary, { isCloudinaryConfigured } from '../lib/cloudinary.js';
+import { getResourceType, destroyCloudinaryAsset } from '../lib/cloudinaryNotes.js';
 
 const CLOUDINARY_FOLDER = 'notes-app';
-
-function getResourceType(mimeType) {
-  if (!mimeType) return 'raw';
-  if (mimeType === 'application/pdf') return 'raw';
-  if (mimeType.startsWith('image/')) return 'image';
-  return 'raw';
-}
 
 function uploadBufferToCloudinary(buffer, mimeType) {
   const resourceType = getResourceType(mimeType);
@@ -21,10 +15,6 @@ function uploadBufferToCloudinary(buffer, mimeType) {
     resource_type: resourceType,
     folder: CLOUDINARY_FOLDER,
   });
-}
-
-function destroyCloudinaryAsset(publicId, resourceType) {
-  return cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
 }
 
 const router = express.Router();
