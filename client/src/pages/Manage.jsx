@@ -27,7 +27,12 @@ export default function Manage() {
   const [uploadError, setUploadError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [dropzoneDragging, setDropzoneDragging] = useState(false);
+  const [usedBytes, setUsedBytes] = useState(null);
+  const [limitBytes, setLimitBytes] = useState(null);
   const fileInputRef = useRef(null);
+
+  const BYTES_PER_MB = 1024 * 1024;
+  const atStorageLimit = usedBytes != null && limitBytes != null && usedBytes >= limitBytes;
 
   const MAX_FILE_SIZE = 20 * 1024 * 1024;
   const ALLOWED_TYPES = [
@@ -65,12 +70,15 @@ export default function Manage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [foldersRes, notesRes] = await Promise.all([
+      const [foldersRes, notesRes, storageRes] = await Promise.all([
         api(notesUrl.folders),
         api(notesUrl.notes),
+        api('/notes/storage').catch(() => ({ usedBytes: 0, limitBytes: 50 * 1024 * 1024 })),
       ]);
       setFolders(foldersRes);
       setNotes(notesRes);
+      setUsedBytes(storageRes?.usedBytes ?? 0);
+      setLimitBytes(storageRes?.limitBytes ?? 50 * 1024 * 1024);
     } catch {
       setFolders([]);
       setNotes([]);
@@ -212,6 +220,32 @@ export default function Manage() {
             Upload, edit, delete, and organize your notes and folders. Drag notes onto categories in the sidebar to move them.
           </p>
 
+          {usedBytes != null && limitBytes != null && (
+            <div className="edura-card p-3 mb-4">
+              <h3 className="h6 mb-2">Storage</h3>
+              <div className="d-flex align-items-center gap-3 flex-wrap">
+                <span className="small text-muted">
+                  {(usedBytes / BYTES_PER_MB).toFixed(1)} MB / {(limitBytes / BYTES_PER_MB).toFixed(1)} MB used
+                </span>
+                <div className="progress flex-grow-1" style={{ maxWidth: 280, height: 8 }}>
+                  <div
+                    className={`progress-bar ${atStorageLimit ? 'bg-danger' : ''}`}
+                    role="progressbar"
+                    style={{ width: `${Math.min(100, (usedBytes / limitBytes) * 100)}%` }}
+                    aria-valuenow={usedBytes}
+                    aria-valuemin={0}
+                    aria-valuemax={limitBytes}
+                  />
+                </div>
+              </div>
+              {atStorageLimit && (
+                <p className="small text-danger mb-0 mt-2">
+                  Storage limit reached. Delete some files or ask an admin to increase your limit.
+                </p>
+              )}
+            </div>
+          )}
+
           <section id="upload-section" className="upload-file-section edura-card p-4">
             <h2 className="upload-file-title">Upload a file</h2>
             <p className="upload-file-subtitle">
@@ -305,7 +339,7 @@ export default function Manage() {
                 <button
                   type="submit"
                   className="btn btn-upload-primary"
-                  disabled={submitting || !uploadFile}
+                  disabled={submitting || !uploadFile || atStorageLimit}
                 >
                   {submitting ? 'Uploading...' : 'Upload'}
                 </button>

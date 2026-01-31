@@ -5,8 +5,16 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 import { uploadPdf, getUploadPath } from '../middleware/uploadMiddleware.js';
 import cloudinary, { isCloudinaryConfigured } from '../lib/cloudinary.js';
 import { getResourceType, destroyCloudinaryAsset } from '../lib/cloudinaryNotes.js';
+import { getUsedStorageBytes } from '../lib/storageHelper.js';
 
 const CLOUDINARY_FOLDER = 'notes-app';
+const DEFAULT_STORAGE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
+
+function formatStorageMessage(usedBytes, limitBytes) {
+  const usedMB = (usedBytes / (1024 * 1024)).toFixed(1);
+  const limitMB = (limitBytes / (1024 * 1024)).toFixed(1);
+  return `Storage limit exceeded (${usedMB} MB / ${limitMB} MB). Delete some files or ask an admin to increase your limit.`;
+}
 
 function uploadBufferToCloudinary(buffer, mimeType) {
   const resourceType = getResourceType(mimeType);
@@ -54,6 +62,16 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/storage', async (req, res) => {
+  try {
+    const limitBytes = req.user.storageLimitBytes ?? DEFAULT_STORAGE_LIMIT_BYTES;
+    const usedBytes = await getUsedStorageBytes(req.user._id);
+    res.json({ usedBytes, limitBytes });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to get storage' });
+  }
+});
+
 function getMimeType(note) {
   if (note.mimeType) return note.mimeType;
   const ext = (note.fileName || '').toLowerCase().replace(/.*\./, '');
@@ -95,6 +113,14 @@ router.get('/:id', async (req, res) => {
 router.post('/', uploadPdf.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'PDF or image file is required' });
+    const limitBytes = req.user.storageLimitBytes ?? DEFAULT_STORAGE_LIMIT_BYTES;
+    const usedBytes = await getUsedStorageBytes(req.user._id);
+    const newTotal = usedBytes + (req.file.size ?? 0);
+    if (newTotal > limitBytes) {
+      return res.status(413).json({
+        message: formatStorageMessage(newTotal, limitBytes),
+      });
+    }
     if (!isCloudinaryConfigured) {
       return res.status(503).json({
         message: 'File upload is not configured. Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET to server/.env.',
@@ -135,6 +161,15 @@ router.put('/:id', uploadPdf.single('file'), async (req, res) => {
     if (req.body.isPublic !== undefined) note.isPublic = req.body.isPublic === 'true' || req.body.isPublic === true;
 
     if (req.file) {
+      const limitBytes = req.user.storageLimitBytes ?? DEFAULT_STORAGE_LIMIT_BYTES;
+      const usedBytes = await getUsedStorageBytes(req.user._id);
+      const currentNoteSize = note.size ?? 0;
+      const newTotal = usedBytes - currentNoteSize + (req.file.size ?? 0);
+      if (newTotal > limitBytes) {
+        return res.status(413).json({
+          message: formatStorageMessage(newTotal, limitBytes),
+        });
+      }
       if (!isCloudinaryConfigured) {
         return res.status(503).json({
           message: 'File upload is not configured. Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET to server/.env.',

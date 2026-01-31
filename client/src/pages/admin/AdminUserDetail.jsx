@@ -14,13 +14,21 @@ export default function AdminUserDetail() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteUserModal, setShowDeleteUserModal] = useState(false);
   const [showDeleteNotesModal, setShowDeleteNotesModal] = useState(false);
+  const [storageLimitMB, setStorageLimitMB] = useState('');
+  const [savingLimit, setSavingLimit] = useState(false);
+  const [limitMessage, setLimitMessage] = useState('');
 
   const isSelf = currentUser?._id === userId;
+  const BYTES_PER_MB = 1024 * 1024;
 
   useEffect(() => {
     if (!userId) return;
     api(`/admin/users/${userId}`)
-      .then(setData)
+      .then((res) => {
+        setData(res);
+        const limitBytes = res.user?.storageLimitBytes ?? 50 * 1024 * 1024;
+        setStorageLimitMB(String(Math.round(limitBytes / BYTES_PER_MB)));
+      })
       .catch((err) => setError(err.message || 'Failed to load user'))
       .finally(() => setLoading(false));
   }, [userId]);
@@ -87,6 +95,30 @@ export default function AdminUserDetail() {
     }
   };
 
+  const handleSaveStorageLimit = async () => {
+    const mb = Number(storageLimitMB);
+    if (!Number.isFinite(mb) || mb < 0) {
+      setLimitMessage('Enter a valid non-negative number (MB).');
+      return;
+    }
+    setLimitMessage('');
+    setSavingLimit(true);
+    try {
+      await api(`/admin/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ storageLimitBytes: mb * BYTES_PER_MB }),
+      });
+      const next = await api(`/admin/users/${userId}`);
+      setData(next);
+      setLimitMessage('Storage limit updated.');
+      setTimeout(() => setLimitMessage(''), 3000);
+    } catch (err) {
+      setLimitMessage(err.message || 'Failed to update limit');
+    } finally {
+      setSavingLimit(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="admin-page p-4">
@@ -108,7 +140,8 @@ export default function AdminUserDetail() {
     );
   }
 
-  const { user, notes } = data;
+  const { user, usedBytes = 0, notes } = data;
+  const limitBytes = user?.storageLimitBytes ?? 50 * BYTES_PER_MB;
 
   return (
     <div className="admin-page p-4">
@@ -131,6 +164,41 @@ export default function AdminUserDetail() {
               Delete user
             </button>
           )}
+        </div>
+      </div>
+
+      <div className="admin-card card mb-4">
+        <div className="card-body">
+          <h3 className="h6 mb-3">Storage limit</h3>
+          <p className="small text-muted mb-2">
+            Used: {(usedBytes / BYTES_PER_MB).toFixed(1)} MB · Limit: {(limitBytes / BYTES_PER_MB).toFixed(1)} MB
+          </p>
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <label htmlFor="admin-storage-limit-mb" className="form-label small mb-0">Limit (MB)</label>
+            <input
+              id="admin-storage-limit-mb"
+              type="number"
+              min={0}
+              step={1}
+              className="form-control form-control-sm"
+              style={{ width: 90 }}
+              value={storageLimitMB}
+              onChange={(e) => setStorageLimitMB(e.target.value)}
+            />
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              onClick={handleSaveStorageLimit}
+              disabled={savingLimit}
+            >
+              {savingLimit ? 'Saving...' : 'Save'}
+            </button>
+            {limitMessage && (
+              <span className={`small ${limitMessage.startsWith('Storage limit updated') ? 'text-success' : 'text-danger'}`}>
+                {limitMessage}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

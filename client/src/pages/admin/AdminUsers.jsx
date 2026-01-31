@@ -15,6 +15,10 @@ export default function AdminUsers() {
       .finally(() => setLoading(false));
   }, []);
 
+  const BYTES_PER_MB = 1024 * 1024;
+  const formatStorage = (used, limit) =>
+    `${((used ?? 0) / BYTES_PER_MB).toFixed(1)} MB / ${((limit ?? 0) / BYTES_PER_MB).toFixed(1)} MB`;
+
   const filtered = search.trim()
     ? users.filter(
         (u) =>
@@ -66,6 +70,7 @@ export default function AdminUsers() {
                 <th>Name</th>
                 <th>Email</th>
                 <th>Notes</th>
+                <th>Storage</th>
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
@@ -76,6 +81,7 @@ export default function AdminUsers() {
                   <td>{u.name || '—'}</td>
                   <td>{u.email || '—'}</td>
                   <td>{u.noteCount ?? 0}</td>
+                  <td>{formatStorage(u.usedBytes, u.storageLimitBytes)}</td>
                   <td>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
                   <td>
                     <Link to={`/admin/users/${u._id}`} className="btn btn-sm btn-outline-primary">
