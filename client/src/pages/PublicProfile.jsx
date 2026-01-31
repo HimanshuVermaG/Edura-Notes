@@ -141,15 +141,18 @@ export default function PublicProfile() {
     );
   };
 
+  const FOLDER_INDENT_REM = 1.75;
+
   function renderFolderSection(node, depth = 0) {
     const folder = node.folder;
     const folderNotes = notesByFolder(folder._id);
     const hasChildren = node.children?.length > 0;
     if (folderNotes.length === 0 && !hasChildren) return null;
     const isSubfolder = depth > 0;
-    const headingClass = isSubfolder ? 'text-muted small text-uppercase mb-2 ms-3' : 'text-muted small text-uppercase mb-2';
+    const indentStyle = isSubfolder ? { marginLeft: `${depth * FOLDER_INDENT_REM}rem`, marginTop: '1.25rem' } : undefined;
+    const headingClass = 'text-muted small text-uppercase mb-2';
     return (
-      <div key={folder._id} className={isSubfolder ? 'mb-4 ms-3' : 'mb-4'}>
+      <div key={folder._id} className="mb-4" style={indentStyle}>
         <h6 className={headingClass}>{folder.name}</h6>
         {folderNotes.length > 0 && (
           isList ? (

@@ -141,7 +141,7 @@ export default function SecureNoteViewer({ noteId, publicNoteId, pdfBlobUrl, ful
           className="secure-note-pdf-container"
           style={
             fullScreen
-              ? { flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }
+              ? { flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }
               : { maxHeight: '70vh', overflow: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }
           }
         >
@@ -154,7 +154,7 @@ export default function SecureNoteViewer({ noteId, publicNoteId, pdfBlobUrl, ful
               height: 'auto',
               display: 'block',
               transform: `scale(${zoom})`,
-              transformOrigin: 'center center',
+              transformOrigin: 'top center',
             }}
             draggable={false}
           />

@@ -7,6 +7,7 @@ export default function EditNote() {
   const { id } = useParams();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
   const [file, setFile] = useState(null);
   const [folderId, setFolderId] = useState('');
   const [folders, setFolders] = useState([]);
@@ -22,6 +23,7 @@ export default function EditNote() {
       .then(([note, foldersList]) => {
         setTitle(note.title);
         setDescription(note.description || '');
+        setIsPublic(note.isPublic === true);
         setCurrentFileName(note.originalName || note.fileName || '');
         const fid = note.folderId && (typeof note.folderId === 'object' ? note.folderId._id : note.folderId);
         setFolderId(fid || '');
@@ -45,6 +47,7 @@ export default function EditNote() {
         formData.append('file', file);
         formData.append('title', title.trim());
         formData.append('description', description.trim());
+        formData.append('isPublic', String(isPublic));
         if (folderId) formData.append('folderId', folderId);
         await apiForm(`/notes/${id}`, formData, { method: 'PUT' });
       } else {
@@ -53,6 +56,7 @@ export default function EditNote() {
           body: JSON.stringify({
             title: title.trim(),
             description: description.trim(),
+            isPublic,
             folderId: folderId || null,
           }),
         });
@@ -103,7 +107,7 @@ export default function EditNote() {
     <Layout>
       <div className="edura-card p-4">
         <h2 className="edura-section-title mb-2">Edit note</h2>
-        <p className="edura-section-subtitle mb-4">Update title, description, folder, or replace the file (PDF or image).</p>
+        <p className="edura-section-subtitle mb-4">Update title, description, folder, visibility, or replace the file (PDF or image).</p>
         <form className="edura-form" onSubmit={handleSubmit}>
           {error && (
             <div className="alert alert-danger py-2 small" role="alert">
@@ -147,6 +151,20 @@ export default function EditNote() {
                 </option>
               ))}
             </select>
+          </div>
+          <div className="mb-3">
+            <label htmlFor="visibility" className="form-label">Visibility</label>
+            <select
+              id="visibility"
+              className="form-select"
+              style={{ maxWidth: 160 }}
+              value={isPublic ? 'true' : 'false'}
+              onChange={(e) => setIsPublic(e.target.value === 'true')}
+            >
+              <option value="false">Private</option>
+              <option value="true">Public</option>
+            </select>
+            <div className="form-text small">Public notes appear on your public profile and in Explore.</div>
           </div>
           <div className="mb-4">
             <label htmlFor="file" className="form-label">Replace file (optional)</label>

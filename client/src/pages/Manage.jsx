@@ -23,6 +23,7 @@ export default function Manage() {
   const [uploadDescription, setUploadDescription] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadFolderId, setUploadFolderId] = useState('');
+  const [uploadIsPublic, setUploadIsPublic] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [dropzoneDragging, setDropzoneDragging] = useState(false);
@@ -101,11 +102,13 @@ export default function Manage() {
       formData.append('title', uploadTitle.trim());
       if (uploadDescription.trim()) formData.append('description', uploadDescription.trim());
       if (uploadFolderId) formData.append('folderId', uploadFolderId);
+      formData.append('isPublic', String(uploadIsPublic));
       await apiForm('/notes', formData, { method: 'POST' });
       setUploadTitle('');
       setUploadDescription('');
       setUploadFile(null);
       setUploadFolderId('');
+      setUploadIsPublic(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
       loadData();
     } catch (err) {
@@ -146,6 +149,7 @@ export default function Manage() {
     setUploadTitle('');
     setUploadDescription('');
     setUploadFolderId('');
+    setUploadIsPublic(false);
     setUploadError('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -168,7 +172,6 @@ export default function Manage() {
       viewMode={viewMode}
       showActions={true}
       folderName={folderName}
-      showVisibilityToggle={true}
     />
   );
 
@@ -283,6 +286,20 @@ export default function Manage() {
                   placeholder="Optional description for this note"
                   rows={3}
                 />
+              </div>
+              <div className="mb-3">
+                <label htmlFor="manage-upload-visibility" className="form-label small">Visibility</label>
+                <select
+                  id="manage-upload-visibility"
+                  className="form-select form-select-sm"
+                  style={{ maxWidth: 160 }}
+                  value={uploadIsPublic ? 'true' : 'false'}
+                  onChange={(e) => setUploadIsPublic(e.target.value === 'true')}
+                >
+                  <option value="false">Private</option>
+                  <option value="true">Public</option>
+                </select>
+                <div className="form-text small">Public notes appear on your public profile and in Explore.</div>
               </div>
               <div className="upload-file-actions">
                 <button
