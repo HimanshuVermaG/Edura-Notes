@@ -1,13 +1,22 @@
 import express from 'express';
+import fs from 'fs';
 import User from '../models/User.js';
 import Note from '../models/Note.js';
 import Folder from '../models/Folder.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { adminMiddleware } from '../middleware/adminMiddleware.js';
+import { getUploadPath } from '../middleware/uploadMiddleware.js';
 import { getResourceType, destroyCloudinaryAsset } from '../lib/cloudinaryNotes.js';
 import { getUsedStorageBytes } from '../lib/storageHelper.js';
 
 const DEFAULT_STORAGE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
+
+function getMimeType(note) {
+  if (note.mimeType) return note.mimeType;
+  const ext = (note.fileName || '').toLowerCase().replace(/.*\./, '');
+  const mime = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' };
+  return mime[ext] || 'application/octet-stream';
+}
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -92,6 +101,39 @@ router.delete('/users/:userId', async (req, res) => {
     res.json({ message: 'User deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to delete user' });
+  }
+});
+
+// GET /api/admin/notes/:id - get note by id (admin only, any user's note)
+router.get('/notes/:id', async (req, res) => {
+  try {
+    const note = await Note.findById(req.params.id).populate('userId', 'name email').lean();
+    if (!note) return res.status(404).json({ message: 'Note not found' });
+    res.json(note);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to get note' });
+  }
+});
+
+// GET /api/admin/notes/:id/file - serve file for note (admin only)
+router.get('/notes/:id/file', async (req, res) => {
+  try {
+    const note = await Note.findById(req.params.id).lean();
+    if (!note) return res.status(404).json({ message: 'Note not found' });
+    if (!note.fileName) return res.status(404).json({ message: 'No file for this note' });
+    if (note.fileUrl) {
+      return res.redirect(302, note.fileUrl);
+    }
+    const filePath = getUploadPath(note.fileName);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'File not found' });
+    const contentType = getMimeType(note);
+    const dispName = note.originalName || note.fileName || 'file';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to get file' });
   }
 });
 

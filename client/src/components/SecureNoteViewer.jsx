@@ -14,7 +14,7 @@ function inferMimeType(fileName) {
   return mime[ext] || 'application/pdf';
 }
 
-export default function SecureNoteViewer({ noteId, publicNoteId, pdfBlobUrl, fullScreen: fullScreenProp = false, mimeType: mimeTypeProp, fileName, zoom: zoomProp = 1 }) {
+export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pdfBlobUrl, fullScreen: fullScreenProp = false, mimeType: mimeTypeProp, fileName, zoom: zoomProp = 1 }) {
   const mimeType = mimeTypeProp || (fileName ? inferMimeType(fileName) : 'application/pdf');
   const isImage = mimeType && mimeType.startsWith('image/');
   const containerRef = useRef(null);
@@ -22,7 +22,7 @@ export default function SecureNoteViewer({ noteId, publicNoteId, pdfBlobUrl, ful
   const [numPages, setNumPages] = useState(null);
   const [pageWidth, setPageWidth] = useState(800);
   const zoom = typeof zoomProp === 'number' && zoomProp > 0 ? zoomProp : 1;
-  const fileId = publicNoteId || noteId;
+  const fileId = adminNoteId || publicNoteId || noteId;
   const [loading, setLoading] = useState(!!fileId && !pdfBlobUrl);
   const [error, setError] = useState(null);
   const createdUrlRef = useRef(null);
@@ -37,7 +37,11 @@ export default function SecureNoteViewer({ noteId, publicNoteId, pdfBlobUrl, ful
       setLoading(false);
       return;
     }
-    const fileUrl = publicNoteId ? `/public/notes/${publicNoteId}/file` : `/notes/${noteId}/file`;
+    const fileUrl = adminNoteId
+      ? `/admin/notes/${adminNoteId}/file`
+      : publicNoteId
+        ? `/public/notes/${publicNoteId}/file`
+        : `/notes/${noteId}/file`;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -61,7 +65,7 @@ export default function SecureNoteViewer({ noteId, publicNoteId, pdfBlobUrl, ful
         createdUrlRef.current = null;
       }
     };
-  }, [noteId, publicNoteId, pdfBlobUrl]);
+  }, [noteId, publicNoteId, adminNoteId, pdfBlobUrl]);
 
   useEffect(() => {
     return () => {

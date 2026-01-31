@@ -16,6 +16,11 @@ export default function AdminDashboard() {
 
   const totalUsers = users.length;
   const totalNotes = users.reduce((sum, u) => sum + (u.noteCount || 0), 0);
+  const totalUsedBytes = users.reduce((sum, u) => sum + (u.usedBytes || 0), 0);
+  const BYTES_PER_MB = 1024 * 1024;
+  const totalStorageLabel = totalUsedBytes >= BYTES_PER_MB * 1024
+    ? `${(totalUsedBytes / (BYTES_PER_MB * 1024)).toFixed(1)} GB used`
+    : `${(totalUsedBytes / BYTES_PER_MB).toFixed(1)} MB used`;
 
   if (loading) {
     return (
@@ -54,6 +59,14 @@ export default function AdminDashboard() {
             <div className="card-body">
               <h6 className="text-muted text-uppercase small mb-1">Total Notes</h6>
               <p className="h3 mb-0">{totalNotes}</p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-6 col-lg-4">
+          <div className="admin-card card h-100">
+            <div className="card-body">
+              <h6 className="text-muted text-uppercase small mb-1">Total Storage Used</h6>
+              <p className="h3 mb-0">{totalStorageLabel}</p>
             </div>
           </div>
         </div>

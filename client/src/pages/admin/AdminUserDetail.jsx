@@ -265,6 +265,12 @@ export default function AdminUserDetail() {
                   <td>{note.isPublic ? 'Yes' : 'No'}</td>
                   <td>{note.createdAt ? new Date(note.createdAt).toLocaleDateString() : '—'}</td>
                   <td>
+                    <Link
+                      to={`/admin/view/note/${note._id}`}
+                      className="btn btn-sm btn-outline-primary me-1"
+                    >
+                      View
+                    </Link>
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-danger"

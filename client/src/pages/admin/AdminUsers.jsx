@@ -6,7 +6,8 @@ export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
 
   useEffect(() => {
     api('/admin/users')
@@ -19,11 +20,11 @@ export default function AdminUsers() {
   const formatStorage = (used, limit) =>
     `${((used ?? 0) / BYTES_PER_MB).toFixed(1)} MB / ${((limit ?? 0) / BYTES_PER_MB).toFixed(1)} MB`;
 
-  const filtered = search.trim()
+  const filtered = appliedSearch.trim()
     ? users.filter(
         (u) =>
-          (u.name || '').toLowerCase().includes(search.trim().toLowerCase()) ||
-          (u.email || '').toLowerCase().includes(search.trim().toLowerCase())
+          (u.name || '').toLowerCase().includes(appliedSearch.trim().toLowerCase()) ||
+          (u.email || '').toLowerCase().includes(appliedSearch.trim().toLowerCase())
       )
     : users;
 
@@ -52,15 +53,29 @@ export default function AdminUsers() {
       <h1 className="h4 mb-4">Users</h1>
       <div className="mb-3">
         <label htmlFor="admin-users-search" className="form-label visually-hidden">Search users</label>
-        <input
-          id="admin-users-search"
-          type="search"
-          className="form-control"
-          placeholder="Search by name or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ maxWidth: 320 }}
-        />
+        <div className="input-group" style={{ maxWidth: 400 }}>
+          <input
+            id="admin-users-search"
+            type="search"
+            className="form-control"
+            placeholder="Search by name or email..."
+            value={searchInput}
+            onChange={(e) => {
+              const v = e.target.value;
+              setSearchInput(v);
+              if (v.trim() === '') setAppliedSearch('');
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setAppliedSearch(searchInput))}
+            aria-label="Search users"
+          />
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setAppliedSearch(searchInput)}
+          >
+            Search
+          </button>
+        </div>
       </div>
       <div className="admin-card card">
         <div className="table-responsive">

@@ -15,6 +15,7 @@ import Explore from './pages/Explore';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
+import AdminNoteView from './pages/admin/AdminNoteView';
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="users/:userId" element={<AdminUserDetail />} />
+        <Route path="view/note/:noteId" element={<AdminNoteView />} />
       </Route>
       <Route path="/profile/:userId" element={<PublicProfile />} />
       <Route path="/view/note/:id" element={<PublicNoteView />} />
