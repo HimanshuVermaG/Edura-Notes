@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { getApiUrl } from '../api/client';
 
 const AuthContext = createContext(null);
 const TOKEN_KEY = 'notes_token';
@@ -41,7 +42,7 @@ export function AuthProvider({ children }) {
         setUser(null);
       }
     }
-    fetch('/api/auth/me', {
+    fetch(getApiUrl('/auth/me'), {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => (res.ok ? res.json() : Promise.reject()))
