@@ -24,12 +24,19 @@ app.use('/api/public', publicRoutes);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
+const isVercel = process.env.VERCEL === '1';
+
 mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/notes-app')
   .then(() => {
-    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+    if (!isVercel) {
+      app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+    }
   })
   .catch((err) => {
     console.error('MongoDB connection error:', err);
-    process.exit(1);
+    if (!isVercel) process.exit(1);
   });
+
+// Export for Vercel serverless (so Express runs and CORS is applied)
+export default app;
