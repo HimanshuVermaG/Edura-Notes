@@ -76,7 +76,7 @@ export default function App() {
       />
       <Route path="/" element={<Navigate to="/explore" replace />} />
       <Route path="/dashboard" element={<Navigate to="/home" replace />} />
-      <Route path="*" element={<Navigate to="/home" replace />} />
+      <Route path="*" element={<Navigate to="/explore" replace />} />
     </Routes>
   );
 }

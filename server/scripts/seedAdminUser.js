@@ -4,17 +4,10 @@ import User from '../models/User.js';
 
 async function seedAdminUser() {
   const rawEmail = process.env.ADMIN_EMAIL;
-  const password = process.env.ADMIN_PASSWORD;
-  const name = process.env.ADMIN_NAME || 'Admin';
   const email = rawEmail ? String(rawEmail).trim().toLowerCase() : '';
 
-  if (!email || !password) {
-    console.error('Set ADMIN_EMAIL and ADMIN_PASSWORD in server/.env to create an admin user.');
-    process.exit(1);
-  }
-
-  if (password.length < 6) {
-    console.error('ADMIN_PASSWORD must be at least 6 characters.');
+  if (!email) {
+    console.error('Set ADMIN_EMAIL in server/.env (the Google account email that should be admin).');
     process.exit(1);
   }
 
@@ -24,19 +17,11 @@ async function seedAdminUser() {
   const existing = await User.findOne({ email });
   if (existing) {
     existing.role = 'admin';
-    existing.password = password;
     await existing.save();
-    console.log('Admin user updated:', email);
+    console.log('Admin role set for:', email);
   } else {
-    await User.create({
-      name,
-      email,
-      password,
-      role: 'admin',
-    });
-    console.log('Admin user created successfully.');
-    console.log('  Email:', email);
-    console.log('  Password: (from ADMIN_PASSWORD)');
+    console.log('No user found with email:', email);
+    console.log('Sign in with Google using that email first, then run this script again to set admin role.');
   }
 
   await mongoose.disconnect();

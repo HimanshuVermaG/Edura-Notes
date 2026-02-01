@@ -1,9 +1,11 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Layout({ children }) {
   const { isAuthenticated, user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isSignInPage = location.pathname === '/signin';
 
   const handleSignOut = () => {
     signOut();
@@ -42,6 +44,11 @@ export default function Layout({ children }) {
                       Manage
                     </Link>
                   </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/explore">
+                      Explore
+                    </Link>
+                  </li>
                   {user?._id && (
                     <li className="nav-item">
                       <Link className="nav-link small" to={`/profile/${user._id}`} title="Your public profile">
@@ -61,15 +68,22 @@ export default function Layout({ children }) {
               ) : (
                 <>
                   <li className="nav-item">
+                    <Link className="nav-link" to="/explore">
+                      Explore
+                    </Link>
+                  </li>
+                  <li className="nav-item">
                     <Link className="nav-link" to="/signin">
                       Sign In
                     </Link>
                   </li>
-                  <li className="nav-item">
-                    <Link className="btn btn-edura btn-sm" to="/signup">
-                      Sign Up
-                    </Link>
-                  </li>
+                  {!isSignInPage && (
+                    <li className="nav-item">
+                      <Link className="btn btn-edura btn-sm" to="/signup">
+                        Sign Up
+                      </Link>
+                    </li>
+                  )}
                 </>
               )}
             </ul>
@@ -89,6 +103,7 @@ export default function Layout({ children }) {
             <div className="col-md-2">
               <h6>Quick Links</h6>
               <ul className="list-unstyled small">
+                <li><Link to="/explore">Explore</Link></li>
                 <li><Link to="/signin">Sign In</Link></li>
                 <li><Link to="/signup">Sign Up</Link></li>
                 <li><Link to="/home">Home</Link></li>

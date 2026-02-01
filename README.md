@@ -1,6 +1,6 @@
 # Notes Website
 
-A multi-user notes app with sign-up/sign-in, dashboard, folders, and secure note viewing (no copy, no print). UI follows the Edura education theme.
+A multi-user notes app with **Google Sign-In**, dashboard, folders, and secure note viewing (no copy, no print). UI follows the Edura education theme.
 
 ## Tech stack
 
@@ -23,6 +23,10 @@ npm install
 npm run dev
 ```
 
+**Google Sign-In:** Create an OAuth 2.0 Client ID in [Google Cloud Console](https://console.cloud.google.com/apis/credentials): type "Web application", add authorized JavaScript origins (e.g. `http://localhost:5173`, your production URL). Add to `server/.env`:
+
+- `GOOGLE_CLIENT_ID` (the Web client ID)
+
 **Cloudinary (file storage):** New uploads are stored on [Cloudinary](https://cloudinary.com). Get credentials from [Dashboard](https://console.cloudinary.com/) → Settings → Security → API Keys. Add to `.env`:
 
 - `CLOUDINARY_CLOUD_NAME`
@@ -33,12 +37,7 @@ Never expose the API secret to the client. Existing notes without Cloudinary URL
 
 Server runs at `http://localhost:5001` (5001 avoids conflict with macOS AirPlay on 5000).
 
-**Demo user (optional):** From the `server` folder run `npm run seed:demo` to create a demo account. Sign in with:
-
-- **Email:** `demo@example.com`
-- **Password:** `demo123456`
-
-**Admin panel:** Create an admin user by setting `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `server/.env`, then from the `server` folder run `npm run seed:admin`. Sign in at `/admin/login` with that email and password to access the admin panel. The admin can view all users, see each user's files, delete users (and their files), and delete specific or multiple files.
+**Admin panel:** Set `ADMIN_EMAIL` in `server/.env` to the Google account email that should have admin role. Sign in at `/admin/login` with that Google account to access the admin panel. The admin can view all users, see each user's files, delete users (and their files), and delete specific or multiple files.
 
 ### 3. Client
 
@@ -47,6 +46,10 @@ cd client
 npm install
 npm run dev
 ```
+
+Create `client/.env` (or use `.env.example` as a template) and set:
+
+- `VITE_GOOGLE_CLIENT_ID` (same value as server `GOOGLE_CLIENT_ID`)
 
 Client runs at `http://localhost:5173` and proxies `/api` to the server.
 
