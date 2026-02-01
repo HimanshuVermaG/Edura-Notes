@@ -22,12 +22,39 @@ const router = express.Router();
 router.use(authMiddleware);
 router.use(adminMiddleware);
 
-// GET /api/admin/users - list users with note count and storage
+// GET /api/admin/users - list users with note count and storage (paginated)
 router.get('/users', async (req, res) => {
   try {
-    const users = await User.find().select('name email createdAt role storageLimitBytes').sort({ name: 1 }).lean();
-    const counts = await Note.aggregate([{ $group: { _id: '$userId', count: { $sum: 1 }, usedBytes: { $sum: { $ifNull: ['$size', 0] } } } }]);
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const search = (req.query.search || '').trim();
+
+    const filter = {};
+    if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.$or = [
+        { name: { $regex: escaped, $options: 'i' } },
+        { email: { $regex: escaped, $options: 'i' } },
+      ];
+    }
+
+    const [total, users] = await Promise.all([
+      User.countDocuments(filter),
+      User.find(filter)
+        .select('name email createdAt role storageLimitBytes')
+        .sort({ name: 1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+    ]);
+
+    const userIds = users.map((u) => u._id);
+    const counts = await Note.aggregate([
+      { $match: { userId: { $in: userIds } } },
+      { $group: { _id: '$userId', count: { $sum: 1 }, usedBytes: { $sum: { $ifNull: ['$size', 0] } } } },
+    ]);
     const byUser = Object.fromEntries(counts.map((c) => [String(c._id), { count: c.count, usedBytes: c.usedBytes ?? 0 }]));
+
     const list = users.map((u) => ({
       _id: u._id,
       name: u.name,
@@ -38,24 +65,42 @@ router.get('/users', async (req, res) => {
       usedBytes: byUser[String(u._id)]?.usedBytes ?? 0,
       storageLimitBytes: u.storageLimitBytes ?? DEFAULT_STORAGE_LIMIT_BYTES,
     }));
-    res.json(list);
+
+    res.json({ users: list, total, page, limit });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to list users' });
   }
 });
 
-// GET /api/admin/users/:userId - single user with notes and storage
+// GET /api/admin/users/:userId - single user with paginated notes and storage
 router.get('/users/:userId', async (req, res) => {
   try {
+    const notesPage = Math.max(1, parseInt(req.query.notesPage, 10) || 1);
+    const notesLimit = Math.min(100, Math.max(1, parseInt(req.query.notesLimit, 10) || 10));
+
     const user = await User.findById(req.params.userId).select('-password').lean();
     if (!user) return res.status(404).json({ message: 'User not found' });
     const usedBytes = await getUsedStorageBytes(req.params.userId);
     const storageLimitBytes = user.storageLimitBytes ?? DEFAULT_STORAGE_LIMIT_BYTES;
-    const notes = await Note.find({ userId: req.params.userId })
-      .select('title originalName mimeType size isPublic listedOnExplore createdAt fileName fileUrl')
-      .sort({ createdAt: -1 })
-      .lean();
-    res.json({ user: { ...user, storageLimitBytes }, usedBytes, notes });
+
+    const [notesTotal, notes] = await Promise.all([
+      Note.countDocuments({ userId: req.params.userId }),
+      Note.find({ userId: req.params.userId })
+        .select('title originalName mimeType size isPublic listedOnExplore createdAt fileName fileUrl')
+        .sort({ createdAt: -1 })
+        .skip((notesPage - 1) * notesLimit)
+        .limit(notesLimit)
+        .lean(),
+    ]);
+
+    res.json({
+      user: { ...user, storageLimitBytes },
+      usedBytes,
+      notes,
+      notesTotal,
+      notesPage,
+      notesLimit,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to get user' });
   }

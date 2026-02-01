@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/client';
+
+const FILES_PAGE_SIZES = [10, 20, 50, 100];
 
 export default function AdminUserDetail() {
   const { userId } = useParams();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
-  const [data, setData] = useState({ user: null, notes: [] });
+  const [data, setData] = useState({ user: null, notes: [], notesTotal: 0, notesPage: 1, notesLimit: 10 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selected, setSelected] = useState(new Set());
@@ -19,21 +21,32 @@ export default function AdminUserDetail() {
   const [limitMessage, setLimitMessage] = useState('');
   const [savingProfileListed, setSavingProfileListed] = useState(false);
   const [savingNoteListedId, setSavingNoteListedId] = useState(null);
+  const [notesPage, setNotesPage] = useState(1);
+  const [notesLimit, setNotesLimit] = useState(10);
 
   const isSelf = currentUser?._id === userId;
   const BYTES_PER_MB = 1024 * 1024;
 
-  useEffect(() => {
-    if (!userId) return;
-    api(`/admin/users/${userId}`)
+  const fetchUser = useCallback(() => {
+    if (!userId) return Promise.resolve();
+    const params = new URLSearchParams();
+    params.set('notesPage', String(notesPage));
+    params.set('notesLimit', String(notesLimit));
+    return api(`/admin/users/${userId}?${params.toString()}`)
       .then((res) => {
         setData(res);
         const limitBytes = res.user?.storageLimitBytes ?? 50 * 1024 * 1024;
         setStorageLimitMB(String(Math.round(limitBytes / BYTES_PER_MB)));
       })
-      .catch((err) => setError(err.message || 'Failed to load user'))
-      .finally(() => setLoading(false));
-  }, [userId]);
+      .catch((err) => setError(err.message || 'Failed to load user'));
+  }, [userId, notesPage, notesLimit]);
+
+  useEffect(() => {
+    if (!userId) return;
+    setLoading(true);
+    setError('');
+    fetchUser().finally(() => setLoading(false));
+  }, [userId, fetchUser]);
 
   const toggleSelect = (id) => {
     setSelected((prev) => {
@@ -45,8 +58,16 @@ export default function AdminUserDetail() {
   };
 
   const toggleSelectAll = () => {
-    if (selected.size === data.notes.length) setSelected(new Set());
-    else setSelected(new Set(data.notes.map((n) => n._id)));
+    const notes = data.notes || [];
+    if (selected.size === notes.length) setSelected(new Set());
+    else setSelected(new Set(notes.map((n) => n._id)));
+  };
+
+  const refetchWithParams = () => {
+    const params = new URLSearchParams();
+    params.set('notesPage', String(notesPage));
+    params.set('notesLimit', String(notesLimit));
+    return api(`/admin/users/${userId}?${params.toString()}`).then(setData);
   };
 
   const handleDeleteSelected = async () => {
@@ -60,8 +81,10 @@ export default function AdminUserDetail() {
       });
       setSelected(new Set());
       setShowDeleteNotesModal(false);
-      const next = await api(`/admin/users/${userId}`);
-      setData(next);
+      const newTotal = (data.notesTotal ?? 0) - selected.size;
+      const newTotalPages = Math.max(1, Math.ceil(newTotal / notesLimit));
+      const pageToUse = Math.min(notesPage, newTotalPages);
+      setNotesPage(pageToUse);
     } catch (err) {
       setError(err.message || 'Failed to delete notes');
     } finally {
@@ -90,8 +113,10 @@ export default function AdminUserDetail() {
         method: 'DELETE',
         body: JSON.stringify({ noteIds: [noteId] }),
       });
-      const next = await api(`/admin/users/${userId}`);
-      setData(next);
+      const newTotal = (data.notesTotal ?? 1) - 1;
+      const newTotalPages = Math.max(1, Math.ceil(newTotal / notesLimit));
+      const pageToUse = Math.min(notesPage, newTotalPages);
+      setNotesPage(pageToUse);
     } catch (err) {
       setError(err.message || 'Failed to delete note');
     }
@@ -110,8 +135,7 @@ export default function AdminUserDetail() {
         method: 'PUT',
         body: JSON.stringify({ storageLimitBytes: mb * BYTES_PER_MB }),
       });
-      const next = await api(`/admin/users/${userId}`);
-      setData(next);
+      await refetchWithParams();
       setLimitMessage('Storage limit updated.');
       setTimeout(() => setLimitMessage(''), 3000);
     } catch (err) {
@@ -129,8 +153,7 @@ export default function AdminUserDetail() {
         method: 'PUT',
         body: JSON.stringify({ profileListedOnExplore: checked }),
       });
-      const next = await api(`/admin/users/${userId}`);
-      setData(next);
+      await refetchWithParams();
     } catch (err) {
       setError(err.message || 'Failed to update profile listing');
     } finally {
@@ -146,13 +169,18 @@ export default function AdminUserDetail() {
         method: 'PATCH',
         body: JSON.stringify({ listedOnExplore }),
       });
-      const next = await api(`/admin/users/${userId}`);
-      setData(next);
+      await refetchWithParams();
     } catch (err) {
       setError(err.message || 'Failed to update note listing');
     } finally {
       setSavingNoteListedId(null);
     }
+  };
+
+  const handleFilesPerPageChange = (e) => {
+    const newLimit = Number(e.target.value);
+    setNotesLimit(newLimit);
+    setNotesPage(1);
   };
 
   if (loading) {
@@ -176,8 +204,11 @@ export default function AdminUserDetail() {
     );
   }
 
-  const { user, usedBytes = 0, notes } = data;
+  const { user, usedBytes = 0, notes, notesTotal = 0 } = data;
   const limitBytes = user?.storageLimitBytes ?? 50 * BYTES_PER_MB;
+  const filesTotalPages = Math.max(1, Math.ceil(notesTotal / notesLimit));
+  const filesStart = notesTotal === 0 ? 0 : (notesPage - 1) * notesLimit + 1;
+  const filesEnd = Math.min(notesPage * notesLimit, notesTotal);
 
   return (
     <div className="admin-page p-4">
@@ -189,7 +220,7 @@ export default function AdminUserDetail() {
           <div>
             <h1 className="h5 mb-1">{user?.name || '—'}</h1>
             <p className="text-muted small mb-0">{user?.email || '—'}</p>
-            <p className="small text-muted mb-0 mt-1">{notes?.length ?? 0} file(s)</p>
+            <p className="small text-muted mb-0 mt-1">{notesTotal} file(s)</p>
           </div>
           {!isSelf && (
             <button
@@ -265,7 +296,7 @@ export default function AdminUserDetail() {
         </div>
       )}
 
-      <div className="d-flex align-items-center gap-2 mb-3">
+      <div className="d-flex flex-wrap align-items-center gap-3 mb-3">
         <h2 className="h6 mb-0">Files</h2>
         {notes?.length > 0 && selected.size > 0 && (
           <button
@@ -276,6 +307,25 @@ export default function AdminUserDetail() {
             Delete selected ({selected.size})
           </button>
         )}
+        <div className="d-flex align-items-center gap-2 ms-auto">
+          <label htmlFor="admin-files-per-page" className="form-label small mb-0 text-nowrap">
+            Files per page
+          </label>
+          <select
+            id="admin-files-per-page"
+            className="form-select form-select-sm"
+            style={{ width: 'auto' }}
+            value={notesLimit}
+            onChange={handleFilesPerPageChange}
+            aria-label="Files per page"
+          >
+            {FILES_PAGE_SIZES.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="admin-card card">
@@ -288,9 +338,9 @@ export default function AdminUserDetail() {
                     <input
                       type="checkbox"
                       className="form-check-input"
-                      checked={selected.size === notes.length}
+                      checked={notes.length > 0 && selected.size === notes.length}
                       onChange={toggleSelectAll}
-                      aria-label="Select all"
+                      aria-label="Select all on page"
                     />
                   )}
                 </th>
@@ -354,10 +404,41 @@ export default function AdminUserDetail() {
             </tbody>
           </table>
         </div>
-        {(!notes || notes.length === 0) && (
+        {(!notes || notes.length === 0) && !loading && (
           <div className="card-body text-center text-muted">No files.</div>
         )}
       </div>
+
+      {notesTotal > 0 && (
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+          <p className="small text-muted mb-0">
+            Showing {filesStart}–{filesEnd} of {notesTotal} file{notesTotal !== 1 ? 's' : ''}
+          </p>
+          <nav aria-label="Files pagination" className="d-flex align-items-center gap-1">
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-primary"
+              disabled={notesPage <= 1}
+              onClick={() => setNotesPage((p) => Math.max(1, p - 1))}
+              aria-label="Previous page"
+            >
+              Previous
+            </button>
+            <span className="px-2 small">
+              Page {notesPage} of {filesTotalPages}
+            </span>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-primary"
+              disabled={notesPage >= filesTotalPages}
+              onClick={() => setNotesPage((p) => Math.min(filesTotalPages, p + 1))}
+              aria-label="Next page"
+            >
+              Next
+            </button>
+          </nav>
+        </div>
+      )}
 
       {showDeleteUserModal && (
         <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} role="dialog">

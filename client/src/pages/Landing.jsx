@@ -18,12 +18,20 @@ export default function Landing() {
   const initDoneRef = useRef(false);
 
   const [searchInput, setSearchInput] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [notes, setNotes] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loadingNotes, setLoadingNotes] = useState(false);
-  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [searched, setSearched] = useState(false);
+
+  const [users, setUsers] = useState([]);
+  const [usersTotal, setUsersTotal] = useState(0);
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersLimit, setUsersLimit] = useState(10);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const [notes, setNotes] = useState([]);
+  const [notesTotal, setNotesTotal] = useState(0);
+  const [notesPage, setNotesPage] = useState(1);
+  const [notesLimit, setNotesLimit] = useState(10);
+  const [loadingNotes, setLoadingNotes] = useState(false);
 
   const fromRef = useRef(from);
   const setTokenRef = useRef(setToken);
@@ -103,42 +111,67 @@ export default function Landing() {
     }
   }, []);
 
-  const runSearch = useCallback((query) => {
-    const q = typeof query === 'string' ? query : searchInput.trim();
-    setSearchQuery(q);
-    setSearched(true);
-    setLoadingNotes(true);
+  const EXPLORE_PAGE_SIZES = [10, 20, 50, 100];
+
+  const fetchUsers = useCallback(() => {
     setLoadingUsers(true);
-
-    const notesParams = new URLSearchParams();
-    if (q) notesParams.set('search', q);
-    const notesQuery = notesParams.toString();
-    const notesUrl = notesQuery ? `/public/explore/notes?${notesQuery}` : '/public/explore/notes';
-
-    const usersParams = new URLSearchParams();
-    if (q) usersParams.set('search', q);
-    const usersQuery = usersParams.toString();
-    const usersUrl = usersQuery ? `/public/explore/users?${usersQuery}` : '/public/explore/users';
-
-    api(notesUrl)
-      .then((data) => setNotes(data.notes || []))
-      .catch(() => setNotes([]))
-      .finally(() => setLoadingNotes(false));
-
-    api(usersUrl)
-      .then((data) => setUsers(data.users || []))
-      .catch(() => setUsers([]))
+    const params = new URLSearchParams();
+    params.set('page', String(usersPage));
+    params.set('limit', String(usersLimit));
+    if (appliedSearch.trim()) params.set('search', appliedSearch.trim());
+    api(`/public/explore/users?${params.toString()}`)
+      .then((data) => {
+        setUsers(data.users || []);
+        setUsersTotal(data.total ?? 0);
+      })
+      .catch(() => {
+        setUsers([]);
+        setUsersTotal(0);
+      })
       .finally(() => setLoadingUsers(false));
-  }, [searchInput]);
+  }, [usersPage, usersLimit, appliedSearch]);
+
+  const fetchNotes = useCallback(() => {
+    setLoadingNotes(true);
+    const params = new URLSearchParams();
+    params.set('page', String(notesPage));
+    params.set('limit', String(notesLimit));
+    if (appliedSearch.trim()) params.set('search', appliedSearch.trim());
+    api(`/public/explore/notes?${params.toString()}`)
+      .then((data) => {
+        setNotes(data.notes || []);
+        setNotesTotal(data.total ?? 0);
+      })
+      .catch(() => {
+        setNotes([]);
+        setNotesTotal(0);
+      })
+      .finally(() => setLoadingNotes(false));
+  }, [notesPage, notesLimit, appliedSearch]);
 
   useEffect(() => {
-    runSearch('');
-  }, []);
+    setSearched(true);
+    fetchUsers();
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    fetchNotes();
+  }, [fetchNotes]);
 
   const handleSearchSubmit = (e) => {
     e?.preventDefault();
-    runSearch(searchInput.trim());
+    setAppliedSearch(searchInput.trim());
+    setUsersPage(1);
+    setNotesPage(1);
   };
+
+  const usersTotalPages = Math.max(1, Math.ceil(usersTotal / usersLimit));
+  const usersStart = usersTotal === 0 ? 0 : (usersPage - 1) * usersLimit + 1;
+  const usersEnd = Math.min(usersPage * usersLimit, usersTotal);
+
+  const notesTotalPages = Math.max(1, Math.ceil(notesTotal / notesLimit));
+  const notesStart = notesTotal === 0 ? 0 : (notesPage - 1) * notesLimit + 1;
+  const notesEnd = Math.min(notesPage * notesLimit, notesTotal);
 
   return (
     <Layout>
@@ -209,65 +242,32 @@ export default function Landing() {
           </div>
         ) : (
           <>
-            <section className="mb-4">
-              <h3 className="h5 mb-3">Public files</h3>
-              {loadingNotes ? (
-                <div className="text-center py-4">
-                  <div className="spinner-border text-primary spinner-border-sm" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                  </div>
+            <section className="mb-5">
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <h3 className="h5 mb-0">Profiles</h3>
+                <div className="d-flex align-items-center gap-2">
+                  <label htmlFor="landing-users-per-page" className="form-label small mb-0 text-nowrap">
+                    Per page
+                  </label>
+                  <select
+                    id="landing-users-per-page"
+                    className="form-select form-select-sm"
+                    style={{ width: 'auto' }}
+                    value={usersLimit}
+                    onChange={(e) => {
+                      setUsersLimit(Number(e.target.value));
+                      setUsersPage(1);
+                    }}
+                    aria-label="Profiles per page"
+                  >
+                    {EXPLORE_PAGE_SIZES.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              ) : notes.length === 0 ? (
-                <div className="edura-card p-4 text-center text-muted">
-                  <p className="mb-0">No public files match your search.</p>
-                </div>
-              ) : (
-                <div className="row g-3">
-                  {notes.map((note) => (
-                    <div key={note._id} className="col-md-6 col-lg-4">
-                      <div className="edura-card p-3 h-100">
-                        <h6 className="card-title mb-1 text-truncate">{note.title}</h6>
-                        {note.userId?.name && (
-                          <p className="card-text small mb-2 text-muted">
-                            Uploaded by{' '}
-                            <Link to={`/profile/${note.userId._id}`}>{note.userId.name}</Link>
-                          </p>
-                        )}
-                        {note.description?.trim() && (
-                          <p
-                            className="card-text small mb-2 text-muted"
-                            title={note.description}
-                          >
-                            {note.description.length > 80
-                              ? note.description.slice(0, 80) + '…'
-                              : note.description}
-                          </p>
-                        )}
-                        <div className="d-flex gap-2 flex-wrap">
-                          <Link
-                            to={`/view/note/${note._id}`}
-                            className="btn btn-sm btn-outline-primary"
-                          >
-                            View
-                          </Link>
-                          {note.userId?._id && (
-                            <Link
-                              to={`/profile/${note.userId._id}`}
-                              className="btn btn-sm btn-outline-secondary"
-                            >
-                              Profile
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section>
-              <h3 className="h5 mb-3">Profiles</h3>
+              </div>
               {loadingUsers ? (
                 <div className="text-center py-4">
                   <div className="spinner-border text-primary spinner-border-sm" role="status">
@@ -279,21 +279,166 @@ export default function Landing() {
                   <p className="mb-0">No profiles match your search.</p>
                 </div>
               ) : (
-                <div className="row g-3">
-                  {users.map((u) => (
-                    <div key={u._id} className="col-md-6 col-lg-4">
-                      <div className="edura-card p-3 h-100 d-flex align-items-center justify-content-between">
-                        <span className="fw-medium">{u.name}</span>
-                        <Link
-                          to={`/profile/${u._id}`}
-                          className="btn btn-sm btn-outline-primary"
-                        >
-                          View profile
-                        </Link>
+                <>
+                  <div className="row g-3">
+                    {users.map((u) => (
+                      <div key={u._id} className="col-md-6 col-lg-4">
+                        <div className="edura-card p-3 h-100 d-flex align-items-center justify-content-between">
+                          <span className="fw-medium">{u.name}</span>
+                          <Link
+                            to={`/profile/${u._id}`}
+                            className="btn btn-sm btn-outline-primary"
+                          >
+                            View profile
+                          </Link>
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                  {usersTotal > 0 && (
+                    <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+                      <p className="small text-muted mb-0">
+                        Showing {usersStart}–{usersEnd} of {usersTotal} profile{usersTotal !== 1 ? 's' : ''}
+                      </p>
+                      <nav aria-label="Profiles pagination" className="d-flex align-items-center gap-1">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary"
+                          disabled={usersPage <= 1}
+                          onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
+                          aria-label="Previous page"
+                        >
+                          Previous
+                        </button>
+                        <span className="px-2 small">
+                          Page {usersPage} of {usersTotalPages}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary"
+                          disabled={usersPage >= usersTotalPages}
+                          onClick={() => setUsersPage((p) => Math.min(usersTotalPages, p + 1))}
+                          aria-label="Next page"
+                        >
+                          Next
+                        </button>
+                      </nav>
                     </div>
-                  ))}
+                  )}
+                </>
+              )}
+            </section>
+
+            <section>
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <h3 className="h5 mb-0">Public files</h3>
+                <div className="d-flex align-items-center gap-2">
+                  <label htmlFor="landing-notes-per-page" className="form-label small mb-0 text-nowrap">
+                    Per page
+                  </label>
+                  <select
+                    id="landing-notes-per-page"
+                    className="form-select form-select-sm"
+                    style={{ width: 'auto' }}
+                    value={notesLimit}
+                    onChange={(e) => {
+                      setNotesLimit(Number(e.target.value));
+                      setNotesPage(1);
+                    }}
+                    aria-label="Files per page"
+                  >
+                    {EXPLORE_PAGE_SIZES.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+              </div>
+              {loadingNotes ? (
+                <div className="text-center py-4">
+                  <div className="spinner-border text-primary spinner-border-sm" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              ) : notes.length === 0 ? (
+                <div className="edura-card p-4 text-center text-muted">
+                  <p className="mb-0">No public files match your search.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="row g-3">
+                    {notes.map((note) => (
+                      <div key={note._id} className="col-md-6 col-lg-4">
+                        <div className="edura-card p-3 h-100">
+                          <h6 className="card-title mb-1 text-truncate">{note.title}</h6>
+                          {note.userId?.name && (
+                            <p className="card-text small mb-2 text-muted">
+                              Uploaded by{' '}
+                              <Link to={`/profile/${note.userId._id}`}>{note.userId.name}</Link>
+                            </p>
+                          )}
+                          {note.description?.trim() && (
+                            <p
+                              className="card-text small mb-2 text-muted"
+                              title={note.description}
+                            >
+                              {note.description.length > 80
+                                ? note.description.slice(0, 80) + '…'
+                                : note.description}
+                            </p>
+                          )}
+                          <div className="d-flex gap-2 flex-wrap">
+                            <Link
+                              to={`/view/note/${note._id}`}
+                              className="btn btn-sm btn-outline-primary"
+                            >
+                              View
+                            </Link>
+                            {note.userId?._id && (
+                              <Link
+                                to={`/profile/${note.userId._id}`}
+                                className="btn btn-sm btn-outline-secondary"
+                              >
+                                Profile
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {notesTotal > 0 && (
+                    <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+                      <p className="small text-muted mb-0">
+                        Showing {notesStart}–{notesEnd} of {notesTotal} file{notesTotal !== 1 ? 's' : ''}
+                      </p>
+                      <nav aria-label="Files pagination" className="d-flex align-items-center gap-1">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary"
+                          disabled={notesPage <= 1}
+                          onClick={() => setNotesPage((p) => Math.max(1, p - 1))}
+                          aria-label="Previous page"
+                        >
+                          Previous
+                        </button>
+                        <span className="px-2 small">
+                          Page {notesPage} of {notesTotalPages}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary"
+                          disabled={notesPage >= notesTotalPages}
+                          onClick={() => setNotesPage((p) => Math.min(notesTotalPages, p + 1))}
+                          aria-label="Next page"
+                        >
+                          Next
+                        </button>
+                      </nav>
+                    </div>
+                  )}
+                </>
               )}
             </section>
           </>

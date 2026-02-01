@@ -1,32 +1,57 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 
+const PAGE_SIZES = [10, 20, 50, 100];
+
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
 
-  useEffect(() => {
-    api('/admin/users')
-      .then(setUsers)
+  const fetchUsers = useCallback(() => {
+    setLoading(true);
+    setError('');
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('limit', String(limit));
+    if (appliedSearch.trim()) params.set('search', appliedSearch.trim());
+    api(`/admin/users?${params.toString()}`)
+      .then((data) => {
+        setUsers(data.users || []);
+        setTotal(data.total ?? 0);
+      })
       .catch((err) => setError(err.message || 'Failed to load users'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [page, limit, appliedSearch]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const BYTES_PER_MB = 1024 * 1024;
-  const formatStorage = (used, limit) =>
-    `${((used ?? 0) / BYTES_PER_MB).toFixed(1)} MB / ${((limit ?? 0) / BYTES_PER_MB).toFixed(1)} MB`;
+  const formatStorage = (used, limitBytes) =>
+    `${((used ?? 0) / BYTES_PER_MB).toFixed(1)} MB / ${((limitBytes ?? 0) / BYTES_PER_MB).toFixed(1)} MB`;
 
-  const filtered = appliedSearch.trim()
-    ? users.filter(
-        (u) =>
-          (u.name || '').toLowerCase().includes(appliedSearch.trim().toLowerCase()) ||
-          (u.email || '').toLowerCase().includes(appliedSearch.trim().toLowerCase())
-      )
-    : users;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const start = total === 0 ? 0 : (page - 1) * limit + 1;
+  const end = Math.min(page * limit, total);
+
+  const handleSearch = () => {
+    setAppliedSearch(searchInput);
+    setPage(1);
+  };
+
+  const handleLimitChange = (e) => {
+    const newLimit = Number(e.target.value);
+    setLimit(newLimit);
+    setPage(1);
+  };
 
   if (loading) {
     return (
@@ -51,7 +76,7 @@ export default function AdminUsers() {
   return (
     <div className="admin-page p-4">
       <h1 className="h4 mb-4">Users</h1>
-      <div className="mb-3">
+      <div className="d-flex flex-wrap align-items-center gap-3 mb-3">
         <label htmlFor="admin-users-search" className="form-label visually-hidden">Search users</label>
         <div className="input-group" style={{ maxWidth: 400 }}>
           <input
@@ -60,21 +85,32 @@ export default function AdminUsers() {
             className="form-control"
             placeholder="Search by name or email..."
             value={searchInput}
-            onChange={(e) => {
-              const v = e.target.value;
-              setSearchInput(v);
-              if (v.trim() === '') setAppliedSearch('');
-            }}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setAppliedSearch(searchInput))}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearch())}
             aria-label="Search users"
           />
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => setAppliedSearch(searchInput)}
-          >
+          <button type="button" className="btn btn-primary" onClick={handleSearch}>
             Search
           </button>
+        </div>
+        <div className="d-flex align-items-center gap-2">
+          <label htmlFor="admin-users-per-page" className="form-label small mb-0 text-nowrap">
+            Users per page
+          </label>
+          <select
+            id="admin-users-per-page"
+            className="form-select form-select-sm"
+            style={{ width: 'auto' }}
+            value={limit}
+            onChange={handleLimitChange}
+            aria-label="Users per page"
+          >
+            {PAGE_SIZES.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
       <div className="admin-card card">
@@ -91,7 +127,7 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((u) => (
+              {users.map((u) => (
                 <tr key={u._id}>
                   <td>{u.name || '—'}</td>
                   <td>{u.email || '—'}</td>
@@ -108,10 +144,40 @@ export default function AdminUsers() {
             </tbody>
           </table>
         </div>
-        {filtered.length === 0 && (
+        {users.length === 0 && !loading && (
           <div className="card-body text-center text-muted">No users found.</div>
         )}
       </div>
+      {total > 0 && (
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+          <p className="small text-muted mb-0">
+            Showing {start}–{end} of {total} user{total !== 1 ? 's' : ''}
+          </p>
+          <nav aria-label="Users pagination" className="d-flex align-items-center gap-1">
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-primary"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              aria-label="Previous page"
+            >
+              Previous
+            </button>
+            <span className="px-2 small">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-primary"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              aria-label="Next page"
+            >
+              Next
+            </button>
+          </nav>
+        </div>
+      )}
     </div>
   );
 }
