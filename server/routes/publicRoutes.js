@@ -17,22 +17,26 @@ const router = express.Router();
 const EXPLORE_NOTES_LIMIT = 50;
 const EXPLORE_USERS_LIMIT = 20;
 
+const exploreNotesFilter = { $or: [ { isPublic: true }, { listedOnExplore: true } ] };
+
 router.get('/explore/notes', async (req, res) => {
   try {
     const search = (req.query.search || '').trim();
     const excludeUserId = (req.query.excludeUserId || '').trim();
     const mongoose = (await import('mongoose')).default;
-    const filter = { isPublic: true };
+    const filter = { $and: [ exploreNotesFilter ] };
     if (excludeUserId && mongoose.Types.ObjectId.isValid(excludeUserId)) {
-      filter.userId = { $ne: new mongoose.Types.ObjectId(excludeUserId) };
+      filter.$and.push({ userId: { $ne: new mongoose.Types.ObjectId(excludeUserId) } });
     }
     if (search) {
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      filter.$or = [
-        { title: { $regex: escaped, $options: 'i' } },
-        { description: { $regex: escaped, $options: 'i' } },
-        { originalName: { $regex: escaped, $options: 'i' } },
-      ];
+      filter.$and.push({
+        $or: [
+          { title: { $regex: escaped, $options: 'i' } },
+          { description: { $regex: escaped, $options: 'i' } },
+          { originalName: { $regex: escaped, $options: 'i' } },
+        ],
+      });
     }
     const notes = await Note.find(filter)
       .populate('userId', 'name')
@@ -50,11 +54,14 @@ router.get('/explore/users', async (req, res) => {
   try {
     const search = (req.query.search || '').trim();
     const mongoose = (await import('mongoose')).default;
-    const userIds = await Note.distinct('userId', { isPublic: true });
-    if (userIds.length === 0) {
+    const noteUserIds = await Note.distinct('userId', exploreNotesFilter);
+    const listedUsers = await User.find({ profileListedOnExplore: true }).select('_id').lean();
+    const listedIds = listedUsers.map((u) => u._id);
+    const allIds = [...new Set([...noteUserIds.map((id) => id.toString()), ...listedIds.map((id) => id.toString())])];
+    if (allIds.length === 0) {
       return res.json({ users: [] });
     }
-    const userFilter = { _id: { $in: userIds } };
+    const userFilter = { _id: { $in: allIds.map((id) => new mongoose.Types.ObjectId(id)) } };
     if (search) {
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       userFilter.name = { $regex: escaped, $options: 'i' };
@@ -73,17 +80,26 @@ router.get('/explore/users', async (req, res) => {
 router.get('/profile/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(userId).select('_id name').lean();
+    const user = await User.findById(userId).select('_id name profileListedOnExplore').lean();
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    const hasVisibleNotes = await Note.exists({ userId, $or: [ { isPublic: true }, { listedOnExplore: true } ] });
+    const profileViewable = user.profileListedOnExplore === true || hasVisibleNotes;
+    if (!profileViewable) {
+      return res.status(404).json({ message: 'Profile not found or private' });
+    }
+
     const folders = await Folder.find({ userId }).sort({ order: 1, name: 1 }).lean();
-    const notes = await Note.find({ userId, isPublic: true })
+    const notes = await Note.find({
+      userId,
+      $or: [ { isPublic: true }, { listedOnExplore: true } ],
+    })
       .populate('userId', 'name')
       .populate('folderId', 'name')
       .sort({ updatedAt: -1 })
       .lean();
 
-    res.json({ user, folders, notes });
+    res.json({ user: { _id: user._id, name: user.name }, folders, notes });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to load profile' });
   }
@@ -91,7 +107,10 @@ router.get('/profile/:userId', async (req, res) => {
 
 router.get('/notes/:id', async (req, res) => {
   try {
-    const note = await Note.findOne({ _id: req.params.id, isPublic: true })
+    const note = await Note.findOne({
+      _id: req.params.id,
+      $or: [ { isPublic: true }, { listedOnExplore: true } ],
+    })
       .populate('userId', 'name')
       .populate('folderId', 'name')
       .lean();
@@ -104,7 +123,10 @@ router.get('/notes/:id', async (req, res) => {
 
 router.get('/notes/:id/file', async (req, res) => {
   try {
-    const note = await Note.findOne({ _id: req.params.id, isPublic: true });
+    const note = await Note.findOne({
+      _id: req.params.id,
+      $or: [ { isPublic: true }, { listedOnExplore: true } ],
+    });
     if (!note) return res.status(404).json({ message: 'Note not found or private' });
     if (!note.fileName) return res.status(404).json({ message: 'No file for this note' });
     if (note.fileUrl) {

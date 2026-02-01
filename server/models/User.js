@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema(
     picture: { type: String, default: '' },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     storageLimitBytes: { type: Number, default: DEFAULT_STORAGE_LIMIT_BYTES, min: 0 },
+    profileListedOnExplore: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

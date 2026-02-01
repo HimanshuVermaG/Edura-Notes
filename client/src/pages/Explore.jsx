@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -14,8 +14,8 @@ export default function Explore() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const runSearch = useCallback(() => {
-    const q = searchInput.trim();
+  const runSearch = useCallback((query) => {
+    const q = typeof query === 'string' ? query : searchInput.trim();
     setSearchQuery(q);
     setSearched(true);
     setLoadingNotes(true);
@@ -43,9 +43,13 @@ export default function Explore() {
       .finally(() => setLoadingUsers(false));
   }, [searchInput, currentUser?._id]);
 
+  useEffect(() => {
+    runSearch('');
+  }, [currentUser?._id]);
+
   const handleSearchSubmit = (e) => {
     e?.preventDefault();
-    runSearch();
+    runSearch(searchInput.trim());
   };
 
   return (

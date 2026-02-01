@@ -103,8 +103,8 @@ export default function Landing() {
     }
   }, []);
 
-  const runSearch = useCallback(() => {
-    const q = searchInput.trim();
+  const runSearch = useCallback((query) => {
+    const q = typeof query === 'string' ? query : searchInput.trim();
     setSearchQuery(q);
     setSearched(true);
     setLoadingNotes(true);
@@ -131,9 +131,13 @@ export default function Landing() {
       .finally(() => setLoadingUsers(false));
   }, [searchInput]);
 
+  useEffect(() => {
+    runSearch('');
+  }, []);
+
   const handleSearchSubmit = (e) => {
     e?.preventDefault();
-    runSearch();
+    runSearch(searchInput.trim());
   };
 
   return (

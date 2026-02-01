@@ -13,6 +13,7 @@ export default function AdminNoteView() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
+  const [savingListed, setSavingListed] = useState(false);
 
   const zoomIn = useCallback(() => {
     setZoom((z) => Math.min(z + ZOOM_STEP, ZOOM_MAX));
@@ -31,6 +32,22 @@ export default function AdminNoteView() {
       .catch(() => setError('Note not found'))
       .finally(() => setLoading(false));
   }, [noteId]);
+
+  const handleListedOnExploreChange = async (checked) => {
+    setSavingListed(true);
+    setError('');
+    try {
+      const updated = await api(`/admin/notes/${noteId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ listedOnExplore: checked }),
+      });
+      setNote(updated);
+    } catch (err) {
+      setError(err.message || 'Failed to update listing');
+    } finally {
+      setSavingListed(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -70,7 +87,22 @@ export default function AdminNoteView() {
             <span className="ms-2 opacity-75 small">({note.userId.name})</span>
           )}
         </span>
-        <div className="d-flex align-items-center gap-2">
+        <div className="d-flex align-items-center gap-3">
+          <div className="d-flex align-items-center gap-2">
+            <input
+              id="admin-note-listed-explore"
+              type="checkbox"
+              className="form-check-input"
+              checked={!!note.listedOnExplore}
+              disabled={savingListed}
+              onChange={(e) => handleListedOnExploreChange(e.target.checked)}
+              aria-label="List on Explore"
+            />
+            <label className="form-check-label text-nowrap small text-white mb-0" htmlFor="admin-note-listed-explore">
+              List on Explore
+            </label>
+            {savingListed && <span className="small opacity-75">Saving...</span>}
+          </div>
           <div className="fullscreen-pdf-zoom" role="group" aria-label="Zoom">
             <button
               type="button"

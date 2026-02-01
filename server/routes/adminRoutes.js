@@ -52,7 +52,7 @@ router.get('/users/:userId', async (req, res) => {
     const usedBytes = await getUsedStorageBytes(req.params.userId);
     const storageLimitBytes = user.storageLimitBytes ?? DEFAULT_STORAGE_LIMIT_BYTES;
     const notes = await Note.find({ userId: req.params.userId })
-      .select('title originalName mimeType size isPublic createdAt fileName fileUrl')
+      .select('title originalName mimeType size isPublic listedOnExplore createdAt fileName fileUrl')
       .sort({ createdAt: -1 })
       .lean();
     res.json({ user: { ...user, storageLimitBytes }, usedBytes, notes });
@@ -61,15 +61,26 @@ router.get('/users/:userId', async (req, res) => {
   }
 });
 
-// PUT /api/admin/users/:userId - update user storage limit (admin only)
+// PUT /api/admin/users/:userId - update user (storage limit, profileListedOnExplore)
 router.put('/users/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
-    const storageLimitBytes = req.body.storageLimitBytes;
-    if (typeof storageLimitBytes !== 'number' || storageLimitBytes < 0) {
-      return res.status(400).json({ message: 'storageLimitBytes must be a non-negative number' });
+    const update = {};
+    if (typeof req.body.storageLimitBytes === 'number') {
+      if (req.body.storageLimitBytes < 0) {
+        return res.status(400).json({ message: 'storageLimitBytes must be non-negative' });
+      }
+      update.storageLimitBytes = req.body.storageLimitBytes;
     }
-    const user = await User.findByIdAndUpdate(userId, { storageLimitBytes }, { new: true }).select('-password').lean();
+    if (typeof req.body.profileListedOnExplore === 'boolean') {
+      update.profileListedOnExplore = req.body.profileListedOnExplore;
+    }
+    if (Object.keys(update).length === 0) {
+      const user = await User.findById(userId).select('-password').lean();
+      if (!user) return res.status(404).json({ message: 'User not found' });
+      return res.json({ user });
+    }
+    const user = await User.findByIdAndUpdate(userId, update, { new: true }).select('-password').lean();
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ user });
   } catch (err) {
@@ -112,6 +123,27 @@ router.get('/notes/:id', async (req, res) => {
     res.json(note);
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to get note' });
+  }
+});
+
+// PATCH /api/admin/notes/:id - update note listedOnExplore (admin only)
+router.patch('/notes/:id', async (req, res) => {
+  try {
+    const noteId = req.params.id;
+    if (typeof req.body.listedOnExplore !== 'boolean') {
+      return res.status(400).json({ message: 'listedOnExplore must be a boolean' });
+    }
+    const note = await Note.findByIdAndUpdate(
+      noteId,
+      { listedOnExplore: req.body.listedOnExplore },
+      { new: true }
+    )
+      .populate('userId', 'name email')
+      .lean();
+    if (!note) return res.status(404).json({ message: 'Note not found' });
+    res.json(note);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to update note' });
   }
 });
 
