@@ -17,6 +17,9 @@ const router = express.Router();
 const EXPLORE_NOTES_MAX_LIMIT = 100;
 const EXPLORE_USERS_MAX_LIMIT = 100;
 
+/** Notes that are listed on Explore by admin – shown automatically on explore page. */
+const listedOnExploreFilter = { listedOnExplore: true };
+/** Notes that are public or listed – used when searching so public files can be found. */
 const exploreNotesFilter = { $or: [ { isPublic: true }, { listedOnExplore: true } ] };
 
 router.get('/explore/notes', async (req, res) => {
@@ -26,7 +29,9 @@ router.get('/explore/notes', async (req, res) => {
     const search = (req.query.search || '').trim();
     const excludeUserId = (req.query.excludeUserId || '').trim();
     const mongoose = (await import('mongoose')).default;
-    const filter = { $and: [ exploreNotesFilter ] };
+    // No search: only admin-listed files. With search: include public files so they can be found.
+    const visibilityFilter = search ? exploreNotesFilter : listedOnExploreFilter;
+    const filter = { $and: [ visibilityFilter ] };
     if (excludeUserId && mongoose.Types.ObjectId.isValid(excludeUserId)) {
       filter.$and.push({ userId: { $ne: new mongoose.Types.ObjectId(excludeUserId) } });
     }
@@ -62,17 +67,22 @@ router.get('/explore/users', async (req, res) => {
     const limit = Math.min(EXPLORE_USERS_MAX_LIMIT, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const search = (req.query.search || '').trim();
     const mongoose = (await import('mongoose')).default;
-    const noteUserIds = await Note.distinct('userId', exploreNotesFilter);
-    const listedUsers = await User.find({ profileListedOnExplore: true }).select('_id').lean();
-    const listedIds = listedUsers.map((u) => u._id);
-    const allIds = [...new Set([...noteUserIds.map((id) => id.toString()), ...listedIds.map((id) => id.toString())])];
-    if (allIds.length === 0) {
-      return res.json({ users: [], total: 0, page, limit });
-    }
-    const userFilter = { _id: { $in: allIds.map((id) => new mongoose.Types.ObjectId(id)) } };
+    let userFilter;
     if (search) {
+      // With search: show users who are listed on explore OR have public/listed notes (so public profiles can be found).
+      const noteUserIds = await Note.distinct('userId', exploreNotesFilter);
+      const listedUsers = await User.find({ profileListedOnExplore: true }).select('_id').lean();
+      const listedIds = listedUsers.map((u) => u._id.toString());
+      const allIds = [...new Set([...noteUserIds.map((id) => id.toString()), ...listedIds])];
+      if (allIds.length === 0) {
+        return res.json({ users: [], total: 0, page, limit });
+      }
+      userFilter = { _id: { $in: allIds.map((id) => new mongoose.Types.ObjectId(id)) } };
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       userFilter.name = { $regex: escaped, $options: 'i' };
+    } else {
+      // No search: only users with "List profile on Explore" checked (shown automatically).
+      userFilter = { profileListedOnExplore: true };
     }
     const [total, users] = await Promise.all([
       User.countDocuments(userFilter),

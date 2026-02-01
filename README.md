@@ -168,8 +168,8 @@ Serve the `client/dist` folder with any static host; set `CLIENT_ORIGIN` (and op
 
 ### Public & Explore
 
-- **Explore notes:** `GET /api/public/explore/notes?page=1&limit=10&search=...&excludeUserId=...` – returns notes where `isPublic` or `listedOnExplore`; paginated.
-- **Explore users:** `GET /api/public/explore/users?page=1&limit=10&search=...` – users with at least one explore-visible note or `profileListedOnExplore`; paginated.
+- **Explore notes:** Without search: only notes with **List on Explore** checked in admin. With search: also includes public files so they can be found. Paginated.
+- **Explore users:** Without search: only users with **List profile on Explore** checked in admin (shown automatically). With search: also includes users who have public/listed notes so public profiles can be found by name. Paginated.
 - **Public profile:** `GET /api/public/profile/:userId` – profile viewable if user has explore-visible notes or `profileListedOnExplore`; returns user + folders + notes (isPublic or listedOnExplore).
 - **Public note:** `GET /api/public/notes/:id` and `GET /api/public/notes/:id/file` – note viewable if `isPublic` or `listedOnExplore`.
 
