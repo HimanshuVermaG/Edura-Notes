@@ -4,9 +4,6 @@ import { useAuth } from '../context/AuthContext';
 export default function Layout({ children }) {
   const { isAuthenticated, user, signOut } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const isSignInPage = location.pathname === '/signin';
-
   const handleSignOut = () => {
     signOut();
     navigate('/signin');
@@ -77,13 +74,6 @@ export default function Layout({ children }) {
                       Sign In
                     </Link>
                   </li>
-                  {!isSignInPage && (
-                    <li className="nav-item">
-                      <Link className="btn btn-edura btn-sm" to="/signup">
-                        Sign Up
-                      </Link>
-                    </li>
-                  )}
                 </>
               )}
             </ul>
@@ -105,7 +95,6 @@ export default function Layout({ children }) {
               <ul className="list-unstyled small">
                 <li><Link to="/explore">Explore</Link></li>
                 <li><Link to="/signin">Sign In</Link></li>
-                <li><Link to="/signup">Sign Up</Link></li>
                 <li><Link to="/home">Home</Link></li>
                 <li><Link to="/manage">Manage</Link></li>
               </ul>
