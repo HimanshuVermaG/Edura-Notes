@@ -6,7 +6,7 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const handleSignOut = () => {
     signOut();
-    navigate('/signin');
+    navigate('/');
   };
 
   return (
@@ -62,20 +62,7 @@ export default function Layout({ children }) {
                     </button>
                   </li>
                 </>
-              ) : (
-                <>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/explore">
-                      Explore
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/signin">
-                      Sign In
-                    </Link>
-                  </li>
-                </>
-              )}
+              ) : null}
             </ul>
           </div>
         </nav>
@@ -93,8 +80,8 @@ export default function Layout({ children }) {
             <div className="col-md-2">
               <h6>Quick Links</h6>
               <ul className="list-unstyled small">
-                <li><Link to="/explore">Explore</Link></li>
-                <li><Link to="/signin">Sign In</Link></li>
+                <li><Link to="/#explore">Explore</Link></li>
+                <li><Link to="/#sign-in">Sign In</Link></li>
                 <li><Link to="/home">Home</Link></li>
                 <li><Link to="/manage">Manage</Link></li>
               </ul>
