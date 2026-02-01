@@ -386,6 +386,128 @@ body {
   margin-left: 0;
 }
 
+/* Folder tree select – dropdown for category selection (Manage / Edit note) */
+.folder-tree-select {
+  position: relative;
+  min-width: 160px;
+}
+.folder-tree-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  /* Remove native form-select dropdown arrow so only our chevron shows (avoids double arrow) */
+  background-image: none;
+}
+.folder-tree-select-trigger-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.folder-tree-select-chevron {
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--edura-text-muted);
+}
+.folder-tree-select-dropdown {
+  position: absolute;
+  z-index: 1050;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--edura-card-bg);
+  border: 1px solid var(--edura-border);
+  border-radius: var(--edura-radius);
+  box-shadow: var(--edura-shadow-hover);
+  padding: 0.35rem 0;
+}
+.folder-tree-select-option {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  background: none;
+  font-size: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: var(--edura-text);
+}
+.folder-tree-select-option:hover,
+.folder-tree-select-option.selected {
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--edura-primary);
+}
+.folder-tree-select-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.folder-tree-select-item {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+.folder-tree-select-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  background: none;
+  width: 100%;
+  min-height: 0;
+}
+.folder-tree-select-label {
+  flex: 1;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: var(--edura-text);
+}
+.folder-tree-select-label:hover,
+.folder-tree-select-item.selected .folder-tree-select-label {
+  color: var(--edura-primary);
+}
+.folder-tree-select-item .folder-tree-select-row:hover {
+  background: rgba(37, 99, 235, 0.06);
+}
+.folder-tree-select-item.selected .folder-tree-select-row {
+  background: rgba(37, 99, 235, 0.08);
+}
+.folder-tree-select-item .folder-chevron {
+  flex-shrink: 0;
+  width: 1rem;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--edura-text-muted);
+  font-size: 0.65rem;
+}
+.folder-tree-select-item .folder-chevron:hover {
+  color: var(--edura-text);
+}
+.folder-tree-select-item .folder-icon {
+  flex-shrink: 0;
+  color: var(--edura-text-muted);
+}
+.folder-tree-select-item.folder-depth-0 .folder-tree-select-row { padding-left: 0.75rem; }
+.folder-tree-select-item.folder-depth-1 .folder-tree-select-row { padding-left: 2rem; }
+.folder-tree-select-item.folder-depth-2 .folder-tree-select-row { padding-left: 2.75rem; }
+
 .folder-list-actions {
   display: flex;
   align-items: center;

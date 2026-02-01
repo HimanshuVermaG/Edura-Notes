@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
 import { api, apiForm } from '../api/client';
 import FolderList from '../components/FolderList';
+import FolderTreeSelect from '../components/FolderTreeSelect';
 import NoteCard from '../components/NoteCard';
 import ViewModeToggle from '../components/ViewModeToggle';
 import SortBySelect from '../components/SortBySelect';
@@ -320,21 +321,16 @@ export default function Manage() {
                     placeholder="Note title"
                   />
                 </div>
-                <div style={{ minWidth: 160 }}>
-                  <label htmlFor="manage-upload-folder" className="form-label small">Folder</label>
-                  <select
+                <div style={{ minWidth: 200 }}>
+                  <label id="manage-upload-folder-label" className="form-label small">Folder</label>
+                  <FolderTreeSelect
                     id="manage-upload-folder"
-                    className="form-select form-select-sm"
+                    labelId="manage-upload-folder-label"
+                    folders={folders}
                     value={uploadFolderId}
-                    onChange={(e) => setUploadFolderId(e.target.value)}
-                  >
-                    <option value="">Uncategorized</option>
-                    {folders.map((f) => (
-                      <option key={f._id} value={f._id}>
-                        {f.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setUploadFolderId}
+                    className="form-select-sm"
+                  />
                 </div>
               </div>
               <div className="upload-file-description">

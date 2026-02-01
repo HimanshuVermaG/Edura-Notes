@@ -22,6 +22,19 @@ router.get('/', async (req, res) => {
   }
 });
 
+/** Check if a folder with the same name already exists among siblings (same parent). Case-insensitive. */
+async function hasSiblingWithSameName(userId, parentId, name, excludeFolderId = null) {
+  const escaped = (name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const filter = {
+    userId,
+    name: { $regex: new RegExp(`^${escaped}$`, 'i') },
+    parentId: parentId == null || parentId === '' ? null : parentId,
+  };
+  if (excludeFolderId) filter._id = { $ne: excludeFolderId };
+  const existing = await Folder.findOne(filter);
+  return !!existing;
+}
+
 router.post('/', async (req, res) => {
   try {
     const { name, parentId } = req.body;
@@ -30,10 +43,14 @@ router.post('/', async (req, res) => {
       ? await Folder.findOne({ _id: parentId, userId: req.user._id })
       : null;
     if (parentId && !parent) return res.status(400).json({ message: 'Parent folder not found' });
+    const effectiveParentId = parent ? parent._id : null;
+    if (await hasSiblingWithSameName(req.user._id, effectiveParentId, name.trim())) {
+      return res.status(400).json({ message: 'A folder with this name already exists in this location. Please choose a different name.' });
+    }
     const folder = await Folder.create({
       name: name.trim(),
       userId: req.user._id,
-      parentId: parent ? parent._id : null,
+      parentId: effectiveParentId,
     });
     res.status(201).json(folder);
   } catch (err) {
@@ -58,6 +75,10 @@ router.put('/:id', async (req, res) => {
         if (wouldBeCycle) return res.status(400).json({ message: 'Cannot move folder inside its own descendant' });
         folder.parentId = parent._id;
       }
+    }
+    const effectiveParentId = folder.parentId && folder.parentId.toString ? folder.parentId : folder.parentId;
+    if (await hasSiblingWithSameName(req.user._id, effectiveParentId, folder.name, folder._id)) {
+      return res.status(400).json({ message: 'A folder with this name already exists in this location. Please choose a different name.' });
     }
     await folder.save();
     res.json(folder);

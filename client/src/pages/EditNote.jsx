@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
+import FolderTreeSelect from '../components/FolderTreeSelect';
 import { api, apiForm } from '../api/client';
 
 export default function EditNote() {
@@ -137,20 +138,14 @@ export default function EditNote() {
             />
           </div>
           <div className="mb-3">
-            <label htmlFor="folder" className="form-label">Folder</label>
-            <select
+            <label id="edit-note-folder-label" className="form-label">Folder</label>
+            <FolderTreeSelect
               id="folder"
-              className="form-select"
+              labelId="edit-note-folder-label"
+              folders={folders}
               value={folderId}
-              onChange={(e) => setFolderId(e.target.value)}
-            >
-              <option value="">Uncategorized</option>
-              {folders.map((f) => (
-                <option key={f._id} value={f._id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
+              onChange={setFolderId}
+            />
           </div>
           <div className="mb-3">
             <label htmlFor="visibility" className="form-label">Visibility</label>

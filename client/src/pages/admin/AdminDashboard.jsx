@@ -3,20 +3,18 @@ import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 
 export default function AdminDashboard() {
-  const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState({ totalUsers: 0, totalNotes: 0, totalUsedBytes: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api('/admin/users')
-      .then(setUsers)
-      .catch((err) => setError(err.message || 'Failed to load users'))
+    api('/admin/stats')
+      .then(setStats)
+      .catch((err) => setError(err.message || 'Failed to load stats'))
       .finally(() => setLoading(false));
   }, []);
 
-  const totalUsers = users.length;
-  const totalNotes = users.reduce((sum, u) => sum + (u.noteCount || 0), 0);
-  const totalUsedBytes = users.reduce((sum, u) => sum + (u.usedBytes || 0), 0);
+  const { totalUsers, totalNotes, totalUsedBytes } = stats;
   const BYTES_PER_MB = 1024 * 1024;
   const totalStorageLabel = totalUsedBytes >= BYTES_PER_MB * 1024
     ? `${(totalUsedBytes / (BYTES_PER_MB * 1024)).toFixed(1)} GB used`

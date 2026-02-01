@@ -22,6 +22,21 @@ const router = express.Router();
 router.use(authMiddleware);
 router.use(adminMiddleware);
 
+// GET /api/admin/stats - dashboard totals (total users, notes, storage)
+router.get('/stats', async (req, res) => {
+  try {
+    const [totalUsers, totalNotesResult] = await Promise.all([
+      User.countDocuments(),
+      Note.aggregate([{ $group: { _id: null, count: { $sum: 1 }, usedBytes: { $sum: { $ifNull: ['$size', 0] } } } }]),
+    ]);
+    const totalNotes = totalNotesResult[0]?.count ?? 0;
+    const totalUsedBytes = totalNotesResult[0]?.usedBytes ?? 0;
+    res.json({ totalUsers, totalNotes, totalUsedBytes });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to load stats' });
+  }
+});
+
 // GET /api/admin/users - list users with note count and storage (paginated)
 router.get('/users', async (req, res) => {
   try {

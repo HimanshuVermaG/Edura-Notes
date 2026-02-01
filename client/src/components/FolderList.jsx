@@ -130,6 +130,7 @@ export default function FolderList({
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [expandedIds, setExpandedIds] = useState(() => new Set());
+  const [folderError, setFolderError] = useState('');
 
   const selectedSet = selectedFolderIds instanceof Set ? selectedFolderIds : new Set(selectedFolderIds || []);
 
@@ -175,6 +176,7 @@ export default function FolderList({
   const handleAddFolder = async (e) => {
     e.preventDefault();
     if (!newName.trim()) return;
+    setFolderError('');
     setAdding(true);
     try {
       const body = { name: newName.trim() };
@@ -183,8 +185,8 @@ export default function FolderList({
       setNewName('');
       setNewParentId('');
       onFoldersChange();
-    } catch {
-      // ignore
+    } catch (err) {
+      setFolderError(err.message || 'Failed to add folder');
     } finally {
       setAdding(false);
     }
@@ -195,13 +197,14 @@ export default function FolderList({
       setEditingId(null);
       return;
     }
+    setFolderError('');
     try {
       await api(`/folders/${id}`, { method: 'PUT', body: JSON.stringify({ name: editName.trim() }) });
       setEditingId(null);
       setEditName('');
       onFoldersChange();
-    } catch {
-      // ignore
+    } catch (err) {
+      setFolderError(err.message || 'Failed to rename folder');
     }
   };
 
@@ -236,7 +239,7 @@ export default function FolderList({
           onEditNameChange={setEditName}
           onSaveRename={() => handleRename(f._id)}
           onCancelRename={() => { setEditingId(null); setEditName(''); }}
-          onStartRename={(e) => { e?.stopPropagation(); setEditingId(f._id); setEditName(f.name); }}
+          onStartRename={(e) => { e?.stopPropagation(); setFolderError(''); setEditingId(f._id); setEditName(f.name); }}
           onDelete={() => handleDelete(f._id)}
           depth={depth}
           hasChildren={hasChildren}
@@ -281,6 +284,11 @@ export default function FolderList({
         />
         {renderTree(folderTree)}
       </ul>
+      {folderError && (
+        <div className="alert alert-danger py-2 small mt-2 mb-0" role="alert">
+          {folderError}
+        </div>
+      )}
       {!readOnly && (
         <form className="d-flex flex-column gap-2 mt-3" onSubmit={handleAddFolder}>
           <input
@@ -288,7 +296,7 @@ export default function FolderList({
             className="form-control form-control-sm"
             placeholder="New folder name"
             value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            onChange={(e) => { setNewName(e.target.value); setFolderError(''); }}
           />
           <label htmlFor="new-folder-parent" className="small text-muted mb-0">Parent folder (max 2 levels)</label>
           <select
