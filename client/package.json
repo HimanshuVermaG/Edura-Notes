@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "node -e \"const fs=require('fs');const p=require('path');const s=p.join(process.cwd(),'node_modules','pdfjs-dist','build','pdf.worker.min.mjs');const d=p.join(process.cwd(),'public','pdf.worker.min.mjs');if(fs.existsSync(s)){try{fs.mkdirSync(p.dirname(d),{recursive:true});fs.copyFileSync(s,d);}catch(e){}}\""
   },
   "dependencies": {
     "react": "^18.2.0",

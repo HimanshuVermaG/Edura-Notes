@@ -4,8 +4,9 @@ import { apiGetBlob } from '../api/client';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-// Configure PDF.js worker (must be in same module as Document/Page)
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Worker served from public/ so it loads from same origin (avoids dynamic import/CDN failures)
+const base = typeof import.meta.env?.BASE_URL === 'string' ? import.meta.env.BASE_URL : '/';
+pdfjs.GlobalWorkerOptions.workerSrc = `${base}pdf.worker.min.mjs`;
 
 function inferMimeType(fileName) {
   if (!fileName) return 'application/pdf';
