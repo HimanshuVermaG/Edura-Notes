@@ -10,10 +10,15 @@ import SortBySelect from '../components/SortBySelect';
 import { sortNotes } from '../utils/sortNotes';
 import { getFoldersInTreeOrder } from '../utils/folderTree';
 
+const NOTES_PAGE_SIZES = [10, 20, 50, 100];
+
 export default function Homepage() {
   const { user } = useAuth();
   const [folders, setFolders] = useState([]);
   const [notes, setNotes] = useState([]);
+  const [notesTotal, setNotesTotal] = useState(0);
+  const [notesPage, setNotesPage] = useState(1);
+  const [notesLimit, setNotesLimit] = useState(10);
   const [loading, setLoading] = useState(true);
   const [selectedFolderIds, setSelectedFolderIds] = useState(() => new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,14 +30,17 @@ export default function Homepage() {
     const searchQ = searchQuery.trim();
     const searchPart = searchQ ? `search=${encodeURIComponent(searchQ)}` : '';
     const foldersUrl = searchQ ? `/folders?search=${encodeURIComponent(searchQ)}` : '/folders';
+    const pageLimit = `page=${notesPage}&limit=${notesLimit}`;
     if (selectedFolderIds.size === 0) {
-      const notes = searchPart ? `/notes?${searchPart}` : '/notes';
+      const notes = searchPart ? `/notes?${pageLimit}&${searchPart}` : `/notes?${pageLimit}`;
       return { notes, folders: foldersUrl };
     }
     const ids = Array.from(selectedFolderIds).map((id) => (id === 'uncategorized' ? 'null' : id)).join(',');
-    const notes = searchPart ? `/notes?folderIds=${encodeURIComponent(ids)}&${searchPart}` : `/notes?folderIds=${encodeURIComponent(ids)}`;
+    const notes = searchPart
+      ? `/notes?${pageLimit}&folderIds=${encodeURIComponent(ids)}&${searchPart}`
+      : `/notes?${pageLimit}&folderIds=${encodeURIComponent(ids)}`;
     return { notes, folders: foldersUrl };
-  }, [selectedFolderIds, searchQuery]);
+  }, [selectedFolderIds, searchQuery, notesPage, notesLimit]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -42,10 +50,14 @@ export default function Homepage() {
         api(notesUrl.notes),
       ]);
       setFolders(foldersRes);
-      setNotes(notesRes);
+      const notesList = Array.isArray(notesRes) ? notesRes : notesRes?.notes ?? [];
+      const total = Array.isArray(notesRes) ? notesRes.length : notesRes?.total ?? 0;
+      setNotes(notesList);
+      setNotesTotal(total);
     } catch {
       setFolders([]);
       setNotes([]);
+      setNotesTotal(0);
     } finally {
       setLoading(false);
     }
@@ -88,6 +100,20 @@ export default function Homepage() {
 
   const foldersInOrder = useMemo(() => getFoldersInTreeOrder(folders), [folders]);
 
+  const notesTotalPages = Math.max(1, Math.ceil(notesTotal / notesLimit));
+  const notesStart = notesTotal === 0 ? 0 : (notesPage - 1) * notesLimit + 1;
+  const notesEnd = Math.min(notesPage * notesLimit, notesTotal);
+
+  const handleFolderSelectionChange = (ids) => {
+    setSelectedFolderIds(ids);
+    setNotesPage(1);
+  };
+
+  const handleSearchClick = () => {
+    setSearchQuery(searchInput);
+    setNotesPage(1);
+  };
+
   const headingLabel = allNotesShown
     ? 'All Notes'
     : selectedFolderIds.size === 1 && selectedFolderIds.has('uncategorized')
@@ -103,7 +129,7 @@ export default function Homepage() {
           <FolderList
             folders={folders}
             selectedFolderIds={selectedFolderIds}
-            onSelectionChange={setSelectedFolderIds}
+            onSelectionChange={handleFolderSelectionChange}
             onFoldersChange={loadData}
             readOnly
           />
@@ -128,13 +154,13 @@ export default function Homepage() {
                   setSearchInput(v);
                   if (v === '') setSearchQuery('');
                 }}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setSearchQuery(searchInput))}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearchClick())}
                 aria-label="Search folders and notes"
               />
               <button
                 type="button"
                 className="btn btn-edura search-bar-btn"
-                onClick={() => setSearchQuery(searchInput)}
+                onClick={handleSearchClick}
                 aria-label="Search"
               >
                 Search
@@ -144,7 +170,29 @@ export default function Homepage() {
 
           <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <h2 className="h5 mb-0">{headingLabel}</h2>
-            <div className="d-flex align-items-center gap-3">
+            <div className="d-flex align-items-center gap-3 flex-wrap">
+              <div className="d-flex align-items-center gap-2">
+                <label htmlFor="homepage-notes-per-page" className="form-label small mb-0 text-nowrap">
+                  Per page
+                </label>
+                <select
+                  id="homepage-notes-per-page"
+                  className="form-select form-select-sm"
+                  style={{ width: 'auto' }}
+                  value={notesLimit}
+                  onChange={(e) => {
+                    setNotesLimit(Number(e.target.value));
+                    setNotesPage(1);
+                  }}
+                  aria-label="Notes per page"
+                >
+                  {NOTES_PAGE_SIZES.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <SortBySelect sortBy={sortBy} onSortByChange={setSortBy} />
               <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
             </div>
@@ -253,6 +301,36 @@ export default function Homepage() {
                       </Link>
                     </>
                   )}
+                </div>
+              )}
+              {notesTotal > 0 && (
+                <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+                  <p className="small text-muted mb-0">
+                    Showing {notesStart}–{notesEnd} of {notesTotal} note{notesTotal !== 1 ? 's' : ''}
+                  </p>
+                  <nav aria-label="Notes pagination" className="d-flex align-items-center gap-1">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      disabled={notesPage <= 1}
+                      onClick={() => setNotesPage((p) => Math.max(1, p - 1))}
+                      aria-label="Previous page"
+                    >
+                      Previous
+                    </button>
+                    <span className="px-2 small">
+                      Page {notesPage} of {notesTotalPages}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      disabled={notesPage >= notesTotalPages}
+                      onClick={() => setNotesPage((p) => Math.min(notesTotalPages, p + 1))}
+                      aria-label="Next page"
+                    >
+                      Next
+                    </button>
+                  </nav>
                 </div>
               )}
             </>

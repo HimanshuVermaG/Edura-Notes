@@ -28,8 +28,13 @@ function uploadBufferToCloudinary(buffer, mimeType) {
 const router = express.Router();
 router.use(authMiddleware);
 
+const NOTES_LIST_MAX_LIMIT = 100;
+
 router.get('/', async (req, res) => {
   try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(NOTES_LIST_MAX_LIMIT, Math.max(1, parseInt(req.query.limit, 10) || 10));
+
     const filter = { userId: req.user._id };
     // Multi-folder filter: folderIds=null,id1,id2 (comma-separated; "null" = uncategorized)
     const folderIdsRaw = req.query.folderIds;
@@ -55,8 +60,16 @@ router.get('/', async (req, res) => {
         { originalName: { $regex: escaped, $options: 'i' } },
       ];
     }
-    const notes = await Note.find(filter).populate('userId', 'name').sort({ updatedAt: -1 });
-    res.json(notes);
+    const [total, notes] = await Promise.all([
+      Note.countDocuments(filter),
+      Note.find(filter)
+        .populate('userId', 'name')
+        .sort({ updatedAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+    ]);
+    res.json({ notes, total, page, limit });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to list notes' });
   }

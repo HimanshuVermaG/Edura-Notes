@@ -9,10 +9,15 @@ import SortBySelect from '../components/SortBySelect';
 import { sortNotes } from '../utils/sortNotes';
 import { getFoldersInTreeOrder } from '../utils/folderTree';
 
+const NOTES_PAGE_SIZES = [10, 20, 50, 100];
+
 export default function Manage() {
   const { user } = useAuth();
   const [folders, setFolders] = useState([]);
   const [notes, setNotes] = useState([]);
+  const [notesTotal, setNotesTotal] = useState(0);
+  const [notesPage, setNotesPage] = useState(1);
+  const [notesLimit, setNotesLimit] = useState(10);
   const [loading, setLoading] = useState(true);
   const [selectedFolderIds, setSelectedFolderIds] = useState(() => new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,7 +39,7 @@ export default function Manage() {
   const BYTES_PER_MB = 1024 * 1024;
   const atStorageLimit = usedBytes != null && limitBytes != null && usedBytes >= limitBytes;
 
-  const MAX_FILE_SIZE = 20 * 1024 * 1024;
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
   const ALLOWED_TYPES = [
     'application/pdf',
     'image/jpeg',
@@ -46,7 +51,7 @@ export default function Manage() {
 
   const validateFile = (file) => {
     if (!file) return 'Please select a file';
-    if (file.size > MAX_FILE_SIZE) return 'File must be 20 MB or smaller';
+    if (file.size > MAX_FILE_SIZE) return 'File must be 10 MB or smaller';
     const ext = '.' + (file.name.split('.').pop() || '').toLowerCase();
     if (!ALLOWED_EXT.includes(ext) && !ALLOWED_TYPES.includes(file.type)) {
       return 'Only images (JPEG, PNG, GIF, WebP) and PDFs are allowed';
@@ -58,14 +63,17 @@ export default function Manage() {
     const searchQ = searchQuery.trim();
     const searchPart = searchQ ? `search=${encodeURIComponent(searchQ)}` : '';
     const foldersUrl = searchQ ? `/folders?search=${encodeURIComponent(searchQ)}` : '/folders';
+    const pageLimit = `page=${notesPage}&limit=${notesLimit}`;
     if (selectedFolderIds.size === 0) {
-      const notes = searchPart ? `/notes?${searchPart}` : '/notes';
+      const notes = searchPart ? `/notes?${pageLimit}&${searchPart}` : `/notes?${pageLimit}`;
       return { notes, folders: foldersUrl };
     }
     const ids = Array.from(selectedFolderIds).map((id) => (id === 'uncategorized' ? 'null' : id)).join(',');
-    const notes = searchPart ? `/notes?folderIds=${encodeURIComponent(ids)}&${searchPart}` : `/notes?folderIds=${encodeURIComponent(ids)}`;
+    const notes = searchPart
+      ? `/notes?${pageLimit}&folderIds=${encodeURIComponent(ids)}&${searchPart}`
+      : `/notes?${pageLimit}&folderIds=${encodeURIComponent(ids)}`;
     return { notes, folders: foldersUrl };
-  }, [selectedFolderIds, searchQuery]);
+  }, [selectedFolderIds, searchQuery, notesPage, notesLimit]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -76,12 +84,16 @@ export default function Manage() {
         api('/notes/storage').catch(() => ({ usedBytes: 0, limitBytes: 50 * 1024 * 1024 })),
       ]);
       setFolders(foldersRes);
-      setNotes(notesRes);
+      const notesList = Array.isArray(notesRes) ? notesRes : notesRes?.notes ?? [];
+      const total = Array.isArray(notesRes) ? notesRes.length : notesRes?.total ?? 0;
+      setNotes(notesList);
+      setNotesTotal(total);
       setUsedBytes(storageRes?.usedBytes ?? 0);
       setLimitBytes(storageRes?.limitBytes ?? 50 * 1024 * 1024);
     } catch {
       setFolders([]);
       setNotes([]);
+      setNotesTotal(0);
     } finally {
       setLoading(false);
     }
@@ -118,6 +130,7 @@ export default function Manage() {
       setUploadFolderId('');
       setUploadIsPublic(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+      setNotesPage(1);
       loadData();
     } catch (err) {
       setUploadError(err.message || 'Failed to upload note');
@@ -194,6 +207,20 @@ export default function Manage() {
 
   const foldersInOrder = useMemo(() => getFoldersInTreeOrder(folders), [folders]);
 
+  const notesTotalPages = Math.max(1, Math.ceil(notesTotal / notesLimit));
+  const notesStart = notesTotal === 0 ? 0 : (notesPage - 1) * notesLimit + 1;
+  const notesEnd = Math.min(notesPage * notesLimit, notesTotal);
+
+  const handleFolderSelectionChange = (ids) => {
+    setSelectedFolderIds(ids);
+    setNotesPage(1);
+  };
+
+  const handleSearchClick = () => {
+    setSearchQuery(searchInput);
+    setNotesPage(1);
+  };
+
   const headingLabel = allNotesShown
     ? 'All Notes'
     : selectedFolderIds.size === 1 && selectedFolderIds.has('uncategorized')
@@ -249,7 +276,7 @@ export default function Manage() {
           <section id="upload-section" className="upload-file-section edura-card p-4">
             <h2 className="upload-file-title">Upload a file</h2>
             <p className="upload-file-subtitle">
-              Images (JPEG, PNG, GIF, WebP) and PDFs. Max 20 MB.
+              Images (JPEG, PNG, GIF, WebP) and PDFs. Max 10 MB.
             </p>
             <form className="edura-form" onSubmit={handleUploadSubmit}>
               {uploadError && (
@@ -368,13 +395,13 @@ export default function Manage() {
                   setSearchInput(v);
                   if (v === '') setSearchQuery('');
                 }}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setSearchQuery(searchInput))}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearchClick())}
                 aria-label="Search folders and notes"
               />
               <button
                 type="button"
                 className="btn btn-edura search-bar-btn"
-                onClick={() => setSearchQuery(searchInput)}
+                onClick={handleSearchClick}
                 aria-label="Search"
               >
                 Search
@@ -384,7 +411,29 @@ export default function Manage() {
 
           <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <h2 className="h5 mb-0">{headingLabel}</h2>
-            <div className="d-flex align-items-center gap-3">
+            <div className="d-flex align-items-center gap-3 flex-wrap">
+              <div className="d-flex align-items-center gap-2">
+                <label htmlFor="manage-notes-per-page" className="form-label small mb-0 text-nowrap">
+                  Per page
+                </label>
+                <select
+                  id="manage-notes-per-page"
+                  className="form-select form-select-sm"
+                  style={{ width: 'auto' }}
+                  value={notesLimit}
+                  onChange={(e) => {
+                    setNotesLimit(Number(e.target.value));
+                    setNotesPage(1);
+                  }}
+                  aria-label="Notes per page"
+                >
+                  {NOTES_PAGE_SIZES.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <SortBySelect sortBy={sortBy} onSortByChange={setSortBy} />
               <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
             </div>
@@ -497,6 +546,36 @@ export default function Manage() {
                       </button>
                     </>
                   )}
+                </div>
+              )}
+              {notesTotal > 0 && (
+                <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+                  <p className="small text-muted mb-0">
+                    Showing {notesStart}–{notesEnd} of {notesTotal} note{notesTotal !== 1 ? 's' : ''}
+                  </p>
+                  <nav aria-label="Notes pagination" className="d-flex align-items-center gap-1">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      disabled={notesPage <= 1}
+                      onClick={() => setNotesPage((p) => Math.max(1, p - 1))}
+                      aria-label="Previous page"
+                    >
+                      Previous
+                    </button>
+                    <span className="px-2 small">
+                      Page {notesPage} of {notesTotalPages}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      disabled={notesPage >= notesTotalPages}
+                      onClick={() => setNotesPage((p) => Math.min(notesTotalPages, p + 1))}
+                      aria-label="Next page"
+                    >
+                      Next
+                    </button>
+                  </nav>
                 </div>
               )}
             </>
