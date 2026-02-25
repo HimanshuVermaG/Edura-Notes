@@ -13,7 +13,7 @@ export default function Layout({ children }) {
     <div className="d-flex flex-column min-vh-100">
       <header className="edura-header">
         <nav className="navbar navbar-expand-lg navbar-light container">
-          <Link className="navbar-brand" to="/">
+          <Link className="navbar-brand" to={isAuthenticated ? '/' : '/explore'}>
             Edura Notes
           </Link>
           <button
@@ -62,7 +62,20 @@ export default function Layout({ children }) {
                     </button>
                   </li>
                 </>
-              ) : null}
+              ) : (
+                <>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/explore">
+                      Explore
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="btn btn-edura btn-sm" to="/signin">
+                      Login / Sign up
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
         </nav>
@@ -80,8 +93,8 @@ export default function Layout({ children }) {
             <div className="col-md-2">
               <h6>Quick Links</h6>
               <ul className="list-unstyled small">
-                <li><Link to="/#explore">Explore</Link></li>
-                <li><Link to="/#sign-in">Sign In</Link></li>
+                <li><Link to="/explore">Explore</Link></li>
+                <li><Link to="/signin">Sign In</Link></li>
                 <li><Link to="/home">Home</Link></li>
                 <li><Link to="/manage">Manage</Link></li>
               </ul>

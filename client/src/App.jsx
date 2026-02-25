@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import { useAuth } from './context/AuthContext';
-import Landing from './pages/Landing';
 import Explore from './pages/Explore';
 import AdminLogin from './pages/AdminLogin';
 import Homepage from './pages/Homepage';
@@ -16,18 +15,18 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
 import AdminNoteView from './pages/admin/AdminNoteView';
+import SignIn from './pages/SignIn';
 
-function ExploreOrRedirect() {
+function DashboardRedirect() {
   const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) return <Navigate to={{ pathname: '/', hash: 'explore' }} replace />;
-  return <Explore />;
+  return <Navigate to={isAuthenticated ? '/home' : '/explore'} replace />;
 }
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/signup" element={<Navigate to="/" replace />} />
-      <Route path="/signin" element={<Navigate to="/" replace />} />
+      <Route path="/signup" element={<Navigate to="/signin" replace state={{ mode: 'signup' }} />} />
+      <Route path="/signin" element={<SignIn />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={<AdminRoute />}>
         <Route index element={<Navigate to="users" replace />} />
@@ -38,7 +37,7 @@ export default function App() {
       </Route>
       <Route path="/profile/:userId" element={<PublicProfile />} />
       <Route path="/view/note/:id" element={<PublicNoteView />} />
-      <Route path="/explore" element={<ExploreOrRedirect />} />
+      <Route path="/explore" element={<Explore />} />
       <Route
         path="/home"
         element={
@@ -80,8 +79,8 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Landing />} />
-      <Route path="/dashboard" element={<Navigate to="/home" replace />} />
+      <Route path="/" element={<Navigate to="/explore" replace />} />
+      <Route path="/dashboard" element={<DashboardRedirect />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
