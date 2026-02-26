@@ -112,6 +112,11 @@ export default function Layout({ children }) {
                       Explore
                     </NavLink>
                   </li>
+                  <li className="nav-item">
+                    <NavLink className="nav-link" to="/community">
+                      Communities
+                    </NavLink>
+                  </li>
                   {user?._id && (
                     <li className="nav-item">
                       <Link className="nav-link small" to={`/profile/${user._id}`} title="Your public profile">
@@ -149,6 +154,11 @@ export default function Layout({ children }) {
                   <li className="nav-item">
                     <Link className="nav-link" to="/explore">
                       Explore
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/community">
+                      Communities
                     </Link>
                   </li>
                   <li className="nav-item d-flex align-items-center gap-1">
@@ -192,6 +202,7 @@ export default function Layout({ children }) {
               <h6>Quick Links</h6>
               <ul className="list-unstyled small">
                 <li><Link to="/explore">Explore</Link></li>
+                <li><Link to="/community">Communities</Link></li>
                 <li><Link to="/signin">Sign In</Link></li>
                 <li><Link to="/home">Home</Link></li>
                 <li><Link to="/manage">Manage</Link></li>

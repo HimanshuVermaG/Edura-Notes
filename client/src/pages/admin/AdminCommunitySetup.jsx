@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { api, apiForm } from '../../api/client';
 import { useToast } from '../../context/ToastContext';
-import { buildFolderTree, getFoldersInTreeOrder } from '../../utils/folderTree';
 import ConfirmModal from '../../components/ConfirmModal';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -17,19 +16,6 @@ function validateFile(file) {
     return 'Only PDF and images (JPEG, PNG, GIF, WebP) are allowed';
   }
   return null;
-}
-
-/** Flatten tree to [{ id, name, depth }] for dropdown. */
-function flattenTreeForSelect(nodes, depth = 0) {
-  const result = [];
-  if (!Array.isArray(nodes)) return result;
-  nodes.forEach((node) => {
-    result.push({ id: node.folder._id, name: node.folder.name, depth });
-    if (node.children?.length) {
-      result.push(...flattenTreeForSelect(node.children, depth + 1));
-    }
-  });
-  return result;
 }
 
 function getFolderNameById(folders, id) {
@@ -60,7 +46,6 @@ export default function AdminCommunitySetup() {
 
   const [folders, setFolders] = useState([]);
   const [newFolderName, setNewFolderName] = useState('');
-  const [newFolderParentId, setNewFolderParentId] = useState('');
   const [editingFolderId, setEditingFolderId] = useState(null);
   const [editingFolderName, setEditingFolderName] = useState('');
   const [deleteFolderTarget, setDeleteFolderTarget] = useState(null);
@@ -69,12 +54,12 @@ export default function AdminCommunitySetup() {
   const [fileQueue, setFileQueue] = useState([]);
   const [dropzoneDragging, setDropzoneDragging] = useState(false);
 
-  const folderTree = useMemo(() => buildFolderTree(folders), [folders]);
   const folderSelectOptions = useMemo(() => {
-    const opts = [{ id: '', name: 'Root Directory', depth: 0 }];
-    opts.push(...flattenTreeForSelect(folderTree));
+    const opts = [{ id: '', name: 'Root Directory' }];
+    const rootFolders = [...(folders || [])].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+    rootFolders.forEach((f) => opts.push({ id: f._id, name: f.name }));
     return opts;
-  }, [folderTree]);
+  }, [folders]);
 
   const loadCommunity = useCallback(async () => {
     if (!communityId) return;
@@ -134,26 +119,18 @@ export default function AdminCommunitySetup() {
       try {
         const created = await api(`/admin/communities/${communityId}/folders`, {
           method: 'POST',
-          body: JSON.stringify({
-            name: n,
-            parentId: newFolderParentId || null,
-          }),
+          body: JSON.stringify({ name: n }),
         });
         setFolders((prev) => [...prev, created]);
         setNewFolderName('');
-        setNewFolderParentId('');
       } catch (err) {
         addToast(err.message || 'Failed to add folder', 'error');
         return;
       }
     } else {
       const tempId = `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      setFolders((prev) => [
-        ...prev,
-        { _id: tempId, name: n, parentId: newFolderParentId || null },
-      ]);
+      setFolders((prev) => [...prev, { _id: tempId, name: n, parentId: null }]);
       setNewFolderName('');
-      setNewFolderParentId('');
       setDirty(true);
     }
   };
@@ -522,53 +499,69 @@ export default function AdminCommunitySetup() {
 
           <div className="admin-card card">
             <div className="card-header bg-light d-flex justify-content-between align-items-center">
-              <h2 className="h6 mb-0 text-uppercase fw-bold">Folder Structure</h2>
-              <span className="badge bg-warning text-dark">Hierarchy Setup</span>
+              <h2 className="h6 mb-0 text-uppercase fw-bold">Folders</h2>
+              <span className="badge bg-secondary">Root-level only</span>
             </div>
             <div className="card-body">
               <div className="d-flex gap-2 mb-3">
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="New folder…"
+                  placeholder="New folder name…"
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addFolder())}
                 />
-                <select
-                  className="form-select"
-                  style={{ width: 'auto', maxWidth: 180 }}
-                  value={newFolderParentId}
-                  onChange={(e) => setNewFolderParentId(e.target.value)}
-                  aria-label="Parent folder"
-                >
-                  {folderSelectOptions.map((opt) => (
-                    <option key={opt.id || 'root'} value={opt.id}>
-                      {opt.depth > 0 ? '　'.repeat(opt.depth) + opt.name : opt.name}
-                    </option>
-                  ))}
-                </select>
                 <button type="button" className="btn btn-primary" onClick={addFolder}>
-                  Add
+                  Add folder
                 </button>
               </div>
               <div className="small">
-                {folderTree.length === 0 ? (
+                {folders.length === 0 ? (
                   <p className="text-muted mb-0">No folders yet. Add one above.</p>
                 ) : (
-                  <FolderTreeDisplay
-                    nodes={folderTree}
-                    editingFolderId={editingFolderId}
-                    editingFolderName={editingFolderName}
-                    onEditStart={(id, name) => {
-                      setEditingFolderId(id);
-                      setEditingFolderName(name);
-                    }}
-                    onEditSave={updateFolder}
-                    onEditCancel={() => { setEditingFolderId(null); setEditingFolderName(''); }}
-                    onEditNameChange={setEditingFolderName}
-                    onDelete={setDeleteFolderTarget}
-                  />
+                  <ul className="list-unstyled mb-0">
+                    {[...folders]
+                      .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }))
+                      .map((f) => {
+                        const isEditing = editingFolderId === f._id;
+                        return (
+                          <li key={f._id} className="d-flex align-items-center gap-2 py-1 px-2 rounded hover-bg-light mb-1">
+                            {isEditing ? (
+                              <>
+                                <input
+                                  type="text"
+                                  className="form-control form-control-sm"
+                                  value={editingFolderName}
+                                  onChange={(e) => setEditingFolderName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') updateFolder();
+                                    if (e.key === 'Escape') { setEditingFolderId(null); setEditingFolderName(''); }
+                                  }}
+                                  autoFocus
+                                />
+                                <button type="button" className="btn btn-sm btn-primary" onClick={updateFolder}>
+                                  Save
+                                </button>
+                                <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => { setEditingFolderId(null); setEditingFolderName(''); }}>
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-muted small">{f.name}</span>
+                                <button type="button" className="btn btn-link btn-sm p-0 ms-auto" onClick={() => { setEditingFolderId(f._id); setEditingFolderName(f.name); }} aria-label={`Edit ${f.name}`}>
+                                  Edit
+                                </button>
+                                <button type="button" className="btn btn-link btn-sm p-0 text-danger" onClick={() => setDeleteFolderTarget(f)} aria-label={`Delete ${f.name}`}>
+                                  Delete
+                                </button>
+                              </>
+                            )}
+                          </li>
+                        );
+                      })}
+                  </ul>
                 )}
               </div>
             </div>
@@ -682,7 +675,7 @@ export default function AdminCommunitySetup() {
         body={
           deleteFolderTarget ? (
             <p className="mb-0">
-              Delete &quot;{deleteFolderTarget.name}&quot;? Files in this folder will be moved to parent or root.
+              Delete &quot;{deleteFolderTarget.name}&quot;? Files in this folder will be moved to root.
             </p>
           ) : null
         }
@@ -690,91 +683,5 @@ export default function AdminCommunitySetup() {
         variant="danger"
       />
     </div>
-  );
-}
-
-function FolderTreeDisplay({
-  nodes,
-  editingFolderId,
-  editingFolderName,
-  onEditStart,
-  onEditSave,
-  onEditCancel,
-  onEditNameChange,
-  onDelete,
-  depth = 0,
-}) {
-  if (!Array.isArray(nodes) || nodes.length === 0) return null;
-  return (
-    <ul className="list-unstyled mb-0">
-      {nodes.map((node) => {
-        const f = node.folder;
-        const isEditing = editingFolderId === f._id;
-        const hasChildren = node.children?.length > 0;
-        return (
-          <li key={f._id} className="mb-1">
-            <div
-              className="d-flex align-items-center gap-2 py-1 px-2 rounded hover-bg-light"
-              style={depth > 0 ? { marginLeft: depth * 16 } : {}}
-            >
-              {isEditing ? (
-                <>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    value={editingFolderName}
-                    onChange={(e) => onEditNameChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') onEditSave();
-                      if (e.key === 'Escape') onEditCancel();
-                    }}
-                    autoFocus
-                  />
-                  <button type="button" className="btn btn-sm btn-primary" onClick={onEditSave}>
-                    Save
-                  </button>
-                  <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onEditCancel}>
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span className="text-muted small">{f.name}</span>
-                  <button
-                    type="button"
-                    className="btn btn-link btn-sm p-0 ms-auto"
-                    onClick={() => onEditStart(f._id, f.name)}
-                    aria-label={`Edit ${f.name}`}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-link btn-sm p-0 text-danger"
-                    onClick={() => onDelete(f)}
-                    aria-label={`Delete ${f.name}`}
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
-            </div>
-            {hasChildren && (
-              <FolderTreeDisplay
-                nodes={node.children}
-                editingFolderId={editingFolderId}
-                editingFolderName={editingFolderName}
-                onEditStart={onEditStart}
-                onEditSave={onEditSave}
-                onEditCancel={onEditCancel}
-                onEditNameChange={onEditNameChange}
-                onDelete={onDelete}
-                depth={depth + 1}
-              />
-            )}
-          </li>
-        );
-      })}
-    </ul>
   );
 }

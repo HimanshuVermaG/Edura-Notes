@@ -188,24 +188,19 @@ router.post('/:communityId/folders', async (req, res) => {
   try {
     const community = await Community.findById(req.params.communityId);
     if (!community) return res.status(404).json({ message: 'Community not found' });
-    const { name, parentId } = req.body;
+    const { name } = req.body;
     if (!name || !String(name).trim()) {
       return res.status(400).json({ message: 'Folder name is required' });
     }
-    const parent = parentId
-      ? await CommunityFolder.findOne({ _id: parentId, communityId: community._id })
-      : null;
-    if (parentId && !parent) return res.status(400).json({ message: 'Parent folder not found' });
-    const effectiveParentId = parent ? parent._id : null;
-    if (await hasSiblingWithSameName(community._id, effectiveParentId, String(name).trim())) {
+    if (await hasSiblingWithSameName(community._id, null, String(name).trim())) {
       return res.status(400).json({
-        message: 'A folder with this name already exists in this location. Please choose a different name.',
+        message: 'A folder with this name already exists. Please choose a different name.',
       });
     }
     const folder = await CommunityFolder.create({
       name: String(name).trim(),
       communityId: community._id,
-      parentId: effectiveParentId,
+      parentId: null,
     });
     res.status(201).json(folder);
   } catch (err) {
@@ -222,26 +217,10 @@ router.put('/:communityId/folders/:folderId', async (req, res) => {
       communityId: community._id,
     });
     if (!folder) return res.status(404).json({ message: 'Folder not found' });
-    const { name, parentId } = req.body;
+    const { name } = req.body;
     if (name !== undefined) folder.name = String(name).trim() || folder.name;
-    if (parentId !== undefined) {
-      if (parentId === null || parentId === '') {
-        folder.parentId = null;
-      } else {
-        const parent = await CommunityFolder.findOne({ _id: parentId, communityId: community._id });
-        if (!parent) return res.status(400).json({ message: 'Parent folder not found' });
-        if (String(parent._id) === String(folder._id)) {
-          return res.status(400).json({ message: 'Folder cannot be its own parent' });
-        }
-        const wouldBeCycle = await isDescendantOf(parent._id, folder._id, community._id);
-        if (wouldBeCycle) {
-          return res.status(400).json({ message: 'Cannot move folder inside its own descendant' });
-        }
-        folder.parentId = parent._id;
-      }
-    }
-    const effectiveParentId = folder.parentId && folder.parentId.toString ? folder.parentId : folder.parentId;
-    if (await hasSiblingWithSameName(community._id, effectiveParentId, folder.name, folder._id)) {
+    folder.parentId = null;
+    if (await hasSiblingWithSameName(community._id, null, folder.name, folder._id)) {
       return res.status(400).json({
         message: 'A folder with this name already exists in this location. Please choose a different name.',
       });

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Merged Community File Hub - ShareHub</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#197fe6",
+                        "primary-content": "#ffffff",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111921",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2632",
+                        "border-light": "#e7edf3",
+                        "border-dark": "#2a3b4d",
+                        "text-main-light": "#0e141b",
+                        "text-main-dark": "#e0e6ed",
+                        "text-sub-light": "#4e7397",
+                        "text-sub-dark": "#94a3b8",
+                    },
+                    fontFamily: {
+                        display: ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark font-display antialiased min-h-screen flex flex-col">
+<header class="sticky top-0 z-50 w-full bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark">
+<div class="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+<div class="flex items-center gap-8">
+<a class="flex items-center gap-3" href="#">
+<div class="text-primary">
+<span class="material-symbols-outlined text-3xl">share</span>
+</div>
+<span class="text-xl font-bold tracking-tight">ShareHub</span>
+</a>
+<div class="hidden md:flex relative group w-96">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-sub-light dark:text-text-sub-dark">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2 border-none rounded-lg bg-background-light dark:bg-background-dark text-sm focus:ring-2 focus:ring-primary placeholder-text-sub-light dark:placeholder-text-sub-dark" placeholder="Search in Computer Science 101..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<nav class="hidden md:flex items-center gap-6 mr-4">
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Explore</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">My Communities</a>
+</nav>
+<div class="flex items-center gap-2 border-l border-border-light dark:border-border-dark pl-4">
+<button class="p-2 text-text-main-light dark:text-text-main-dark hover:bg-background-light dark:hover:bg-background-dark rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-text-main-light dark:text-text-main-dark hover:bg-background-light dark:hover:bg-background-dark rounded-full transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</div>
+</div>
+</header>
+<div class="flex flex-grow h-[calc(100vh-64px)] overflow-hidden">
+<aside class="w-64 flex-shrink-0 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark hidden lg:flex flex-col">
+<div class="p-4">
+<button class="w-full bg-primary hover:bg-primary/90 text-white px-4 py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-xl">add</span>
+                    New Upload
+                </button>
+</div>
+<nav class="flex-1 px-2 py-2 space-y-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-text-sub-light dark:text-text-sub-dark hover:bg-background-light dark:hover:bg-background-dark hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary">description</span>
+                    All Files
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg bg-primary/10 text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">folder</span>
+                    Folders
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-text-sub-light dark:text-text-sub-dark hover:bg-background-light dark:hover:bg-background-dark hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary">group</span>
+                    Shared with Me
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-text-sub-light dark:text-text-sub-dark hover:bg-background-light dark:hover:bg-background-dark hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary">schedule</span>
+                    Recent
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-text-sub-light dark:text-text-sub-dark hover:bg-background-light dark:hover:bg-background-dark hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary">star</span>
+                    Starred
+                </a>
+<div class="pt-4 mt-4 border-t border-border-light dark:border-border-dark">
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-text-sub-light dark:text-text-sub-dark hover:bg-background-light dark:hover:bg-background-dark hover:text-red-500 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-red-500">delete</span>
+                        Trash
+                    </a>
+</div>
+</nav>
+<div class="p-4 border-t border-border-light dark:border-border-dark">
+<div class="bg-background-light dark:bg-background-dark rounded-xl p-4">
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs font-bold text-text-main-light dark:text-text-main-dark">Storage</span>
+<span class="text-xs text-text-sub-light dark:text-text-sub-dark">75%</span>
+</div>
+<div class="w-full bg-border-light dark:bg-border-dark rounded-full h-1.5 mb-2">
+<div class="bg-primary h-1.5 rounded-full" style="width: 75%"></div>
+</div>
+<p class="text-[10px] text-text-sub-light dark:text-text-sub-dark mb-3">15 GB of 20 GB used</p>
+<button class="w-full py-1.5 text-xs font-bold text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-colors">Upgrade Storage</button>
+</div>
+</div>
+</aside>
+<main class="flex-grow overflow-y-auto w-full bg-background-light dark:bg-background-dark p-6">
+<div class="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 shadow-sm border border-border-light dark:border-border-dark mb-8">
+<div class="flex flex-col md:flex-row gap-6 items-start">
+<div class="w-20 h-20 md:w-24 md:h-24 shrink-0 rounded-xl overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-md relative group">
+<div class="absolute inset-0 bg-black/10"></div>
+<span class="material-symbols-outlined text-4xl relative z-10">terminal</span>
+<img alt="Abstract code background" class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay" data-alt="Abstract code background pattern" src="https://lh3.googleusercontent.com/aida-public/AB6AXuASZp-iwdYDhPpD5xmIL3H1bCQZA3gxu6IaQDr25ubhWoMiil5JxCrMM_xlR1-4zQpAWhTh4I7NWBNOq7efgNP6w_LJ5SXwOiALq3GI2LILL-ksh5aZ7dia8MJ1dCxeTHeh2P6Yy9bxecL3n5bsSqLKHVsVHyYXPheA-oCQv3HYTXdZtXwz188fGCfWReZvpcCvhK4lk6wepys6ThT5lH65q36dbIKzJ3Zith4i6GoNNz70NcD_La3WCQEtMVqB9SItD13UxPX9ksFm"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+<div>
+<h1 class="text-2xl font-bold text-text-main-light dark:text-text-main-dark mb-1">Computer Science 101</h1>
+<div class="flex flex-wrap gap-x-4 gap-y-2 text-sm text-text-sub-light dark:text-text-sub-dark items-center">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">group</span>
+<span class="font-bold text-text-main-light dark:text-text-main-dark">12.4k</span> Members
+                                    </div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">folder_open</span>
+<span class="font-bold text-text-main-light dark:text-text-main-dark">3.2k</span> Files
+                                    </div>
+<div class="flex -space-x-1.5 overflow-hidden ml-2">
+<img alt="Member avatar" class="inline-block h-5 w-5 rounded-full ring-2 ring-white dark:ring-surface-dark object-cover" data-alt="Female portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3Qgp3YL5Lhp_BtUpsiWN1sL5D2Llm_KbtpUtCmJsmlJzaUFnOPE6vS-EB-bGVUKSHTWrzyLDsgVhWhMUTdG4tDfpsX7-9dIbXMA1i_KViwKDDuYobe--KJApo6k7LnI5QlQ1SmiNQgMMqJt9HCklyf_bvOZcNXPTT9Ci5AJIw9xYY28ZYLHKBN7YW5vblOERNrwEWzz0NL38ord9a_OvYFbov3kVvWuNDVR10VN3hx2rSzzCO5mCusyycLRzwjudTO0B7DZvV3vvp"/>
+<img alt="Member avatar" class="inline-block h-5 w-5 rounded-full ring-2 ring-white dark:ring-surface-dark object-cover" data-alt="Male portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmN7SBzfgzL9r-IC9WqQ1Q1dQmgzkqMeKiSBqm8TkkxkB74awM6GKDPwEJ0uWWWlSZxkXA5bKKi5lGiQ-YeJIXU1F2yvZYrASIyKzqVg-ZrjXT9osfrC793X2v-MqUfUlBZ3VmD3gI_k2anjgoPEc13tjhqI2JsyMqPzSEX6jyjKlQfvFclJ-j0TiwVc05SC4hbhS8XNwPFvQTiL5DVjCPGmeM8K0cuAnwSZoZueRGxing1M21WZcryaj6PM7OEMvdyFZ_jV3vh_FF"/>
+<img alt="Member avatar" class="inline-block h-5 w-5 rounded-full ring-2 ring-white dark:ring-surface-dark object-cover" data-alt="Male portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLxlFxDZ8qMxfz6tvrHr_JjFd6LgTWq-tLjGl7EJa2Lm4heEIVMLhZiFjOlNrIb9B0mxjj_rrhHOgUObXjoUYysgeSikT_uACze4m-P9rpCXbmo0Pvte14DKZvezni9ByqnccXZ38Wv0EAsS0ftiZDhhDM1W0fBLWF-qrkNxOc7AIiUiz8z1gMh4M0GnIOZWpzQG_ECjS6E13DFrMC0AixjIj9967SaRhLMVfuI3klxYYfkkIX2FvZMfVDoPg5twTiWztO60-DUzeF"/>
+</div>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 bg-background-light dark:bg-background-dark hover:bg-border-light dark:hover:bg-border-dark text-text-main-light dark:text-text-main-dark rounded-lg text-sm font-bold transition-colors flex items-center gap-2 border border-border-light dark:border-border-dark">
+<span class="material-symbols-outlined text-[16px]">share</span> Share
+                                </button>
+<button class="px-4 py-1.5 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold transition-colors shadow-sm shadow-primary/20">
+                                    Join
+                                </button>
+</div>
+</div>
+<p class="text-text-sub-light dark:text-text-sub-dark text-sm mb-3 line-clamp-2">
+                            The ultimate hub for CS freshmen. Share lecture notes, discuss algorithms, find study partners, and access curated resources for Intro to Programming, Data Structures, and Calculus.
+                        </p>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-0.5 bg-background-light dark:bg-background-dark rounded text-[11px] font-medium text-text-sub-light dark:text-text-sub-dark border border-border-light dark:border-border-dark cursor-pointer hover:border-primary hover:text-primary transition-colors">#algorithms</span>
+<span class="px-2 py-0.5 bg-background-light dark:bg-background-dark rounded text-[11px] font-medium text-text-sub-light dark:text-text-sub-dark border border-border-light dark:border-border-dark cursor-pointer hover:border-primary hover:text-primary transition-colors">#java</span>
+<span class="px-2 py-0.5 bg-background-light dark:bg-background-dark rounded text-[11px] font-medium text-text-sub-light dark:text-text-sub-dark border border-border-light dark:border-border-dark cursor-pointer hover:border-primary hover:text-primary transition-colors">#python</span>
+<span class="px-2 py-0.5 bg-background-light dark:bg-background-dark rounded text-[11px] font-medium text-text-sub-light dark:text-text-sub-dark border border-border-light dark:border-border-dark cursor-pointer hover:border-primary hover:text-primary transition-colors">#webdev</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mb-8">
+<div class="flex items-center gap-2 mb-4 text-text-main-light dark:text-text-main-dark">
+<span class="material-symbols-outlined text-primary text-xl">schedule</span>
+<h2 class="text-lg font-bold">Recent Activity</h2>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-4 border border-border-light dark:border-border-dark hover:shadow-md transition-shadow group cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-600 flex items-center justify-center">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<button class="text-text-sub-light dark:text-text-sub-dark hover:bg-background-light dark:hover:bg-background-dark rounded-full p-1 transition-colors">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+<h3 class="font-bold text-sm text-text-main-light dark:text-text-main-dark truncate mb-1 group-hover:text-primary">Data_Structs_V2.pdf</h3>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark">Edited 2h ago</p>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-4 border border-border-light dark:border-border-dark hover:shadow-md transition-shadow group cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center">
+<span class="material-symbols-outlined">description</span>
+</div>
+<button class="text-text-sub-light dark:text-text-sub-dark hover:bg-background-light dark:hover:bg-background-dark rounded-full p-1 transition-colors">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+<h3 class="font-bold text-sm text-text-main-light dark:text-text-main-dark truncate mb-1 group-hover:text-primary">Sort_Algos_Draft.docx</h3>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark">Edited 5h ago</p>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-4 border border-border-light dark:border-border-dark hover:shadow-md transition-shadow group cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center">
+<span class="material-symbols-outlined">image</span>
+</div>
+<button class="text-text-sub-light dark:text-text-sub-dark hover:bg-background-light dark:hover:bg-background-dark rounded-full p-1 transition-colors">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+<h3 class="font-bold text-sm text-text-main-light dark:text-text-main-dark truncate mb-1 group-hover:text-primary">Tree_Diagram_v1.png</h3>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark">Edited 1d ago</p>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-4 border border-border-light dark:border-border-dark hover:shadow-md transition-shadow group cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<div class="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/20 text-orange-600 flex items-center justify-center">
+<span class="material-symbols-outlined">slideshow</span>
+</div>
+<button class="text-text-sub-light dark:text-text-sub-dark hover:bg-background-light dark:hover:bg-background-dark rounded-full p-1 transition-colors">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+<h3 class="font-bold text-sm text-text-main-light dark:text-text-main-dark truncate mb-1 group-hover:text-primary">CS_Pres_Final.pptx</h3>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark">Edited 2d ago</p>
+</div>
+</div>
+</div>
+<div class="mb-6">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2 text-text-main-light dark:text-text-main-dark">
+<span class="material-symbols-outlined text-primary text-xl">folder</span>
+<h2 class="text-lg font-bold">All Folders</h2>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-sm text-text-sub-light dark:text-text-sub-dark">Show:</span>
+<button class="flex items-center gap-1 text-sm font-medium text-text-main-light dark:text-text-main-dark hover:text-primary transition-colors border border-border-light dark:border-border-dark px-2 py-1 rounded">
+                            20 <span class="material-symbols-outlined text-lg">expand_more</span>
+</button>
+<span class="text-sm text-text-sub-light dark:text-text-sub-dark ml-2">Sort by:</span>
+<button class="flex items-center gap-1 text-sm font-medium text-text-main-light dark:text-text-main-dark hover:text-primary transition-colors border border-border-light dark:border-border-dark px-2 py-1 rounded">
+                            Name (A-Z) <span class="material-symbols-outlined text-lg">expand_more</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-5 border border-border-light dark:border-border-dark hover:border-primary/50 hover:shadow-md transition-all group cursor-pointer flex flex-col justify-between h-48">
+<div>
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl fill-current">folder</span>
+</div>
+<button class="text-text-sub-light dark:text-text-sub-dark hover:text-primary">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<h3 class="text-base font-bold text-text-main-light dark:text-text-main-dark mb-1 group-hover:text-primary transition-colors">Lecture Notes</h3>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark">45 items • 1.2 GB</p>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-border-light dark:border-border-dark">
+<div class="flex -space-x-2">
+<img alt="Contributor" class="w-6 h-6 rounded-full border-2 border-white dark:border-surface-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3Qgp3YL5Lhp_BtUpsiWN1sL5D2Llm_KbtpUtCmJsmlJzaUFnOPE6vS-EB-bGVUKSHTWrzyLDsgVhWhMUTdG4tDfpsX7-9dIbXMA1i_KViwKDDuYobe--KJApo6k7LnI5QlQ1SmiNQgMMqJt9HCklyf_bvOZcNXPTT9Ci5AJIw9xYY28ZYLHKBN7YW5vblOERNrwEWzz0NL38ord9a_OvYFbov3kVvWuNDVR10VN3hx2rSzzCO5mCusyycLRzwjudTO0B7DZvV3vvp"/>
+<img alt="Contributor" class="w-6 h-6 rounded-full border-2 border-white dark:border-surface-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmN7SBzfgzL9r-IC9WqQ1Q1dQmgzkqMeKiSBqm8TkkxkB74awM6GKDPwEJ0uWWWlSZxkXA5bKKi5lGiQ-YeJIXU1F2yvZYrASIyKzqVg-ZrjXT9osfrC793X2v-MqUfUlBZ3VmD3gI_k2anjgoPEc13tjhqI2JsyMqPzSEX6jyjKlQfvFclJ-j0TiwVc05SC4hbhS8XNwPFvQTiL5DVjCPGmeM8K0cuAnwSZoZueRGxing1M21WZcryaj6PM7OEMvdyFZ_jV3vh_FF"/>
+</div>
+<span class="text-[10px] text-text-sub-light dark:text-text-sub-dark font-medium">Updated 2d ago</span>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-5 border border-border-light dark:border-border-dark hover:border-primary/50 hover:shadow-md transition-all group cursor-pointer flex flex-col justify-between h-48">
+<div>
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl fill-current">folder</span>
+</div>
+<button class="text-text-sub-light dark:text-text-sub-dark hover:text-primary">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<h3 class="text-base font-bold text-text-main-light dark:text-text-main-dark mb-1 group-hover:text-primary transition-colors">Assignments</h3>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark">12 items • 340 MB</p>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-border-light dark:border-border-dark">
+<div class="flex -space-x-2">
+<img alt="Contributor" class="w-6 h-6 rounded-full border-2 border-white dark:border-surface-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLxlFxDZ8qMxfz6tvrHr_JjFd6LgTWq-tLjGl7EJa2Lm4heEIVMLhZiFjOlNrIb9B0mxjj_rrhHOgUObXjoUYysgeSikT_uACze4m-P9rpCXbmo0Pvte14DKZvezni9ByqnccXZ38Wv0EAsS0ftiZDhhDM1W0fBLWF-qrkNxOc7AIiUiz8z1gMh4M0GnIOZWpzQG_ECjS6E13DFrMC0AixjIj9967SaRhLMVfuI3klxYYfkkIX2FvZMfVDoPg5twTiWztO60-DUzeF"/>
+</div>
+<span class="text-[10px] text-text-sub-light dark:text-text-sub-dark font-medium">Updated 4h ago</span>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-5 border border-border-light dark:border-border-dark hover:border-primary/50 hover:shadow-md transition-all group cursor-pointer flex flex-col justify-between h-48">
+<div>
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl fill-current">folder</span>
+</div>
+<button class="text-text-sub-light dark:text-text-sub-dark hover:text-primary">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<h3 class="text-base font-bold text-text-main-light dark:text-text-main-dark mb-1 group-hover:text-primary transition-colors">Resources</h3>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark">89 items • 2.4 GB</p>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-border-light dark:border-border-dark">
+<div class="flex -space-x-2">
+<img alt="Contributor" class="w-6 h-6 rounded-full border-2 border-white dark:border-surface-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3Qgp3YL5Lhp_BtUpsiWN1sL5D2Llm_KbtpUtCmJsmlJzaUFnOPE6vS-EB-bGVUKSHTWrzyLDsgVhWhMUTdG4tDfpsX7-9dIbXMA1i_KViwKDDuYobe--KJApo6k7LnI5QlQ1SmiNQgMMqJt9HCklyf_bvOZcNXPTT9Ci5AJIw9xYY28ZYLHKBN7YW5vblOERNrwEWzz0NL38ord9a_OvYFbov3kVvWuNDVR10VN3hx2rSzzCO5mCusyycLRzwjudTO0B7DZvV3vvp"/>
+<div class="w-6 h-6 rounded-full border-2 border-white dark:border-surface-dark bg-background-light dark:bg-background-dark flex items-center justify-center text-[8px] font-bold text-text-sub-light">+3</div>
+</div>
+<span class="text-[10px] text-text-sub-light dark:text-text-sub-dark font-medium">Updated 1w ago</span>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-5 border border-border-light dark:border-border-dark hover:border-primary/50 hover:shadow-md transition-all group cursor-pointer flex flex-col justify-between h-48">
+<div>
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl fill-current">folder_shared</span>
+</div>
+<button class="text-text-sub-light dark:text-text-sub-dark hover:text-primary">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<h3 class="text-base font-bold text-text-main-light dark:text-text-main-dark mb-1 group-hover:text-primary transition-colors">Past Exams</h3>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark">156 items • 5.8 GB</p>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-border-light dark:border-border-dark">
+<div class="flex -space-x-2">
+<img alt="Contributor" class="w-6 h-6 rounded-full border-2 border-white dark:border-surface-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmN7SBzfgzL9r-IC9WqQ1Q1dQmgzkqMeKiSBqm8TkkxkB74awM6GKDPwEJ0uWWWlSZxkXA5bKKi5lGiQ-YeJIXU1F2yvZYrASIyKzqVg-ZrjXT9osfrC793X2v-MqUfUlBZ3VmD3gI_k2anjgoPEc13tjhqI2JsyMqPzSEX6jyjKlQfvFclJ-j0TiwVc05SC4hbhS8XNwPFvQTiL5DVjCPGmeM8K0cuAnwSZoZueRGxing1M21WZcryaj6PM7OEMvdyFZ_jV3vh_FF"/>
+</div>
+<span class="text-[10px] text-text-sub-light dark:text-text-sub-dark font-medium">Updated 3d ago</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

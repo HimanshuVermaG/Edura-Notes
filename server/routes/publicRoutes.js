@@ -3,6 +3,9 @@ import fs from 'fs';
 import Note from '../models/Note.js';
 import User from '../models/User.js';
 import Folder from '../models/Folder.js';
+import Community from '../models/Community.js';
+import CommunityFolder from '../models/CommunityFolder.js';
+import CommunityFile from '../models/CommunityFile.js';
 import { getUploadPath } from '../middleware/uploadMiddleware.js';
 
 function getMimeType(note) {
@@ -16,6 +19,7 @@ const router = express.Router();
 
 const EXPLORE_NOTES_MAX_LIMIT = 100;
 const EXPLORE_USERS_MAX_LIMIT = 100;
+const COMMUNITIES_MAX_LIMIT = 100;
 
 /** Explore page: only notes explicitly approved by admin to show on explore. */
 const exploreNotesFilter = { listedOnExplore: true };
@@ -91,6 +95,126 @@ router.get('/explore/users', async (req, res) => {
   } catch (err) {
     console.error('[publicRoutes] /explore/users error:', err);
     res.status(500).json({ message: err.message || 'Failed to search users' });
+  }
+});
+
+/** Public list of all admin-created communities (no auth). */
+router.get('/communities', async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(COMMUNITIES_MAX_LIMIT, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const search = (req.query.search || '').trim();
+    const tag = (req.query.tag || '').trim();
+    const filter = {};
+    if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.$or = [
+        { name: { $regex: escaped, $options: 'i' } },
+        { description: { $regex: escaped, $options: 'i' } },
+      ];
+    }
+    if (tag) filter.tags = tag;
+    const [total, communities] = await Promise.all([
+      Community.countDocuments(filter),
+      Community.find(filter)
+        .populate('createdBy', 'name')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+    ]);
+    const communityIds = communities.map((c) => c._id);
+    const fileCounts = await CommunityFile.aggregate([
+      { $match: { communityId: { $in: communityIds } } },
+      { $group: { _id: '$communityId', count: { $sum: 1 } } },
+    ]);
+    const countMap = Object.fromEntries(fileCounts.map((d) => [String(d._id), d.count]));
+    const list = communities.map((c) => ({
+      _id: c._id,
+      name: c.name,
+      description: c.description || '',
+      coverUrl: c.coverUrl || null,
+      tags: c.tags || [],
+      fileCount: countMap[String(c._id)] ?? 0,
+      createdBy: c.createdBy ? { name: c.createdBy.name } : null,
+    }));
+    res.json({ communities: list, total, page, limit });
+  } catch (err) {
+    console.error('[publicRoutes] /communities error:', err);
+    res.status(500).json({ message: err.message || 'Failed to list communities' });
+  }
+});
+
+function getCommunityFileMimeType(file) {
+  if (file.mimeType) return file.mimeType;
+  const ext = (file.fileName || file.originalName || '').toLowerCase().replace(/.*\./, '');
+  const mime = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' };
+  return mime[ext] || 'application/octet-stream';
+}
+
+/** Public single community file metadata (no auth). */
+router.get('/communities/:communityId/files/:fileId', async (req, res) => {
+  try {
+    const file = await CommunityFile.findOne({
+      _id: req.params.fileId,
+      communityId: req.params.communityId,
+    }).lean();
+    if (!file) return res.status(404).json({ message: 'File not found' });
+    res.json({
+      _id: file._id,
+      title: file.title || file.originalName || 'Untitled',
+      originalName: file.originalName,
+      fileName: file.fileName,
+      mimeType: getCommunityFileMimeType(file),
+    });
+  } catch (err) {
+    console.error('[publicRoutes] /communities/:communityId/files/:fileId error:', err);
+    res.status(500).json({ message: err.message || 'Failed to load file' });
+  }
+});
+
+/** Public single community file blob (no auth). Redirect to storage or stream. */
+router.get('/communities/:communityId/files/:fileId/file', async (req, res) => {
+  try {
+    const file = await CommunityFile.findOne({
+      _id: req.params.fileId,
+      communityId: req.params.communityId,
+    });
+    if (!file) return res.status(404).json({ message: 'File not found' });
+    if (file.fileUrl) {
+      return res.redirect(302, file.fileUrl);
+    }
+    return res.status(404).json({ message: 'No file content' });
+  } catch (err) {
+    console.error('[publicRoutes] /communities/:communityId/files/:fileId/file error:', err);
+    res.status(500).json({ message: err.message || 'Failed to get file' });
+  }
+});
+
+/** Public single community with folders and files (no auth). */
+router.get('/communities/:id', async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.id)
+      .populate('createdBy', 'name')
+      .lean();
+    if (!community) return res.status(404).json({ message: 'Community not found' });
+    const [folders, files] = await Promise.all([
+      CommunityFolder.find({ communityId: community._id, parentId: null }).sort({ order: 1, createdAt: 1 }).lean(),
+      CommunityFile.find({ communityId: community._id }).sort({ createdAt: 1 }).lean(),
+    ]);
+    res.json({
+      _id: community._id,
+      name: community.name,
+      description: community.description || '',
+      coverUrl: community.coverUrl || null,
+      tags: community.tags || [],
+      createdBy: community.createdBy ? { name: community.createdBy.name } : null,
+      folders,
+      files,
+    });
+  } catch (err) {
+    console.error('[publicRoutes] /communities/:id error:', err);
+    res.status(500).json({ message: err.message || 'Failed to load community' });
   }
 });
 

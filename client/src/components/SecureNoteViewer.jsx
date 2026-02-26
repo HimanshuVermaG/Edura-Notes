@@ -15,7 +15,7 @@ function inferMimeType(fileName) {
   return mime[ext] || 'application/pdf';
 }
 
-export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pdfBlobUrl, fullScreen: fullScreenProp = false, mimeType: mimeTypeProp, fileName, zoom: zoomProp = 1 }) {
+export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, communityFileId, communityId, pdfBlobUrl, fullScreen: fullScreenProp = false, mimeType: mimeTypeProp, fileName, zoom: zoomProp = 1 }) {
   const mimeType = mimeTypeProp || (fileName ? inferMimeType(fileName) : 'application/pdf');
   const isImage = mimeType && mimeType.startsWith('image/');
   const containerRef = useRef(null);
@@ -23,7 +23,7 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
   const [numPages, setNumPages] = useState(null);
   const [pageWidth, setPageWidth] = useState(800);
   const zoom = typeof zoomProp === 'number' && zoomProp > 0 ? zoomProp : 1;
-  const fileId = adminNoteId || publicNoteId || noteId;
+  const fileId = adminNoteId || publicNoteId || noteId || (communityFileId && communityId ? 'community' : null);
   const [loading, setLoading] = useState(!!fileId && !pdfBlobUrl);
   const [error, setError] = useState(null);
   const createdUrlRef = useRef(null);
@@ -38,11 +38,13 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
       setLoading(false);
       return;
     }
-    const fileUrl = adminNoteId
-      ? `/admin/notes/${adminNoteId}/file`
-      : publicNoteId
-        ? `/public/notes/${publicNoteId}/file`
-        : `/notes/${noteId}/file`;
+    const fileUrl = communityFileId && communityId
+      ? `/public/communities/${communityId}/files/${communityFileId}/file`
+      : adminNoteId
+        ? `/admin/notes/${adminNoteId}/file`
+        : publicNoteId
+          ? `/public/notes/${publicNoteId}/file`
+          : `/notes/${noteId}/file`;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -66,7 +68,7 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
         createdUrlRef.current = null;
       }
     };
-  }, [noteId, publicNoteId, adminNoteId, pdfBlobUrl]);
+  }, [noteId, publicNoteId, adminNoteId, communityFileId, communityId, pdfBlobUrl]);
 
   useEffect(() => {
     return () => {

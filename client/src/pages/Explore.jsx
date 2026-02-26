@@ -231,6 +231,11 @@ export default function Explore() {
 
       {/* Page body */}
       <div className="explore-body">
+        <div className="d-flex justify-content-end mb-3">
+          <Link to="/community" className="btn btn-sm btn-outline-primary" style={{ borderRadius: '9999px' }}>
+            Browse communities →
+          </Link>
+        </div>
 
         {/* ─── Top Contributors ─────────────────────────── */}
         {(searchFilter === 'all' || searchFilter === 'profiles') && (
