@@ -292,3 +292,4 @@ Notes Handling/
 3. **Explore visibility:** A note or profile appears on Explore if the owner set it public **or** an admin set “List on Explore” / “List profile on Explore”.
 4. **Upload limit:** 10 MB per file (client and server); change in `uploadMiddleware.js` and Manage.jsx if you need a different limit.
 5. **CORS:** For production, set `CLIENT_ORIGIN` in `server/.env` to your frontend URL so the API only accepts requests from that origin.
+6. **Audit:** See [AUDIT.md](AUDIT.md) for project logic, abandoned-code list, and a checklist for cleanup and doc alignment.
