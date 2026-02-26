@@ -32,7 +32,7 @@ A full-stack notes app where users sign in with Google, organize notes in folder
 
 ## Main features
 
-- **Landing page** – Hero, “Sign in with Google”, and Explore (profiles + public files) for guests.
+- **Explore (default for guests)** – Root `/` redirects to `/explore`. Public profiles and public files; “Sign in with Google”; sign in via `/signin`.
 - **Google Sign-In** – One-click sign-in; JWT stored in client; optional redirect back after login.
 - **Home (signed-in)** – Browse notes by folder, search, sort (name/size/date), grid/list view, pagination (10/20/50/100 per page).
 - **Manage** – Upload PDF/images (max 10 MB), create/edit folders, move notes, set public/private, pagination.
@@ -237,7 +237,7 @@ Notes Handling/
 │   │   ├── api/            # API client (fetch + auth header)
 │   │   ├── components/    # Layout, NoteCard, SecureNoteViewer, etc.
 │   │   ├── context/        # AuthContext
-│   │   ├── pages/          # Landing, Home, Manage, Explore, Admin, Public*, etc.
+│   │   ├── pages/          # Home, Manage, Explore, Admin, Public*, etc.
 │   │   ├── styles/         # edura.css (theme)
 │   │   └── utils/          # folderTree, sortNotes
 │   ├── .env.example

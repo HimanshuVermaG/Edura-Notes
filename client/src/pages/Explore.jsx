@@ -41,6 +41,7 @@ export default function Explore() {
   const [notesTotal, setNotesTotal] = useState(0);
   const [notesPage, setNotesPage] = useState(1);
   const [notesLimit, setNotesLimit] = useState(4);
+  const [notesSortBy, setNotesSortBy] = useState('time');
   const [loadingNotes, setLoadingNotes] = useState(false);
 
   const fetchUsers = useCallback(() => {
@@ -66,6 +67,7 @@ export default function Explore() {
     const params = new URLSearchParams();
     params.set('page', String(notesPage));
     params.set('limit', String(notesLimit));
+    params.set('sortBy', notesSortBy);
     if (appliedSearch.trim()) params.set('search', appliedSearch.trim());
     if (currentUser?._id) params.set('excludeUserId', currentUser._id);
     api(`/public/explore/notes?${params.toString()}`)
@@ -78,7 +80,7 @@ export default function Explore() {
         setNotesTotal(0);
       })
       .finally(() => setLoadingNotes(false));
-  }, [notesPage, notesLimit, appliedSearch, currentUser?._id]);
+  }, [notesPage, notesLimit, notesSortBy, appliedSearch, currentUser?._id]);
 
   useEffect(() => {
     if (searchFilter === 'all' || searchFilter === 'profiles') fetchUsers();
@@ -122,29 +124,36 @@ export default function Explore() {
           </label>
           <form className="explore-search-bar" onSubmit={handleSearchSubmit}>
             <span className="explore-search-icon" aria-hidden>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
               </svg>
             </span>
             <input
               id="explore-search"
               type="search"
               className="explore-search-input"
-              placeholder="Search for notes, topics, or profiles..."
+              placeholder="Search notes, topics, or profiles..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               aria-label="Search for notes, topics, or profiles"
+              autoComplete="off"
             />
-            <select
-              className="explore-search-filter form-select form-select-sm"
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              aria-label="Filter by type"
-            >
-              <option value="all">All</option>
-              <option value="profiles">Profiles</option>
-              <option value="notes">Notes</option>
-            </select>
+            <div className="explore-search-actions">
+              <select
+                className="explore-search-filter"
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                aria-label="Filter by type"
+              >
+                <option value="all">All</option>
+                <option value="profiles">Profiles</option>
+                <option value="notes">Notes</option>
+              </select>
+              <button type="submit" className="explore-search-btn" aria-label="Search">
+                Search
+              </button>
+            </div>
           </form>
         </div>
       </section>
@@ -243,8 +252,16 @@ export default function Explore() {
             </div>
             <div className="d-flex align-items-center gap-2 flex-wrap">
               <label htmlFor="explore-notes-sort" className="form-label small mb-0 text-nowrap">Sort by:</label>
-              <select id="explore-notes-sort" className="form-select form-select-sm explore-select-sm" aria-label="Sort order">
-                <option>Newest First</option>
+              <select
+                id="explore-notes-sort"
+                className="form-select form-select-sm explore-select-sm"
+                value={notesSortBy}
+                onChange={(e) => { setNotesSortBy(e.target.value); setNotesPage(1); }}
+                aria-label="Sort order"
+              >
+                <option value="name">Name</option>
+                <option value="size">Size</option>
+                <option value="time">Newest first</option>
               </select>
               <label htmlFor="explore-notes-per-page" className="form-label small mb-0 text-nowrap">Show:</label>
               <select

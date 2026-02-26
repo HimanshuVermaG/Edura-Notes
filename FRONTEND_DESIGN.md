@@ -31,7 +31,7 @@ This document is the single source of truth for the frontend: all pages and link
 
 | Path | Component | Auth | Purpose |
 |------|-----------|------|---------|
-| `/` | Landing | Public (guest only; redirects to /home if authenticated) | Landing hero, Google sign-in, explore (users + public notes) |
+| `/` | Redirect | – | Redirects to `/explore`. (Landing page was removed; see AUDIT.md.) |
 | `/signup` | Redirect | Public | Redirects to `/signin` with `state.mode: 'signup'` |
 | `/signin` | SignIn | Public | Email sign-in/sign-up tabs + optional Google |
 | `/admin/login` | AdminLogin | Public | Admin Google sign-in; requires `user.role === 'admin'` |
@@ -74,9 +74,9 @@ This document is the single source of truth for the frontend: all pages and link
 
 | From page | Link / action | To path |
 |-----------|----------------|---------|
-| Landing | View profile | `/profile/:userId` |
-| Landing | View (note) | `/view/note/:id` |
-| Landing | Profile (on note card) | `/profile/:userId` |
+| Explore | View profile | `/profile/:userId` |
+| Explore | View (note) | `/view/note/:id` |
+| Explore | Profile (on note card) | `/profile/:userId` |
 | SignIn | Explore | `/explore` |
 | Explore | View profile | `/profile/:userId` |
 | Explore | View (note) | `/view/note/:id` |
@@ -110,7 +110,7 @@ flowchart LR
     A["Visit / or /explore"]
     B["Hit protected route"]
     C["Redirect to / with state.from"]
-    D["Landing: Google or scroll to explore"]
+    D["Explore: browse or /signin"]
     E["Optional: /signin for email"]
   end
   subgraph login [After login]
@@ -124,7 +124,7 @@ flowchart LR
   E --> F
 ```
 
-- **Guest**: Visits `/` or `/explore`. If they hit a protected route (`/home`, `/manage`, etc.), they are redirected to `/` with `state.from` set. Landing shows Google sign-in (and optional scroll to explore). Optional `/signin` for email sign-in/sign-up.
+- **Guest**: Visits `/` (redirects to `/explore`) or `/explore`. If they hit a protected route (`/home`, `/manage`, etc.), they are redirected to `/` with `state.from` set. Explore shows public profiles and notes; optional `/signin` for email or Google sign-in/sign-up.
 - **After login**: `setToken` is called; app navigates to `location.state.from` or `/home`.
 - **Admin**: Visiting any `/admin/*` (except `/admin/login`) triggers `AdminRoute`: requires JWT and `user.role === 'admin'`. If not logged in → redirect to `/admin/login`; if not admin → redirect to `/home`.
 
@@ -136,7 +136,7 @@ flowchart LR
 
 ### Public / explore flow
 
-- **Browse**: Landing (guest) or Explore – search public profiles and public notes (paginated). Profile link → PublicProfile; View note → PublicNoteView (read-only). PublicNoteView "Back to profile" → `/profile/:userId`.
+- **Browse**: Explore – search public profiles and public notes (paginated). Profile link → PublicProfile; View note → PublicNoteView (read-only). PublicNoteView "Back to profile" → `/profile/:userId`.
 
 ### Admin flow
 
@@ -150,15 +150,9 @@ flowchart LR
 
 ## 4. Pages (Detailed)
 
-### Landing
+### Landing (removed)
 
-- **Route**: `/`. **Auth**: Public; if authenticated, redirect to `/home`.
-- **File**: `client/src/pages/Landing.jsx`
-- **Purpose**: First screen for guests: hero with tagline, Google sign-in (when `VITE_GOOGLE_CLIENT_ID` set), and an Explore section (search public users and public notes with pagination).
-- **Components used**: Layout; inline hero card; search form; two sections (Profiles, Public files) with cards and pagination.
-- **Key UI**: Hero (title, subtitle, Google button, error alert); search input + Search button; Per-page select for profiles and files; profile cards (name, "View profile"); note cards (title, uploaded by, description snippet, View, Profile); Previous/Next pagination for both lists.
-- **Data/API**: `GET /api/public/explore/users` (page, limit, search), `GET /api/public/explore/notes` (page, limit, search). Optional `POST /api/auth/google` (credential) for sign-in.
-- **Outbound links**: `/profile/:userId`, `/view/note/:id`.
+- **Route**: `/` now redirects to `/explore`. The former Landing page (`client/src/pages/Landing.jsx`) was removed; see [AUDIT.md](AUDIT.md). Guests see Explore as the default public page.
 
 ---
 
@@ -332,7 +326,7 @@ flowchart LR
 |-----------|------|---------|---------|
 | ProtectedRoute | `client/src/components/ProtectedRoute.jsx` | Renders children only when authenticated; else redirect to `/` with `state.from`; shows loading spinner while auth resolving | App (wraps Homepage, Manage, EditNote, ViewNote, FullScreenPdfView) |
 | AdminRoute | `client/src/components/AdminRoute.jsx` | Requires user and `user.role === 'admin'`; renders AdminLayout + Outlet; else redirect to /admin/login or /home | App (wraps /admin routes) |
-| Layout | `client/src/components/Layout.jsx` | Header (brand, nav, auth), main slot, footer | Landing, SignIn, Explore, Homepage, Manage, EditNote, PublicProfile |
+| Layout | `client/src/components/Layout.jsx` | Header (brand, nav, auth), main slot, footer | SignIn, Explore, Homepage, Manage, EditNote, PublicProfile |
 | FolderList | `client/src/components/FolderList.jsx` | Folder tree (All Notes, Uncategorized, roots, subfolders); multi-select with cascading; when !readOnly: add folder, inline rename, delete | Homepage, Manage |
 | FolderTreeSelect | `client/src/components/FolderTreeSelect.jsx` | Single-folder dropdown (tree, max depth 2) for upload or edit form | Manage, EditNote |
 | NoteCard | `client/src/components/NoteCard.jsx` | Single note card: title, optional file name, folder badge, description, "Uploaded by", View/Edit/Delete; grid or list layout | Homepage, Manage |

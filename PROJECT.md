@@ -1,5 +1,7 @@
 # Notes Handling – Project Documentation
 
+> **Note (legacy/simplified spec):** This document describes an older variant of the app (email/password auth only, no Google OAuth, no Explore/Admin/public routes, no pagination). For the current application behavior and stack, see [README.md](README.md) and [AUDIT.md](AUDIT.md).
+
 This document describes the **Notes Handling** (Edura Notes) project in full so it can be understood and rebuilt from scratch. It covers folder/file structure, tech stack, every major file and its role, API contracts, data models, and features.
 
 ---

@@ -52,14 +52,37 @@ The app is a full-stack notes platform with **Google OAuth + email/password** au
 
 ---
 
-## 3. Checklist (cleanup and doc alignment)
+## 3. Implementation checklist
 
-Use this list to clean up abandoned code and align documentation with the current app.
+Use this list to clean up abandoned code and align documentation with the current app. Each item has an **ID** so you can choose which ones to implement.
 
-- [ ] **Landing.jsx** – Remove or repurpose. Either delete the file or wire `/` to it and adjust redirects (e.g. authenticated → `/home`, guest → Landing).
-- [ ] **Dashboard.jsx** – Remove or repurpose. Either delete or use it for `/dashboard` and update it to use `folderIds` + pagination to match the current notes API.
-- [ ] **NewNote.jsx** – Remove or repurpose. Either delete or expose under a route (e.g. `/notes/new` rendering NewNote) if a standalone upload page is desired.
-- [ ] **PROJECT.md** – Update or archive so it matches the current app (Google OAuth, Explore, Admin, public routes, pagination) or mark it as "legacy/simplified spec".
-- [ ] **FRONTEND_DESIGN.md** – Update the route table so `/` → Explore and remove or note Landing as unused.
-- [ ] **edura.css** – Optionally tidy comments: rename or remove "Landing page" / "Dashboard welcome" blocks if those pages are removed.
-- [ ] **README.md** – Ensure it mentions AUDIT.md (e.g. under Important points: "See AUDIT.md for project logic and abandoned-code checklist.").
+| ID | Item | Action |
+|----|------|--------|
+| **1** | Landing.jsx | Remove or repurpose: delete the file, or wire `/` to it and adjust redirects (e.g. authenticated → `/home`, guest → Landing). |
+| **2** | Dashboard.jsx | Remove or repurpose: delete the file, or use it for `/dashboard` and update it to use `folderIds` + pagination to match the current notes API. |
+| **3** | NewNote.jsx | Remove or repurpose: delete the file, or expose under a route (e.g. `/notes/new` rendering NewNote) if a standalone upload page is desired. |
+| **4** | PROJECT.md | Update or archive so it matches the current app (Google OAuth, Explore, Admin, public routes, pagination), or mark it as "legacy/simplified spec". |
+| **5** | FRONTEND_DESIGN.md | Update the route table so `/` → Explore and remove or note Landing as unused. |
+| **6** | edura.css | Optionally tidy comments: rename or remove "Landing page" / "Dashboard welcome" blocks if those pages are removed. |
+| **7** | README.md | Ensure it mentions AUDIT.md (e.g. under Important points). *(Already done if point 6 exists there.)* |
+
+---
+
+## 4. How to choose what to implement
+
+**Instructions:** Pick which checklist item(s) you want done, then tell your developer or AI assistant:
+
+- **By ID:** e.g. *"Implement items 1, 3, and 5"* or *"Do checklist items 2 and 4"*.
+- **By name:** e.g. *"Implement Landing.jsx and FRONTEND_DESIGN.md"*.
+
+**What each ID means:**
+
+- **1** – Landing page: delete `client/src/pages/Landing.jsx` or wire it to `/` and fix redirects.
+- **2** – User Dashboard: delete `client/src/pages/Dashboard.jsx` or use it for `/dashboard` and fix API (folderIds + pagination).
+- **3** – NewNote page: delete `client/src/pages/NewNote.jsx` or add a route so `/notes/new` renders it.
+- **4** – PROJECT.md: update to match current app or mark as legacy.
+- **5** – FRONTEND_DESIGN.md: update route table (`/` → Explore, note Landing unused).
+- **6** – edura.css: tidy Landing/Dashboard comment blocks (optional).
+- **7** – README.md: add or confirm link to AUDIT.md in Important points.
+
+You can implement one, several, or all. No item depends on another, except: if you **delete** Landing (1) or Dashboard (2), consider doing **6** (edura.css comments) for consistency.

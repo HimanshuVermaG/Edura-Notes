@@ -20,12 +20,20 @@ const EXPLORE_USERS_MAX_LIMIT = 100;
 /** Explore page: only notes explicitly approved by admin to show on explore. */
 const exploreNotesFilter = { listedOnExplore: true };
 
+function getExploreNotesSort(sortBy) {
+  const key = (sortBy || 'time').toLowerCase();
+  if (key === 'name') return { title: 1 };
+  if (key === 'size') return { size: 1 };
+  return { updatedAt: -1 }; // time: newest first
+}
+
 router.get('/explore/notes', async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(EXPLORE_NOTES_MAX_LIMIT, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const search = (req.query.search || '').trim();
     const excludeUserId = (req.query.excludeUserId || '').trim();
+    const sortBy = (req.query.sortBy || 'time').trim();
     const mongoose = (await import('mongoose')).default;
     const filter = { $and: [ exploreNotesFilter ] };
     if (excludeUserId && mongoose.Types.ObjectId.isValid(excludeUserId)) {
@@ -41,12 +49,13 @@ router.get('/explore/notes', async (req, res) => {
         ],
       });
     }
+    const sort = getExploreNotesSort(sortBy);
     const [total, notes] = await Promise.all([
       Note.countDocuments(filter),
       Note.find(filter)
         .populate('userId', 'name picture')
         .populate('folderId', 'name')
-        .sort({ updatedAt: -1 })
+        .sort(sort)
         .skip((page - 1) * limit)
         .limit(limit)
         .lean(),
