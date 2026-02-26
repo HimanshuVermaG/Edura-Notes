@@ -3,25 +3,44 @@ import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { getInitials } from '../utils/avatar';
 
-const EXPLORE_PAGE_SIZES = [10, 20, 50, 100];
+const EXPLORE_PAGE_SIZES = [4, 8, 12, 20, 50, 100];
+
+function relativeTime(date) {
+  const d = new Date(date);
+  const now = new Date();
+  const sec = Math.floor((now - d) / 1000);
+  if (sec < 60) return 'just now';
+  if (sec < 3600) return Math.floor(sec / 60) + 'm ago';
+  if (sec < 86400) return Math.floor(sec / 3600) + 'h ago';
+  if (sec < 2592000) return Math.floor(sec / 86400) + 'd ago';
+  if (sec < 31536000) return Math.floor(sec / 2592000) + 'mo ago';
+  return Math.floor(sec / 31536000) + 'y ago';
+}
+
+function isPdf(mimeType, originalName) {
+  if (mimeType && mimeType.toLowerCase().includes('pdf')) return true;
+  const ext = (originalName || '').toLowerCase().split('.').pop();
+  return ext === 'pdf';
+}
 
 export default function Explore() {
   const { user: currentUser } = useAuth();
   const [searchInput, setSearchInput] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
-  const [searched, setSearched] = useState(false);
+  const [searchFilter, setSearchFilter] = useState('all');
 
   const [users, setUsers] = useState([]);
   const [usersTotal, setUsersTotal] = useState(0);
   const [usersPage, setUsersPage] = useState(1);
-  const [usersLimit, setUsersLimit] = useState(10);
+  const [usersLimit, setUsersLimit] = useState(4);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   const [notes, setNotes] = useState([]);
   const [notesTotal, setNotesTotal] = useState(0);
   const [notesPage, setNotesPage] = useState(1);
-  const [notesLimit, setNotesLimit] = useState(10);
+  const [notesLimit, setNotesLimit] = useState(4);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
   const fetchUsers = useCallback(() => {
@@ -62,13 +81,12 @@ export default function Explore() {
   }, [notesPage, notesLimit, appliedSearch, currentUser?._id]);
 
   useEffect(() => {
-    setSearched(true);
-    fetchUsers();
-  }, [fetchUsers]);
+    if (searchFilter === 'all' || searchFilter === 'profiles') fetchUsers();
+  }, [searchFilter, fetchUsers]);
 
   useEffect(() => {
-    fetchNotes();
-  }, [fetchNotes]);
+    if (searchFilter === 'all' || searchFilter === 'notes') fetchNotes();
+  }, [searchFilter, fetchNotes]);
 
   const handleSearchSubmit = (e) => {
     e?.preventDefault();
@@ -78,232 +96,242 @@ export default function Explore() {
   };
 
   const usersTotalPages = Math.max(1, Math.ceil(usersTotal / usersLimit));
-  const usersStart = usersTotal === 0 ? 0 : (usersPage - 1) * usersLimit + 1;
-  const usersEnd = Math.min(usersPage * usersLimit, usersTotal);
-
   const notesTotalPages = Math.max(1, Math.ceil(notesTotal / notesLimit));
-  const notesStart = notesTotal === 0 ? 0 : (notesPage - 1) * notesLimit + 1;
-  const notesEnd = Math.min(notesPage * notesLimit, notesTotal);
 
   return (
     <Layout>
-      <div className="edura-card p-4 mb-4">
-        <h1 className="edura-section-title mb-2">Explore</h1>
-        <p className="edura-section-subtitle mb-0">Search public files and user profiles.</p>
-      </div>
-
-      <div className="mb-4 search-bar-wrap">
-        <label htmlFor="explore-search" className="form-label visually-hidden">
-          Search public files and profiles
-        </label>
-        <form className="search-bar input-group" style={{ maxWidth: 400 }} onSubmit={handleSearchSubmit}>
-          <input
-            id="explore-search"
-            type="search"
-            className="form-control edura-form search-bar-input"
-            placeholder="Search public files and profiles..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            aria-label="Search public files and profiles"
-          />
-          <button type="submit" className="btn btn-edura search-bar-btn" aria-label="Search">
-            Search
-          </button>
-        </form>
-      </div>
-
-      {!searched ? (
-        <div className="edura-card p-5 text-center text-muted">
-          <p className="mb-0">Enter a search term and click Search to find public files and user profiles.</p>
+      <section className="explore-hero-wrap explore-hero text-center mb-5">
+        <div className="explore-hero-inner">
+          <h1 className="explore-hero-title">
+            Secure document management <br className="d-none d-sm-block" /> for <span className="explore-hero-highlight">modern learning</span>
+          </h1>
+          <p className="explore-hero-subtitle">
+            Edura Notes is the secure platform for students and professionals to store, share, and discover knowledge. Organize your academic life today.
+          </p>
         </div>
-      ) : (
-        <>
-          <section className="mb-5">
-            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-              <h2 className="h5 mb-0">Profiles</h2>
-              <div className="d-flex align-items-center gap-2">
-                <label htmlFor="explore-users-per-page" className="form-label small mb-0 text-nowrap">
-                  Per page
-                </label>
-                <select
-                  id="explore-users-per-page"
-                  className="form-select form-select-sm"
-                  style={{ width: 'auto' }}
-                  value={usersLimit}
-                  onChange={(e) => {
-                    setUsersLimit(Number(e.target.value));
-                    setUsersPage(1);
-                  }}
-                  aria-label="Profiles per page"
-                >
-                  {EXPLORE_PAGE_SIZES.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            {loadingUsers ? (
-              <div className="text-center py-4">
-                <div className="spinner-border text-primary spinner-border-sm" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-              </div>
-            ) : users.length === 0 ? (
-              <div className="edura-card p-4 text-center text-muted">
-                <p className="mb-0">No profiles match your search.</p>
-              </div>
-            ) : (
-              <>
-                <div className="row g-3">
-                  {users.map((u) => (
-                    <div key={u._id} className="col-md-6 col-lg-4">
-                      <div className="edura-card p-3 h-100 d-flex align-items-center justify-content-between">
-                        <span className="fw-medium">{u.name}</span>
-                        <Link to={`/profile/${u._id}`} className="btn btn-sm btn-outline-primary">
-                          View profile
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {usersTotal > 0 && (
-                  <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
-                    <p className="small text-muted mb-0">
-                      Showing {usersStart}–{usersEnd} of {usersTotal} profile{usersTotal !== 1 ? 's' : ''}
-                    </p>
-                    <nav aria-label="Profiles pagination" className="d-flex align-items-center gap-1">
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-primary"
-                        disabled={usersPage <= 1}
-                        onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
-                        aria-label="Previous page"
-                      >
-                        Previous
-                      </button>
-                      <span className="px-2 small">
-                        Page {usersPage} of {usersTotalPages}
-                      </span>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-primary"
-                        disabled={usersPage >= usersTotalPages}
-                        onClick={() => setUsersPage((p) => Math.min(usersTotalPages, p + 1))}
-                        aria-label="Next page"
-                      >
-                        Next
-                      </button>
-                    </nav>
-                  </div>
-                )}
-              </>
-            )}
-          </section>
+      </section>
 
-          <section>
-            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-              <h2 className="h5 mb-0">Public files</h2>
-              <div className="d-flex align-items-center gap-2">
-                <label htmlFor="explore-notes-per-page" className="form-label small mb-0 text-nowrap">
-                  Per page
-                </label>
-                <select
-                  id="explore-notes-per-page"
-                  className="form-select form-select-sm"
-                  style={{ width: 'auto' }}
-                  value={notesLimit}
-                  onChange={(e) => {
-                    setNotesLimit(Number(e.target.value));
-                    setNotesPage(1);
-                  }}
-                  aria-label="Files per page"
-                >
-                  {EXPLORE_PAGE_SIZES.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </div>
+      <section className="explore-public-notes mb-4">
+        <h2 className="explore-section-title text-center">Explore Public Notes</h2>
+        <p className="explore-section-desc text-center">
+          Discover study materials, lecture notes, and resources shared by the Edura community.
+        </p>
+        <div className="explore-search-wrap">
+          <label htmlFor="explore-search" className="form-label visually-hidden">
+            Search for notes, topics, or profiles
+          </label>
+          <form className="explore-search-bar" onSubmit={handleSearchSubmit}>
+            <span className="explore-search-icon" aria-hidden>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+              </svg>
+            </span>
+            <input
+              id="explore-search"
+              type="search"
+              className="explore-search-input"
+              placeholder="Search for notes, topics, or profiles..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              aria-label="Search for notes, topics, or profiles"
+            />
+            <select
+              className="explore-search-filter form-select form-select-sm"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              aria-label="Filter by type"
+            >
+              <option value="all">All</option>
+              <option value="profiles">Profiles</option>
+              <option value="notes">Notes</option>
+            </select>
+          </form>
+        </div>
+      </section>
+
+      {(searchFilter === 'all' || searchFilter === 'profiles') && (
+        <section className="explore-contributors mb-5">
+          <div className="explore-section-header">
+            <div>
+              <h2 className="explore-section-title d-flex align-items-center gap-2">
+                <span className="explore-section-icon" aria-hidden>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+                  </svg>
+                </span>
+                Top Contributors
+              </h2>
+              <p className="explore-section-desc mb-0">Active students and professionals sharing quality content.</p>
             </div>
-            {loadingNotes ? (
-              <div className="text-center py-4">
-                <div className="spinner-border text-primary spinner-border-sm" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-              </div>
-            ) : notes.length === 0 ? (
-              <div className="edura-card p-4 text-center text-muted">
-                <p className="mb-0">No public files match your search.</p>
-              </div>
-            ) : (
-              <>
-                <div className="row g-3">
-                  {notes.map((note) => (
-                    <div key={note._id} className="col-md-6 col-lg-4">
-                      <div className="edura-card p-3 h-100">
-                        <h6 className="card-title mb-1 text-truncate">{note.title}</h6>
-                        {note.userId?.name && (
-                          <p className="card-text small mb-2 text-muted">
-                            Uploaded by{' '}
-                            <Link to={`/profile/${note.userId._id}`}>{note.userId.name}</Link>
-                          </p>
+            <div className="d-flex align-items-center gap-2">
+              <label htmlFor="explore-users-per-page" className="form-label small mb-0 text-nowrap">Show:</label>
+              <select
+                id="explore-users-per-page"
+                className="form-select form-select-sm explore-select-sm"
+                value={usersLimit}
+                onChange={(e) => { setUsersLimit(Number(e.target.value)); setUsersPage(1); }}
+                aria-label="Contributors per page"
+              >
+                {EXPLORE_PAGE_SIZES.map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {loadingUsers ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div>
+            </div>
+          ) : users.length === 0 ? (
+            <div className="edura-card p-4 text-center text-muted">
+              <p className="mb-0">No profiles match your search.</p>
+            </div>
+          ) : (
+            <>
+              <div className="explore-cards-row row g-3">
+                {users.map((u) => (
+                  <div key={u._id} className="col-6 col-md-4 col-lg-3">
+                    <div className="edura-card explore-contributor-card p-3 h-100">
+                      <div className="explore-avatar-wrap">
+                        {u.picture ? (
+                          <img src={u.picture} alt="" className="explore-avatar-img rounded-circle" width={80} height={80} />
+                        ) : (
+                          <span className="explore-avatar-initials explore-avatar-initials-lg rounded-circle">{getInitials(u.name)}</span>
                         )}
+                      </div>
+                      <h3 className="explore-card-name mb-1">{u.name}</h3>
+                      <Link to={`/profile/${u._id}`} className="btn btn-sm explore-btn-view-profile mt-2 w-100">
+                        View Profile
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {usersTotal > 0 && usersTotalPages > 1 && (
+                <nav className="explore-pagination mt-5" aria-label="Contributors pagination">
+                  <button type="button" className="explore-pagination-prev" disabled={usersPage <= 1} onClick={() => setUsersPage((p) => Math.max(1, p - 1))} aria-label="Previous page">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" /></svg>
+                  </button>
+                  <div className="explore-pagination-numbers">
+                    {Array.from({ length: usersTotalPages }, (_, i) => i + 1).map((n) => (
+                      <button key={n} type="button" className={`explore-pagination-num ${usersPage === n ? 'explore-pagination-num-active' : ''}`} onClick={() => setUsersPage(n)} aria-label={`Page ${n}`}>{n}</button>
+                    ))}
+                  </div>
+                  <button type="button" className="explore-pagination-next" disabled={usersPage >= usersTotalPages} onClick={() => setUsersPage((p) => Math.min(usersTotalPages, p + 1))} aria-label="Next page">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" /></svg>
+                  </button>
+                </nav>
+              )}
+            </>
+          )}
+        </section>
+      )}
+      {searchFilter === 'all' && <hr className="explore-section-divider" />}
+      {(searchFilter === 'all' || searchFilter === 'notes') && (
+        <section className="explore-files">
+          <div className="explore-section-header">
+            <div>
+              <h2 className="explore-section-title d-flex align-items-center gap-2">
+                <span className="explore-section-icon" aria-hidden>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                  </svg>
+                </span>
+                Public Files
+              </h2>
+              <p className="explore-section-desc mb-0">Recent uploads from the community.</p>
+            </div>
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+              <label htmlFor="explore-notes-sort" className="form-label small mb-0 text-nowrap">Sort by:</label>
+              <select id="explore-notes-sort" className="form-select form-select-sm explore-select-sm" aria-label="Sort order">
+                <option>Newest First</option>
+              </select>
+              <label htmlFor="explore-notes-per-page" className="form-label small mb-0 text-nowrap">Show:</label>
+              <select
+                id="explore-notes-per-page"
+                className="form-select form-select-sm explore-select-sm"
+                value={notesLimit}
+                onChange={(e) => { setNotesLimit(Number(e.target.value)); setNotesPage(1); }}
+                aria-label="Files per page"
+              >
+                {EXPLORE_PAGE_SIZES.map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {loadingNotes ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div>
+            </div>
+          ) : notes.length === 0 ? (
+            <div className="edura-card p-4 text-center text-muted">
+              <p className="mb-0">No public files match your search.</p>
+            </div>
+          ) : (
+            <>
+              <div className="explore-cards-row row g-3">
+                {notes.map((note) => (
+                  <div key={note._id} className="col-6 col-md-4 col-lg-3">
+                    <div className="edura-card explore-file-card h-100 d-flex flex-column overflow-hidden">
+                      <div className="explore-file-card-icon-strip">
+                        {isPdf(note.mimeType, note.originalName) ? (
+                          <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="explore-file-strip-icon">
+                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-3 11H8v-2h3v2zm0-4H8v-2h3v2zm0-4H8V7h3v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z" />
+                          </svg>
+                        ) : (
+                          <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="explore-file-strip-icon">
+                            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="explore-file-card-body p-3 flex-grow-1 d-flex flex-column">
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                          <span className="explore-badge-public">PUBLIC</span>
+                          <span className="explore-file-time small text-muted">{relativeTime(note.updatedAt || note.createdAt)}</span>
+                        </div>
+                        <h3 className="explore-file-title mb-1">{note.title}</h3>
                         {note.description?.trim() && (
-                          <p className="card-text small mb-2 text-muted" title={note.description}>
+                          <p className="explore-file-desc small text-muted mb-3 flex-grow-1" title={note.description}>
                             {note.description.length > 80 ? note.description.slice(0, 80) + '…' : note.description}
                           </p>
                         )}
-                        <div className="d-flex gap-2 flex-wrap">
-                          <Link to={`/view/note/${note._id}`} className="btn btn-sm btn-outline-primary">
-                            View
+                        <div className="explore-file-card-footer mt-auto pt-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
+                          <div className="d-flex align-items-center gap-2 min-w-0">
+                            {note.userId?.picture ? (
+                              <img src={note.userId.picture} alt="" className="explore-avatar-img rounded-circle flex-shrink-0" width={24} height={24} />
+                            ) : (
+                              <span className="explore-avatar-initials explore-avatar-initials-sm rounded-circle flex-shrink-0">{getInitials(note.userId?.name)}</span>
+                            )}
+                            <span className="small text-muted text-truncate explore-file-author-name">{note.userId?.name || 'Unknown'}</span>
+                          </div>
+                          <Link to={`/view/note/${note._id}`} className="explore-file-view-link small d-inline-flex align-items-center gap-1 flex-shrink-0">
+                            View <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" /></svg>
                           </Link>
-                          {note.userId?._id && (
-                            <Link to={`/profile/${note.userId._id}`} className="btn btn-sm btn-outline-secondary">
-                              Profile
-                            </Link>
-                          )}
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-                {notesTotal > 0 && (
-                  <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
-                    <p className="small text-muted mb-0">
-                      Showing {notesStart}–{notesEnd} of {notesTotal} file{notesTotal !== 1 ? 's' : ''}
-                    </p>
-                    <nav aria-label="Files pagination" className="d-flex align-items-center gap-1">
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-primary"
-                        disabled={notesPage <= 1}
-                        onClick={() => setNotesPage((p) => Math.max(1, p - 1))}
-                        aria-label="Previous page"
-                      >
-                        Previous
-                      </button>
-                      <span className="px-2 small">
-                        Page {notesPage} of {notesTotalPages}
-                      </span>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-primary"
-                        disabled={notesPage >= notesTotalPages}
-                        onClick={() => setNotesPage((p) => Math.min(notesTotalPages, p + 1))}
-                        aria-label="Next page"
-                      >
-                        Next
-                      </button>
-                    </nav>
                   </div>
-                )}
-              </>
-            )}
-          </section>
-        </>
+                ))}
+              </div>
+              {notesTotal > 0 && notesTotalPages > 1 && (
+                <nav className="explore-pagination mt-5 mb-4" aria-label="Files pagination">
+                  <button type="button" className="explore-pagination-prev" disabled={notesPage <= 1} onClick={() => setNotesPage((p) => Math.max(1, p - 1))} aria-label="Previous page">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" /></svg>
+                  </button>
+                  <div className="explore-pagination-numbers">
+                    {Array.from({ length: Math.min(notesTotalPages, 10) }, (_, i) => i + 1).map((n) => (
+                      <button key={n} type="button" className={`explore-pagination-num ${notesPage === n ? 'explore-pagination-num-active' : ''}`} onClick={() => setNotesPage(n)} aria-label={`Page ${n}`}>{n}</button>
+                    ))}
+                  </div>
+                  <button type="button" className="explore-pagination-next" disabled={notesPage >= notesTotalPages} onClick={() => setNotesPage((p) => Math.min(notesTotalPages, p + 1))} aria-label="Next page">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" /></svg>
+                  </button>
+                </nav>
+              )}
+            </>
+          )}
+        </section>
       )}
     </Layout>
   );
