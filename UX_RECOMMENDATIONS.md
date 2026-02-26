@@ -1,299 +1,84 @@
-# UX Recommendations – Edura Notes
+# Edura Notes: UI/UX Modernization Recommendations
 
-This document lists **changes and logic improvements** that can improve user experience and smoothen the flow of the project. Recommendations are organised by **cross-cutting themes** and **by page**, so the team can prioritise and implement incrementally.
-
-**How to use:** Pick recommendations by page or by theme. Implement in any order unless a dependency is noted (e.g. a global toast system enables success messages on multiple pages).
-
-**Status:** Items marked *“(already in place)”* in the document reflect current behaviour. The rest are proposed improvements.
+This document outlines a comprehensive set of UI/UX upgrades for the Edura Notes platform. The goal is to modernize the look and feel to align with current design trends (e.g., glassmorphism, soft shadows, micro-interactions, refined typography) **without altering the underlying React logic, component structure, or backend flow**.
 
 ---
 
-## Table of contents
+## 1. Global Design System Upgrades
 
-1. [Cross-cutting recommendations](#1-cross-cutting-recommendations)
-2. [Recommendations by page](#2-recommendations-by-page)
-3. [Shared components](#3-shared-components)
-4. [Implementation priority](#4-implementation-priority)
-5. [Reference: key file paths](#5-reference-key-file-paths)
+### Typography
+- **Current State:** Uses standard `Inter` or system fonts.
+- **Recommendation:** Keep `Inter` for body text but introduce a more distinct geometric sans-serif font for headings (like **Plus Jakarta Sans** or **Outfit**). This creates a striking contrast and a premium feel.
+- **Text Hierarchy:** Increase the contrast between primary text, secondary text, and muted text. Make muted text slightly more legible.
 
----
+### Color Palette & Theming
+- **Current State:** A standard blue (`#2563eb`) primary color with gray backgrounds.
+- **Recommendation:** 
+  - Switch to a **vibrant, tailored HSL color palette**. Ensure primary buttons have a subtle, smooth gradient (e.g., from `#3b82f6` to `#2563eb`) instead of a flat hex color.
+  - Implement a true **dark mode** switch with deep OLED blacks or sleek navy grays (`#0f172a`), rather than the current standard dark grays.
+  - **Glassmorphism:** Use translucent backgrounds with backdrop-filter blurs for floating elements like the header, dropdowns, and modals.
 
-## 1. Cross-cutting recommendations
-
-### Error handling and feedback
-
-- **Toast / notification system:** Replace or supplement inline alerts with a small toast or notification system (e.g. success after upload, save, delete) so the page is not dominated by alert boxes. Use toasts for transient success and non-blocking errors.
-- **NoteCard delete errors:** In `client/src/components/NoteCard.jsx`, delete and visibility-toggle errors are currently swallowed in `catch` with no user feedback. Surface errors via a toast or inline message and keep the list in sync (e.g. do not call `onDeleted` on failure).
-
-### Confirmations
-
-- **Replace `window.confirm`:** Use in-app modals for destructive actions instead of `window.confirm` in:
-  - `client/src/components/NoteCard.jsx` (delete note)
-  - `client/src/pages/EditNote.jsx` (delete note)
-  Align with the pattern used in `client/src/pages/admin/AdminUserDetail.jsx` (delete user / delete notes modals) for better accessibility and layout control.
-
-### Loading and empty states
-
-- **Skeleton loaders:** Consider skeleton loaders on Homepage, Manage, Explore, and Admin list pages instead of (or in addition to) a single spinner, so layout and content type are visible sooner.
-- **Empty states:** Standardise copy and primary CTA across pages (e.g. “Upload your first note” on Manage; “No results” with “Clear filters” or “Go to Explore” where relevant).
-
-### Navigation and wayfinding
-
-- **Breadcrumbs:** Add optional breadcrumbs on EditNote (Manage > Edit note), PublicProfile (Explore > [Name]), and AdminUserDetail (Admin > Users > [User name]) so users know where they are and can jump back one level.
-- **Back behaviour:** Unify “Back” / “Close” behaviour. FullScreenPdfView “Close” could return to the previous route (from Home vs Manage) when the user opened the viewer from a list; PublicNoteView “Back” already goes to profile—document and keep consistent.
-
-### Search and filters
-
-- **Consistency:** Search applies on button click and Enter on Homepage, Manage, Explore, and AdminUsers. Either document “apply on submit” as the standard and keep placeholder/labels consistent, or add optional “search as you type” with debounce for list-heavy pages.
-- **Clear search:** Where there is a search input, consider a “Clear search” control when the input is non-empty to reset filters in one click.
-- **Explore:** Search bar is modernised (pill-style, icon, filter dropdown, Search button); logic unchanged (submit applies search, resets to page 1).
-
-### Forms and unsaved changes
-
-- **EditNote and long forms:** Add a warning when the user tries to leave (route change or refresh) with unsaved changes, e.g. `beforeunload` plus React Router `useBlocker` or prompt.
-
-### Accessibility
-
-- **Focus management:** After closing modals (e.g. Admin delete modals), move focus back to the trigger or a safe region; after form submit (e.g. EditNote Save), ensure focus is not lost.
-- **Destructive actions:** Ensure all destructive actions have clear `aria-label`s and, where applicable, confirmation text that is read by screen readers.
-
-### Mobile and responsiveness
-
-- **Admin tables:** Review AdminUsers and AdminUserDetail files table on small screens—use horizontal scroll or a card layout so content is not clipped.
-- **Sidebar and filters:** Ensure the folder sidebar (Homepage, Manage) and the filter bar (Explore) collapse or stack cleanly on narrow viewports.
+### Shadows & Border Radii
+- **Current State:** Standard boxy cards with small (`8px`) border radii and basic `box-shadow`.
+- **Recommendation:** 
+  - Increase border-radius to `16px` for cards and `12px` for buttons. 
+  - Use soft, layered, and tinted shadows (e.g., `0 10px 25px -5px rgba(37, 99, 235, 0.1)`) instead of hard black shadows.
 
 ---
 
-## 2. Recommendations by page
+## 2. Component-Level Upgrades
 
-### SignIn  
-**File:** `client/src/pages/SignIn.jsx`
+### Navigation & Header (`Layout.jsx`)
+- **Upgrade to a "Floating" Glass Header:** Make the navbar sticky at the top with a translucent background (`backdrop-filter: blur(12px)`). Add a subtle bottom border that only appears when scrolled.
+- **Active States:** Instead of a simple background color change on nav links, use a smooth sliding underline animation or a pill-shaped background that animates on hover.
+- **Avatar Menu:** Replace the standard dropdown with a modern floating popover card with icons for each menu item (Profile, Settings, Logout).
 
-**Current behaviour:** Sign-in and sign-up tabs (email/password) plus optional Google; errors shown inline; redirect to `from` or `/home` after success.
+### Note Cards (`NoteCard.jsx`)
+- **Hover Micro-interactions:** When hovering over a note card, smoothly elevate it (translateY by `-4px`) and increase the shadow depth.
+- **Thumbnail Placeholders:** Instead of relying just on standard SVG icons for PDFs/Images, generate a soft gradient placeholder background representing the file type.
+- **Action Buttons:** Move action buttons (Edit, Delete, View) into a sleek, hidden overlay that appears on hover, or use clean icon-only buttons with tooltips to reduce visual clutter on the card surface.
+- **Badges:** Make the "Public/Private" and "Folder Name" badges pill-shaped with soft, translucent background colors matching their category.
 
-**Recommendations:**
-
-- Show password rules (e.g. “At least 6 characters”) before or alongside the sign-up form so users see requirements before submitting.
-- Optional “Remember me” or session-length hint so users understand how long they stay signed in.
-- Clear the error message when switching between sign-in and sign-up tabs to avoid showing a stale error.
-- Ensure redirect `from` is preserved when the token expires and the user re-authenticates (already stored in location state; verify after session expiry).
-
----
-
-### Homepage  
-**File:** `client/src/pages/Homepage.jsx`
-
-**Current behaviour:** Folder sidebar (read-only), search (button + Enter), sort, view mode (grid/list), pagination; notes grouped by folder; empty state with “Go to Manage”.
-
-**Recommendations:**
-
-- Persist view mode and sort (e.g. in `localStorage`) so they survive refresh and feel consistent across visits.
-- Add a “Clear search” control when `searchInput` is non-empty to reset the query in one click.
-- Empty state CTA “Go to Manage” is present; ensure the link is clear and, if desired, that navigating from Home to Manage scrolls or focuses the upload area when the list is empty.
+### Folders Sidebar (`FolderList.jsx`)
+- **Active Folder Indicator:** Use a pill-shaped highlight for the selected folder with an accent color left-border bar that smoothly animated.
+- **Indentation:** Use subtle vertical dashed lines to connect child tree folders to their parents, making the hierarchy visually distinct and easy to follow.
 
 ---
 
-### Manage  
-**File:** `client/src/pages/Manage.jsx`
+## 3. Page-Specific Upgrades
 
-**Current behaviour:** Upload form (dropzone, title, folder, description, visibility), folder sidebar (editable), notes list with View/Edit/Delete, search, sort, view mode, pagination, storage bar.
+### Auth Pages (`SignIn.jsx` / `AdminLogin.jsx`)
+- **Split Screen Layout:** Instead of a centered card on a gray background, use a modern split-screen layout. The left side handles the auth form, and the right side features a vibrant gradient, an abstract 3D illustration, or a stylized platform preview.
+- **Floating Labels:** Upgrade standard input fields to use floating labels (Material Design style) with smooth focus animations and focus rings.
+- **Google Auth Button:** Restyle the Google Sign-In wrapper to match the modern pill-shape standard. 
 
-**Recommendations:**
+### Explore Page (`Explore.jsx`)
+- **Hero Section:** Make the hero section much more dynamic. Add a subtle animated mesh gradient background. Increase the title size tracking, making it a bold statement piece.
+- **Search Bar:** Transform the search bar into a large, prominent "Omnibar" in the center of the hero section with a soft shadow and a trailing submit button. Add a subtle pulsating glow around the search bar when focused.
+- **Contributor Cards:** Display top profiles in a horizontal, auto-scrolling carousel rather than a static grid if space is tight. Enhance the avatar circles with an overlapping border effect.
 
-- After successful upload, show brief success feedback (toast or inline message) and optionally scroll to the new note or keep the upload form visible with an “Add another” emphasis.
-- When at storage limit, disable the upload control and make the limit message more prominent (e.g. alert or banner).
-- Optionally align search bar styling with Explore for visual consistency across the app.
+### Dashboard & Manage (`Homepage.jsx` / `Manage.jsx`)
+- **Empty States:** Replace text-heavy empty states with beautifully crafted, flat illustrations or 3D icons (e.g., a "ghost town" folder or a floating document graphic) to encourage interaction.
+- **Drag & Drop Zone (Manage.jsx):** 
+  - Make the upload dropzone highly interactive. When dragging a file over, add a pulsating border and a slight scale-up animation (`transform: scale(1.02)`).
+  - Add an icon animation (e.g., an arrow jumping into a cloud) inside the dropzone.
+- **Storage Progress Bar:** Change the flat progress bar to a rounded, segmented, or gradient-filled progress bar that animates from 0% on page load. 
+- **View Mode Toggle:** Upgrade the List/Grid view toggle to a segmented control (like iOS segmented buttons) with a sliding pill background behind the active state.
 
----
-
-### Explore  
-**File:** `client/src/pages/Explore.jsx`
-
-**Current behaviour:** Hero; modernised pill-style search bar with filter (All / Profiles / Notes) and Search button *(already in place)*; Top Contributors and Public Files sections with pagination; Public Files sort by **Name**, **Size**, or **Newest first** *(already in place)*; search applies on submit and Enter.
-
-**Recommendations:**
-
-- Empty states for “No profiles” / “No files” could add “Try different filters” or “Clear search” to help users recover.
-- Persist filter (All/Profiles/Notes) and sort in URL query params so sharing or refreshing keeps the same view and deep-linking works.
-
----
-
-### EditNote  
-**File:** `client/src/pages/EditNote.jsx`
-
-**Current behaviour:** Form to edit title, description, folder, visibility, optional file replace; Save / Cancel / Delete note; delete uses `window.confirm`.
-
-**Recommendations:**
-
-- Replace `window.confirm` for delete with an in-app confirmation modal (aligned with Admin delete modals).
-- Add unsaved-changes warning on route change or refresh (e.g. `beforeunload` + React Router blocker).
-- Add breadcrumb “Manage > Edit note” at the top for wayfinding.
-- When replacing the file, show selected file name/size/type so the user knows what will be uploaded before saving.
+### Document Viewers (`FullScreenPdfView.jsx`, `SecureNoteViewer.jsx`)
+- **Distraction-Free Mode:** Ensure the viewer has an automatic "theater mode" that fades out the surrounding UI (header, sidebars) when the user stops moving their mouse for 3 seconds.
+- **Toolbar:** Transform the PDF viewer toolbar into a floating pill at the bottom center of the screen, containing zoom and page navigation, keeping the document itself front and center.
 
 ---
 
-### ViewNote  
-**File:** `client/src/pages/ViewNote.jsx`
+## 4. Modern Polish & Animations
 
-**Current behaviour:** Redirects to `/notes/:id/view` (FullScreenPdfView). No user-facing logic on this route.
+- **Page Transitions:** Add `framer-motion` (or simple CSS keyframes) to gently fade and slide in page contents when navigating between routes.
+- **Skeleton Loaders:** Replace the spinning Bootstrap loaders (`spinner-border`) with sleek skeleton box loaders that match the exact shape of NoteCards and User profiles during API fetches.
+- **Toast Notifications:** Update the toast context design to use floating, bottom-right "snackbars" with a blur effect and a swift slide-in animation, dropping the standard alert boxes.
 
-**Recommendations:**
-
-- No logic change required. This route exists only to redirect to the viewer so links to `/notes/:id` still work.
-
----
-
-### FullScreenPdfView  
-**File:** `client/src/pages/FullScreenPdfView.jsx`
-
-**Current behaviour:** Loads note by id, shows SecureNoteViewer with zoom; “Close” links to `/home`; loading and error states shown.
-
-**Recommendations:**
-
-- “Close” / “Back” could use `useLocation().state?.from` or the referring route so the user returns to Home or Manage depending on where they opened the viewer.
-- Add keyboard shortcut (e.g. Escape) to close the viewer for faster navigation.
-
----
-
-### PublicProfile  
-**File:** `client/src/pages/PublicProfile.jsx`
-
-**Current behaviour:** Fetches public profile by `userId`; shows user info, folders, and public notes with search, sort, view mode; error state has “Home” link to `/`.
-
-**Recommendations:**
-
-- The error “Home” link goes to `/` (which redirects to Explore). Consider labelling it “Back to Explore” or linking directly to `/explore` for clarity.
-- Add an empty state when the user has no public notes (friendly message and link to Explore or home).
-
----
-
-### PublicNoteView  
-**File:** `client/src/pages/PublicNoteView.jsx`
-
-**Current behaviour:** Full-screen public note viewer with zoom; “Back to profile” links to the profile or `/`; no auth required.
-
-**Recommendations:**
-
-- Align with FullScreenPdfView: add Escape key to close or go back.
-- Keep “Back to profile” label consistent; already good for context.
-
----
-
-### AdminLogin  
-**File:** `client/src/pages/AdminLogin.jsx`
-
-**Current behaviour:** Google Sign-In only; error shown if not admin; redirects to `/admin` on success.
-
-**Recommendations:**
-
-- Add a link “Back to main site” or “Sign in as user” to `/signin` or `/explore` so admins can return without needing to know the URL.
-- Optional short hint that only Google accounts with admin access are accepted.
-
----
-
-### AdminDashboard  
-**File:** `client/src/pages/admin/AdminDashboard.jsx`
-
-**Current behaviour:** Fetches stats (total users, notes, storage); shows three cards and “View all users” link; loading and error states.
-
-**Recommendations:**
-
-- On error, add a “Retry” button so the user can re-fetch without refreshing the page.
-- Optional quick links (e.g. last 5 users, recent notes) for faster navigation into Admin Users or user detail.
-
----
-
-### AdminUsers  
-**File:** `client/src/pages/admin/AdminUsers.jsx`
-
-**Current behaviour:** User list with search (button), per-page selector, pagination, table with “View files” link.
-
-**Recommendations:**
-
-- Trigger search on Enter as well as button click for consistency with other search bars.
-- Improve table responsiveness on small screens (horizontal scroll or card layout)—see cross-cutting.
-- Add empty state when no users match the search (message + optional “Clear search”).
-
----
-
-### AdminUserDetail  
-**File:** `client/src/pages/admin/AdminUserDetail.jsx`
-
-**Current behaviour:** User detail with storage limit, profile/note listing toggles, notes table with select/delete, modals for delete user and delete selected notes.
-
-**Recommendations:**
-
-- Add breadcrumb “Users > [User name]” at the top.
-- After bulk delete of notes, refetch user data (or at least storage and note count) so “storage used” and note count stay in sync.
-- Ensure focus returns to the trigger or a safe element after closing delete modals (accessibility).
-
----
-
-### AdminNoteView  
-**File:** `client/src/pages/admin/AdminNoteView.jsx`
-
-**Current behaviour:** Full-screen note viewer with “List on Explore” toggle; “Back to user” link; loading and error states.
-
-**Recommendations:**
-
-- “Back to user” link is clear; keep as is.
-- Optional Escape key to close or go back.
-- “List on Explore” toggle errors are shown inline; if a global toast is added, use it here for consistency.
-
----
-
-## 3. Shared components
-
-### Layout  
-**File:** `client/src/components/Layout.jsx`
-
-- Ensure nav order is consistent (e.g. Home, Manage, Explore, Public profile) and that “Public profile” and auth links are visible.
-- Footer could explicitly include “Explore” and “Sign In” where relevant for guests.
-
-### NoteCard  
-**File:** `client/src/components/NoteCard.jsx`
-
-- Use an in-app confirmation modal for delete instead of `window.confirm`.
-- Show delete and visibility-toggle errors (toast or inline) instead of failing silently.
-
-### FolderList / FolderTreeSelect  
-**Files:** `client/src/components/FolderList.jsx`, `client/src/components/FolderTreeSelect.jsx`
-
-- Optional keyboard navigation (arrow keys, Enter to select) for power users.
-- Ensure expanded/collapsed state is clear for screen readers (e.g. `aria-expanded`).
-
-### ProtectedRoute / AdminRoute  
-**Files:** `client/src/components/ProtectedRoute.jsx`, `client/src/components/AdminRoute.jsx`
-
-- Loading spinner is consistent. Unauthenticated users are sent to `/` (then `/explore`); non-admin users hitting admin routes go to `/admin/login`. Use this when choosing “Back” / “Home” links across the app.
-
----
-
-## 4. Implementation priority
-
-Suggested order for implementing recommendations (optional):
-
-| Priority | Area | Notes |
-|----------|------|--------|
-| 1 | Error feedback and confirmations | Toast system + modal confirmations + NoteCard error surfacing. Unblocks success messages and consistent delete UX. |
-| 2 | Breadcrumbs and back links | EditNote, PublicProfile, AdminUserDetail; FullScreenPdfView “Close” to previous route. Improves wayfinding. |
-| 3 | Unsaved changes and form UX | EditNote (and other long forms) prompt on leave. Reduces accidental data loss. |
-| 4 | Skeleton loaders and empty states | Homepage, Manage, Explore, Admin lists; standardise empty copy and CTAs. Improves perceived performance and guidance. |
-| 5 | URL state for Explore | Persist filter and sort in query params. Enables sharing and refresh without losing view. |
-| 6 | Accessibility and keyboard | Focus management after modals and submit; Escape to close viewers; aria-labels and keyboard nav for FolderList. |
-
----
-
-## 5. Reference: key file paths
-
-| Area | Path |
-|------|------|
-| Pages | `client/src/pages/*.jsx`, `client/src/pages/admin/*.jsx` |
-| Layout, auth | `client/src/components/Layout.jsx`, `ProtectedRoute.jsx`, `AdminRoute.jsx` |
-| Note list / viewer | `NoteCard.jsx`, `SecureNoteViewer.jsx`, `SecureNoteViewerLazy.jsx` |
-| Folders | `FolderList.jsx`, `FolderTreeSelect.jsx`, `client/src/utils/folderTree.js` |
-| API / auth context | `client/src/api/client.js`, `client/src/context/AuthContext.jsx` |
-
----
-
-*End of UX_RECOMMENDATIONS.md*
+### Implementation Path (No Logic Changes)
+1. **Utility & Theming:** Update `edura.css` root variables to the new HSL/Tailwind-style colors.
+2. **Icons:** Swap out generic SVGs with a unified icon library (e.g., `lucide-react`) for a sharper, consistent weight.
+3. **CSS Classes:** Swap out heavy block styles for utility composition (if Tailwind is adopted) or refine existing `edura-card` and `btn-edura` classes to use the new border radii and shadow properties.
+4. **HTML Structure:** Minimal changes required; mostly wrapping inputs in relative containers for floating labels or adding overlay divs for hover states in `NoteCard.jsx`.

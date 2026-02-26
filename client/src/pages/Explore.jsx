@@ -117,14 +117,18 @@ export default function Explore() {
 
   return (
     <Layout>
-      <section className="explore-hero-wrap explore-hero text-center mb-5">
+      <section className="explore-hero-wrap explore-hero explore-hero-animated text-center mb-5">
         <div className="explore-hero-inner">
           <h1 className="explore-hero-title">
-            Secure document management <br className="d-none d-sm-block" /> for <span className="explore-hero-highlight">modern learning</span>
+            Secure document management <br className="d-none d-sm-block" /> for <span className="explore-hero-highlight explore-hero-highlight-animated">modern learning</span>
           </h1>
           <p className="explore-hero-subtitle">
             Edura Notes is the secure platform for students and professionals to store, share, and discover knowledge. Organize your academic life today.
           </p>
+          <div className="explore-scroll-hint" aria-hidden>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+            Scroll to explore
+          </div>
         </div>
       </section>
 
@@ -203,8 +207,16 @@ export default function Explore() {
             </div>
           </div>
           {loadingUsers ? (
-            <div className="text-center py-5">
-              <div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div>
+            <div className="row g-3">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="col-6 col-md-4 col-lg-3">
+                  <div className="edura-card p-3 h-100 text-center">
+                    <div className="edura-skeleton edura-skeleton-circle mx-auto mb-3" style={{ width: 80, height: 80 }} />
+                    <div className="edura-skeleton edura-skeleton-text mx-auto" style={{ width: '60%' }} />
+                    <div className="edura-skeleton edura-skeleton-text-sm mx-auto mt-2" style={{ width: '80%' }} />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : users.length === 0 ? (
             <div className="edura-card p-4 text-center text-muted">
@@ -225,16 +237,18 @@ export default function Explore() {
               <div className="explore-cards-row row g-3">
                 {users.map((u) => (
                   <div key={u._id} className="col-6 col-md-4 col-lg-3">
-                    <div className="edura-card explore-contributor-card p-3 h-100">
+                    <div className="edura-card explore-contributor-card p-3 h-100 text-center">
                       <div className="explore-avatar-wrap">
-                        {u.picture ? (
-                          <img src={u.picture} alt="" className="explore-avatar-img rounded-circle" width={80} height={80} />
-                        ) : (
-                          <span className="explore-avatar-initials explore-avatar-initials-lg rounded-circle">{getInitials(u.name)}</span>
-                        )}
+                        <div className="explore-avatar-gradient-ring d-inline-block">
+                          {u.picture ? (
+                            <img src={u.picture} alt="" className="explore-avatar-img rounded-circle" width={74} height={74} />
+                          ) : (
+                            <span className="explore-avatar-initials explore-avatar-initials-lg rounded-circle">{getInitials(u.name)}</span>
+                          )}
+                        </div>
                       </div>
                       <h3 className="explore-card-name mb-1">{u.name}</h3>
-                      <Link to={`/profile/${u._id}`} className="btn btn-sm explore-btn-view-profile mt-2 w-100">
+                      <Link to={`/profile/${u._id}`} className="btn btn-sm explore-btn-view-profile mt-2 w-100" style={{ borderRadius: '9999px' }}>
                         View Profile
                       </Link>
                     </div>
@@ -303,8 +317,18 @@ export default function Explore() {
             </div>
           </div>
           {loadingNotes ? (
-            <div className="text-center py-5">
-              <div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div>
+            <div className="row g-3">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="col-6 col-md-4 col-lg-3">
+                  <div className="edura-card overflow-hidden" style={{ padding: 0 }}>
+                    <div className="edura-skeleton" style={{ height: 128 }} />
+                    <div className="p-3">
+                      <div className="edura-skeleton edura-skeleton-text" />
+                      <div className="edura-skeleton edura-skeleton-text-sm" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : notes.length === 0 ? (
             <div className="edura-card p-4 text-center text-muted">
@@ -325,21 +349,24 @@ export default function Explore() {
               <div className="explore-cards-row row g-3">
                 {notes.map((note) => (
                   <div key={note._id} className="col-6 col-md-4 col-lg-3">
-                    <div className="edura-card explore-file-card h-100 d-flex flex-column overflow-hidden">
-                      <div className="explore-file-card-icon-strip">
+                    <div className={`edura-card explore-file-card h-100 d-flex flex-column overflow-hidden`} style={{ padding: 0 }}>
+                      <div className={`explore-file-card-icon-strip ${isPdf(note.mimeType, note.originalName) ? 'explore-file-strip-pdf' : 'explore-file-strip-image'}`}>
                         {isPdf(note.mimeType, note.originalName) ? (
-                          <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="explore-file-strip-icon">
+                          <svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="explore-file-strip-icon" style={{ color: '#2563eb', opacity: 0.7 }}>
                             <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-3 11H8v-2h3v2zm0-4H8v-2h3v2zm0-4H8V7h3v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z" />
                           </svg>
                         ) : (
-                          <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="explore-file-strip-icon">
+                          <svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="explore-file-strip-icon" style={{ color: '#059669', opacity: 0.7 }}>
                             <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
                           </svg>
                         )}
                       </div>
                       <div className="explore-file-card-body p-3 flex-grow-1 d-flex flex-column">
                         <div className="d-flex justify-content-between align-items-start mb-2">
-                          <span className="explore-badge-public">PUBLIC</span>
+                          <span className="explore-badge-public">
+                            <span className="explore-badge-public-dot" aria-hidden />
+                            PUBLIC
+                          </span>
                           <span className="explore-file-time small text-muted">{relativeTime(note.updatedAt || note.createdAt)}</span>
                         </div>
                         <h3 className="explore-file-title mb-1">{note.title}</h3>
