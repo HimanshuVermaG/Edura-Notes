@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const communityFileSchema = new mongoose.Schema(
   {
     title: { type: String, default: '', trim: true },
+    description: { type: String, default: '', trim: true },
     originalName: { type: String, default: '' },
     fileName: { type: String, required: true },
     fileUrl: { type: String, default: null },

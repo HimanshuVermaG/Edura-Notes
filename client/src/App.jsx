@@ -17,7 +17,6 @@ import AdminUserDetail from './pages/admin/AdminUserDetail';
 import AdminNoteView from './pages/admin/AdminNoteView';
 import AdminCommunities from './pages/admin/AdminCommunities';
 import AdminCommunitySetup from './pages/admin/AdminCommunitySetup';
-import PublicCommunities from './pages/PublicCommunities';
 import PublicCommunityView from './pages/PublicCommunityView';
 import PublicCommunityFolderView from './pages/PublicCommunityFolderView';
 import PublicCommunityFileView from './pages/PublicCommunityFileView';
@@ -46,7 +45,7 @@ export default function App() {
       </Route>
       <Route path="/profile/:userId" element={<PublicProfile />} />
       <Route path="/view/note/:id" element={<PublicNoteView />} />
-      <Route path="/community" element={<PublicCommunities />} />
+      <Route path="/community" element={<Navigate to="/explore?filter=communities" replace />} />
       <Route path="/community/:id" element={<PublicCommunityView />} />
       <Route path="/community/:id/folder/:folderId" element={<PublicCommunityFolderView />} />
       <Route path="/community/:id/file/:fileId" element={<PublicCommunityFileView />} />

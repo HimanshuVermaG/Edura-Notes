@@ -4665,3 +4665,122 @@ textarea:focus-visible {
   background: rgba(0, 0, 0, 0.3);
   color: rgba(255, 255, 255, 0.8);
 }
+
+/* =============================================
+   COMMUNITY PROFILE TAGS (read-only chips, not buttons)
+   ============================================= */
+.community-profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.community-profile-tag {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8125rem;
+  color: var(--edura-text-muted);
+  background: var(--edura-bg);
+  border: 1px solid var(--edura-border);
+  border-radius: 9999px;
+  cursor: default;
+  user-select: none;
+}
+
+.community-profile-tag:hover {
+  background: var(--edura-bg);
+  border-color: var(--edura-border);
+}
+
+[data-theme="dark"] .community-profile-tag {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--edura-border);
+  color: var(--edura-text-muted);
+}
+
+/* =============================================
+   COMMUNITY CARD (Explore + Public Profile)
+   ============================================= */
+.community-card {
+  background: var(--edura-card-bg);
+  border: 1.5px solid var(--edura-border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.community-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 36px -4px rgba(37, 99, 235, 0.13);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.community-card-cover {
+  height: 112px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(124, 58, 237, 0.06));
+}
+
+.community-card-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.community-card-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--edura-text-muted);
+  opacity: 0.7;
+}
+
+.community-card-body {
+  border-top: 1px solid var(--edura-border);
+}
+
+.community-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--edura-text);
+  font-family: var(--edura-font-display);
+  margin-bottom: 0.25rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.community-card-desc {
+  font-size: 0.8125rem;
+  color: var(--edura-text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.community-card-stats {
+  font-size: 0.8125rem;
+}
+
+[data-theme="dark"] .community-card {
+  border-color: var(--edura-border);
+}
+
+[data-theme="dark"] .community-card:hover {
+  box-shadow: 0 14px 36px -4px rgba(0, 0, 0, 0.35);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+[data-theme="dark"] .community-card-cover {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(124, 58, 237, 0.08));
+}

@@ -6,6 +6,7 @@ import Folder from '../models/Folder.js';
 import Community from '../models/Community.js';
 import CommunityFolder from '../models/CommunityFolder.js';
 import CommunityFile from '../models/CommunityFile.js';
+import CommunityMember from '../models/CommunityMember.js';
 import { getUploadPath } from '../middleware/uploadMiddleware.js';
 
 function getMimeType(note) {
@@ -198,9 +199,10 @@ router.get('/communities/:id', async (req, res) => {
       .populate('createdBy', 'name')
       .lean();
     if (!community) return res.status(404).json({ message: 'Community not found' });
-    const [folders, files] = await Promise.all([
+    const [folders, files, memberCount] = await Promise.all([
       CommunityFolder.find({ communityId: community._id, parentId: null }).sort({ order: 1, createdAt: 1 }).lean(),
       CommunityFile.find({ communityId: community._id }).sort({ createdAt: 1 }).lean(),
+      CommunityMember.countDocuments({ communityId: community._id }),
     ]);
     res.json({
       _id: community._id,
@@ -209,6 +211,7 @@ router.get('/communities/:id', async (req, res) => {
       coverUrl: community.coverUrl || null,
       tags: community.tags || [],
       createdBy: community.createdBy ? { name: community.createdBy.name } : null,
+      memberCount: memberCount ?? 0,
       folders,
       files,
     });
@@ -230,17 +233,53 @@ router.get('/profile/:userId', async (req, res) => {
       return res.status(404).json({ message: 'Profile not found or private' });
     }
 
-    const folders = await Folder.find({ userId }).sort({ order: 1, name: 1 }).lean();
-    const notes = await Note.find({
-      userId,
-      $or: [ { isPublic: true }, { listedOnExplore: true } ],
-    })
-      .populate('userId', 'name')
-      .populate('folderId', 'name')
-      .sort({ updatedAt: -1 })
-      .lean();
+    const [folders, notes, memberships] = await Promise.all([
+      Folder.find({ userId }).sort({ order: 1, name: 1 }).lean(),
+      Note.find({
+        userId,
+        $or: [ { isPublic: true }, { listedOnExplore: true } ],
+      })
+        .populate('userId', 'name')
+        .populate('folderId', 'name')
+        .sort({ updatedAt: -1 })
+        .lean(),
+      CommunityMember.find({ userId })
+        .populate('communityId', 'name _id')
+        .lean(),
+    ]);
+    const membershipOrder = (memberships || [])
+      .filter((m) => m.communityId)
+      .map((m) => m.communityId._id);
+    const communityIds = [...new Set(membershipOrder)];
+    const [communityDocs, fileCounts] = await Promise.all([
+      communityIds.length
+        ? Community.find({ _id: { $in: communityIds } }).select('name description coverUrl').lean()
+        : [],
+      communityIds.length
+        ? CommunityFile.aggregate([
+            { $match: { communityId: { $in: communityIds } } },
+            { $group: { _id: '$communityId', count: { $sum: 1 } } },
+          ])
+        : [],
+    ]);
+    const communityMap = Object.fromEntries(
+      communityDocs.map((c) => [String(c._id), { _id: c._id, name: c.name, description: c.description || '', coverUrl: c.coverUrl || null }])
+    );
+    const countMap = Object.fromEntries((fileCounts || []).map((d) => [String(d._id), d.count]));
+    const joinedCommunities = membershipOrder
+      .map((id) => {
+        const c = communityMap[String(id)];
+        if (!c) return null;
+        return { ...c, fileCount: countMap[String(id)] ?? 0 };
+      })
+      .filter(Boolean);
 
-    res.json({ user: { _id: user._id, name: user.name, picture: user.picture || '' }, folders, notes });
+    res.json({
+      user: { _id: user._id, name: user.name, picture: user.picture || '' },
+      folders,
+      notes,
+      joinedCommunities,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to load profile' });
   }

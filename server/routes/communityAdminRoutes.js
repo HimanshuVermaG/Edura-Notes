@@ -297,8 +297,10 @@ router.post('/:communityId/files', uploadPdf.single('file'), async (req, res) =>
       cloudFolder
     );
     const title = (req.body.title || req.file.originalname || 'Untitled').trim() || 'Untitled';
+    const description = (req.body.description || '').trim() || '';
     const file = await CommunityFile.create({
       title,
+      description,
       originalName: req.file.originalname || '',
       fileName: result.public_id,
       fileUrl: result.secure_url,

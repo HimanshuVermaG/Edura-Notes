@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
+import CommunityCard from '../components/CommunityCard';
 import { api } from '../api/client';
 import { getInitials } from '../utils/avatar';
 import { buildFolderTree } from '../utils/folderTree';
@@ -13,6 +14,7 @@ export default function PublicProfile() {
   const [user, setUser] = useState(null);
   const [folders, setFolders] = useState([]);
   const [notes, setNotes] = useState([]);
+  const [joinedCommunities, setJoinedCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,12 +35,14 @@ export default function PublicProfile() {
         setUser(data.user);
         setFolders(data.folders || []);
         setNotes(data.notes || []);
+        setJoinedCommunities(data.joinedCommunities || []);
       })
       .catch((err) => {
         setError(err.message || 'User not found');
         setUser(null);
         setFolders([]);
         setNotes([]);
+        setJoinedCommunities([]);
       })
       .finally(() => setLoading(false));
   }, [userId]);
@@ -173,21 +177,68 @@ export default function PublicProfile() {
 
   return (
     <Layout>
-      <div className="edura-card p-4 mb-4 d-flex align-items-center gap-3">
-        {user.picture ? (
-          <img src={user.picture} alt="" className="rounded-circle" width={56} height={56} style={{ objectFit: 'cover' }} />
-        ) : (
-          <span className="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold text-white" style={{ width: 56, height: 56, background: 'var(--edura-primary)', fontSize: '1.25rem' }} aria-hidden>
-            {getInitials(user.name)}
-          </span>
-        )}
-        <div>
-          <h1 className="edura-section-title mb-1">{user.name}&apos;s profile</h1>
-          <p className="edura-section-subtitle mb-0">Public notes and files</p>
+      <div className="explore-body">
+        <div className="edura-card p-4 mb-4 d-flex align-items-center gap-3">
+          {user.picture ? (
+            <img src={user.picture} alt="" className="rounded-circle" width={56} height={56} style={{ objectFit: 'cover' }} />
+          ) : (
+            <span className="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold text-white" style={{ width: 56, height: 56, background: 'var(--edura-primary)', fontSize: '1.25rem' }} aria-hidden>
+              {getInitials(user.name)}
+            </span>
+          )}
+          <div>
+            <h1 className="edura-section-title mb-1">{user.name}&apos;s profile</h1>
+            <p className="edura-section-subtitle mb-0">Public notes and files</p>
+          </div>
         </div>
-      </div>
 
-      {notes.length === 0 ? (
+        <section className="explore-files mb-5" aria-labelledby="profile-communities-heading">
+          <div className="explore-section-header">
+            <div>
+              <h2 id="profile-communities-heading" className="explore-section-title-v2 d-flex align-items-center gap-2">
+                <span className="explore-section-icon-pill" aria-hidden>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                </span>
+                Communities
+              </h2>
+              <p className="explore-section-desc mb-0">Communities this user has joined.</p>
+            </div>
+          </div>
+          {loading ? (
+            <div className="row g-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="col-6 col-md-4 col-lg-3">
+                  <div className="community-card">
+                    <div className="community-card-cover edura-skeleton" style={{ height: 112 }} />
+                    <div className="community-card-body p-3">
+                      <div className="edura-skeleton edura-skeleton-text" style={{ width: '80%' }} />
+                      <div className="edura-skeleton edura-skeleton-text-sm mt-2" style={{ width: '60%' }} />
+                      <div className="community-card-stats mt-3 d-flex gap-2">
+                        <span className="edura-skeleton edura-skeleton-text-sm" style={{ width: 60 }} />
+                      </div>
+                      <div className="edura-skeleton mt-3" style={{ height: 36, borderRadius: 8 }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : joinedCommunities.length === 0 ? (
+            <div className="explore-empty-state">
+              <div className="explore-empty-icon">👥</div>
+              <p className="mb-2">No communities joined.</p>
+            </div>
+          ) : (
+            <div className="row g-3">
+              {joinedCommunities.map((c) => (
+                <div key={c._id} className="col-6 col-md-4 col-lg-3">
+                  <CommunityCard community={c} />
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {notes.length === 0 ? (
         <div className="edura-card p-5 text-center text-muted">
           <p className="mb-2">No public notes yet.</p>
           <Link to="/explore" className="btn btn-sm btn-outline-primary">Browse Explore</Link>
@@ -253,7 +304,8 @@ export default function PublicProfile() {
             </>
           )}
         </>
-      )}
+        )}
+      </div>
     </Layout>
   );
 }

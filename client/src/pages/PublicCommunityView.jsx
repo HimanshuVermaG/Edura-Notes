@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 
 const RECENT_FILES_COUNT = 8;
@@ -56,11 +57,15 @@ function FileIcon({ mimeType, originalName }) {
 
 export default function PublicCommunityView() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [community, setCommunity] = useState(null);
   const [folders, setFolders] = useState([]);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [joined, setJoined] = useState(false);
+  const [joining, setJoining] = useState(false);
 
   const fetchCommunity = useCallback(async () => {
     if (!id) return;
@@ -84,6 +89,48 @@ export default function PublicCommunityView() {
   useEffect(() => {
     fetchCommunity();
   }, [fetchCommunity]);
+
+  useEffect(() => {
+    if (!id || !currentUser) {
+      setJoined(false);
+      return;
+    }
+    api(`/communities/${id}/joined`)
+      .then((data) => setJoined(data.joined === true))
+      .catch(() => setJoined(false));
+  }, [id, currentUser?._id]);
+
+  const handleJoin = useCallback(async () => {
+    if (!currentUser) {
+      navigate('/signin', { state: { from: window.location.pathname } });
+      return;
+    }
+    if (!id || joining) return;
+    setJoining(true);
+    try {
+      await api(`/communities/${id}/join`, { method: 'POST' });
+      setJoined(true);
+      if (community) setCommunity((c) => ({ ...c, memberCount: (c.memberCount ?? 0) + 1 }));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setJoining(false);
+    }
+  }, [id, currentUser, joining, community]);
+
+  const handleLeave = useCallback(async () => {
+    if (!currentUser || !id || joining) return;
+    setJoining(true);
+    try {
+      await api(`/communities/${id}/join`, { method: 'DELETE' });
+      setJoined(false);
+      if (community) setCommunity((c) => ({ ...c, memberCount: Math.max(0, (c.memberCount ?? 1) - 1) }));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setJoining(false);
+    }
+  }, [id, currentUser, joining, community]);
 
   const recentFiles = useMemo(() => {
     return [...files]
@@ -195,7 +242,7 @@ export default function PublicCommunityView() {
                         <span className="community-profile-stat-icon" aria-hidden>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" /></svg>
                         </span>
-                        — Members
+                        {community.memberCount ?? 0} Members
                       </span>
                       <span className="community-profile-stat">
                         <span className="community-profile-stat-icon" aria-hidden>
@@ -210,7 +257,25 @@ export default function PublicCommunityView() {
                       <span className="community-profile-btn-icon" aria-hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z" /></svg></span>
                       Share
                     </button>
-                    <span className="btn btn-sm btn-edura community-profile-btn-join">Join</span>
+                    {joined ? (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary community-profile-btn-join"
+                        onClick={handleLeave}
+                        disabled={joining}
+                      >
+                        {joining ? '…' : 'Leave'}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-edura community-profile-btn-join"
+                        onClick={handleJoin}
+                        disabled={joining}
+                      >
+                        {joining ? '…' : currentUser ? 'Join' : 'Sign in to join'}
+                      </button>
+                    )}
                   </div>
                 </div>
                 {community.description && (
