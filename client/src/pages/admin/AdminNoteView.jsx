@@ -1,7 +1,8 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../api/client';
 import SecureNoteViewerLazy from '../../components/SecureNoteViewerLazy';
+import ErrorBoundary from '../../components/ErrorBoundary';
 
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3;
@@ -9,11 +10,15 @@ const ZOOM_STEP = 0.25;
 
 export default function AdminNoteView() {
   const { noteId } = useParams();
+  const navigate = useNavigate();
   const [note, setNote] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [savingListed, setSavingListed] = useState(false);
+
+  const backUrl = note?.userId?._id ? `/admin/users/${note.userId._id}` : '/admin/users';
+  const handleBack = useCallback(() => navigate(backUrl), [navigate, backUrl]);
 
   const zoomIn = useCallback(() => {
     setZoom((z) => Math.min(z + ZOOM_STEP, ZOOM_MAX));
@@ -33,6 +38,14 @@ export default function AdminNoteView() {
       .finally(() => setLoading(false));
   }, [noteId]);
 
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') handleBack();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [handleBack]);
+
   const handleListedOnExploreChange = async (checked) => {
     setSavingListed(true);
     setError('');
@@ -48,6 +61,9 @@ export default function AdminNoteView() {
       setSavingListed(false);
     }
   };
+
+  const preventContextMenu = useCallback((e) => e.preventDefault(), []);
+  const preventDrag = useCallback((e) => e.preventDefault(), []);
 
   if (loading) {
     return (
@@ -69,10 +85,6 @@ export default function AdminNoteView() {
       </div>
     );
   }
-
-  const backUrl = note.userId?._id ? `/admin/users/${note.userId._id}` : '/admin/users';
-  const preventContextMenu = (e) => e.preventDefault();
-  const preventDrag = (e) => e.preventDefault();
 
   return (
     <div
@@ -128,19 +140,30 @@ export default function AdminNoteView() {
               +
             </button>
           </div>
-          <Link to={backUrl} className="btn btn-sm btn-outline-light">
+          <button type="button" className="btn btn-sm btn-outline-light" onClick={handleBack} aria-label="Back to user">
             Back to user
-          </Link>
+          </button>
         </div>
       </div>
       <div className="fullscreen-pdf-content">
-        <SecureNoteViewerLazy
-          adminNoteId={note._id}
-          fullScreen={true}
-          mimeType={note.mimeType}
-          fileName={note.fileName}
-          zoom={zoom}
-        />
+        <ErrorBoundary
+          fallback={
+            <div className="fullscreen-pdf-loading d-flex flex-column align-items-center justify-content-center gap-3">
+              <p className="text-warning mb-0">Failed to load the file viewer.</p>
+              <button type="button" className="btn btn-outline-light" onClick={handleBack}>
+                Back to user
+              </button>
+            </div>
+          }
+        >
+          <SecureNoteViewerLazy
+            adminNoteId={note._id}
+            fullScreen={true}
+            mimeType={note.mimeType}
+            fileName={note.fileName}
+            zoom={zoom}
+          />
+        </ErrorBoundary>
       </div>
     </div>
   );

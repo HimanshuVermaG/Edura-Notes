@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 
@@ -87,6 +87,8 @@ export default function AdminLogin() {
               )}
             </div>
           )}
+          <p className="text-muted small text-center mt-3 mb-0">Only Google accounts with admin access can sign in here.</p>
+          <Link to="/explore" className="btn btn-link btn-sm mt-2">Back to main site</Link>
         </div>
       </div>
     </div>

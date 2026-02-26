@@ -35,7 +35,12 @@ export default function AdminDashboard() {
   if (error) {
     return (
       <div className="admin-page p-4">
-        <div className="alert alert-danger">{error}</div>
+        <div className="alert alert-danger d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <span>{error}</span>
+          <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => window.location.reload()}>
+            Retry
+          </button>
+        </div>
       </div>
     );
   }

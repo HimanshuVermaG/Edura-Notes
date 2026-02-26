@@ -205,8 +205,10 @@ export default function SignIn() {
                   {submitting ? 'Signing in...' : 'Sign in'}
                 </button>
               </form>
-            ) : (
-              <form onSubmit={handleEmailSignUp}>
+              ) : (
+                <>
+                  <p className="small text-muted mb-3">Password must be at least 6 characters.</p>
+                  <form onSubmit={handleEmailSignUp}>
                 <div className="mb-3">
                   <label htmlFor="signup-name" className="form-label small">Name</label>
                   <input
@@ -251,7 +253,8 @@ export default function SignIn() {
                   {submitting ? 'Signing up...' : 'Sign up'}
                 </button>
               </form>
-            )}
+                </>
+              )}
             <p className="text-center text-muted small mt-4 mb-0">
               <Link to="/explore">Explore public files and profiles</Link>
             </p>

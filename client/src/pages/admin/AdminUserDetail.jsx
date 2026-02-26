@@ -85,6 +85,11 @@ export default function AdminUserDetail() {
       const newTotalPages = Math.max(1, Math.ceil(newTotal / notesLimit));
       const pageToUse = Math.min(notesPage, newTotalPages);
       setNotesPage(pageToUse);
+      const params = new URLSearchParams();
+      params.set('notesPage', String(pageToUse));
+      params.set('notesLimit', String(notesLimit));
+      const fresh = await api(`/admin/users/${userId}?${params.toString()}`);
+      setData(fresh);
     } catch (err) {
       setError(err.message || 'Failed to delete notes');
     } finally {
@@ -117,6 +122,11 @@ export default function AdminUserDetail() {
       const newTotalPages = Math.max(1, Math.ceil(newTotal / notesLimit));
       const pageToUse = Math.min(notesPage, newTotalPages);
       setNotesPage(pageToUse);
+      const params = new URLSearchParams();
+      params.set('notesPage', String(pageToUse));
+      params.set('notesLimit', String(notesLimit));
+      const fresh = await api(`/admin/users/${userId}?${params.toString()}`);
+      setData(fresh);
     } catch (err) {
       setError(err.message || 'Failed to delete note');
     }
@@ -212,9 +222,11 @@ export default function AdminUserDetail() {
 
   return (
     <div className="admin-page p-4">
-      <div className="d-flex align-items-center gap-2 mb-4">
-        <Link to="/admin/users" className="btn btn-sm btn-outline-secondary">← Users</Link>
-      </div>
+      <nav aria-label="Breadcrumb" className="mb-4">
+        <Link to="/admin/users" className="text-muted small">Users</Link>
+        <span className="text-muted small mx-2">/</span>
+        <span className="small">{user?.name || 'User'}</span>
+      </nav>
       <div className="admin-card card mb-4">
         <div className="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
           <div>

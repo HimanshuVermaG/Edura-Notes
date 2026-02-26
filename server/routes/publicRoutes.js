@@ -62,6 +62,7 @@ router.get('/explore/notes', async (req, res) => {
     ]);
     res.json({ notes, total, page, limit });
   } catch (err) {
+    console.error('[publicRoutes] /explore/notes error:', err);
     res.status(500).json({ message: err.message || 'Failed to search notes' });
   }
 });
@@ -88,6 +89,7 @@ router.get('/explore/users', async (req, res) => {
     ]);
     res.json({ users, total, page, limit });
   } catch (err) {
+    console.error('[publicRoutes] /explore/users error:', err);
     res.status(500).json({ message: err.message || 'Failed to search users' });
   }
 });

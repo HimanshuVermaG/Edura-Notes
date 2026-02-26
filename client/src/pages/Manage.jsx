@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { api, apiForm } from '../api/client';
 import FolderList from '../components/FolderList';
 import FolderTreeSelect from '../components/FolderTreeSelect';
@@ -14,6 +15,7 @@ const NOTES_PAGE_SIZES = [10, 20, 50, 100];
 
 export default function Manage() {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [folders, setFolders] = useState([]);
   const [notes, setNotes] = useState([]);
   const [notesTotal, setNotesTotal] = useState(0);
@@ -125,6 +127,7 @@ export default function Manage() {
       if (uploadFolderId) formData.append('folderId', uploadFolderId);
       formData.append('isPublic', String(uploadIsPublic));
       await apiForm('/notes', formData, { method: 'POST' });
+      addToast('Note uploaded successfully.', 'success');
       setUploadTitle('');
       setUploadDescription('');
       setUploadFile(null);
@@ -274,6 +277,11 @@ export default function Manage() {
             </div>
           )}
 
+          {atStorageLimit && (
+            <div className="alert alert-warning mb-3" role="alert">
+              <strong>Storage limit reached.</strong> Delete some files or ask an admin to increase your limit. Upload is disabled until you free space.
+            </div>
+          )}
           <section id="upload-section" className="upload-file-section edura-card p-4">
             <h2 className="upload-file-title">
               <span className="upload-file-title-icon" aria-hidden>

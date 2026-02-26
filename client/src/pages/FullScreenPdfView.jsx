@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
 import SecureNoteViewerLazy from '../components/SecureNoteViewerLazy';
@@ -9,10 +9,25 @@ const ZOOM_STEP = 0.25;
 
 export default function FullScreenPdfView() {
   const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const from = location.state?.from || '/home';
   const [note, setNote] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
+
+  const handleClose = useCallback(() => {
+    navigate(from);
+  }, [navigate, from]);
+
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [handleClose]);
 
   const zoomIn = useCallback(() => {
     setZoom((z) => Math.min(z + ZOOM_STEP, ZOOM_MAX));
@@ -86,9 +101,9 @@ export default function FullScreenPdfView() {
               +
             </button>
           </div>
-          <Link to="/home" className="btn btn-sm btn-outline-light">
+          <button type="button" className="btn btn-sm btn-outline-light" onClick={handleClose} aria-label="Close">
             Close
-          </Link>
+          </button>
         </div>
       </div>
       <div className="fullscreen-pdf-content">

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -44,7 +44,11 @@ export default function Explore() {
   const [notesSortBy, setNotesSortBy] = useState('time');
   const [loadingNotes, setLoadingNotes] = useState(false);
 
+  const usersFetchId = useRef(0);
+  const notesFetchId = useRef(0);
+
   const fetchUsers = useCallback(() => {
+    const id = ++usersFetchId.current;
     setLoadingUsers(true);
     const params = new URLSearchParams();
     params.set('page', String(usersPage));
@@ -52,17 +56,23 @@ export default function Explore() {
     if (appliedSearch.trim()) params.set('search', appliedSearch.trim());
     api(`/public/explore/users?${params.toString()}`)
       .then((data) => {
+        if (id !== usersFetchId.current) return;
         setUsers(data.users || []);
         setUsersTotal(data.total ?? 0);
       })
       .catch(() => {
+        if (id !== usersFetchId.current) return;
         setUsers([]);
         setUsersTotal(0);
       })
-      .finally(() => setLoadingUsers(false));
+      .finally(() => {
+        if (id !== usersFetchId.current) return;
+        setLoadingUsers(false);
+      });
   }, [usersPage, usersLimit, appliedSearch]);
 
   const fetchNotes = useCallback(() => {
+    const id = ++notesFetchId.current;
     setLoadingNotes(true);
     const params = new URLSearchParams();
     params.set('page', String(notesPage));
@@ -72,14 +82,19 @@ export default function Explore() {
     if (currentUser?._id) params.set('excludeUserId', currentUser._id);
     api(`/public/explore/notes?${params.toString()}`)
       .then((data) => {
+        if (id !== notesFetchId.current) return;
         setNotes(data.notes || []);
         setNotesTotal(data.total ?? 0);
       })
       .catch(() => {
+        if (id !== notesFetchId.current) return;
         setNotes([]);
         setNotesTotal(0);
       })
-      .finally(() => setLoadingNotes(false));
+      .finally(() => {
+        if (id !== notesFetchId.current) return;
+        setLoadingNotes(false);
+      });
   }, [notesPage, notesLimit, notesSortBy, appliedSearch, currentUser?._id]);
 
   useEffect(() => {
@@ -193,7 +208,17 @@ export default function Explore() {
             </div>
           ) : users.length === 0 ? (
             <div className="edura-card p-4 text-center text-muted">
-              <p className="mb-0">No profiles match your search.</p>
+              <p className="mb-2">No profiles match your search.</p>
+              {appliedSearch.trim() && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => { setSearchInput(''); setAppliedSearch(''); setUsersPage(1); setNotesPage(1); }}
+                >
+                  Clear search
+                </button>
+              )}
+              <p className="small mt-2 mb-0">Try a different filter or search term.</p>
             </div>
           ) : (
             <>
@@ -283,7 +308,17 @@ export default function Explore() {
             </div>
           ) : notes.length === 0 ? (
             <div className="edura-card p-4 text-center text-muted">
-              <p className="mb-0">No public files match your search.</p>
+              <p className="mb-2">No public files match your search.</p>
+              {appliedSearch.trim() && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => { setSearchInput(''); setAppliedSearch(''); setUsersPage(1); setNotesPage(1); }}
+                >
+                  Clear search
+                </button>
+              )}
+              <p className="small mt-2 mb-0">Try a different filter or search term.</p>
             </div>
           ) : (
             <>

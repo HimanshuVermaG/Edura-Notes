@@ -11,6 +11,8 @@ import { sortNotes } from '../utils/sortNotes';
 import { getFoldersInTreeOrder } from '../utils/folderTree';
 
 const NOTES_PAGE_SIZES = [10, 20, 50, 100];
+const STORAGE_VIEW_MODE = 'edura_home_viewMode';
+const STORAGE_SORT_BY = 'edura_home_sortBy';
 
 export default function Homepage() {
   const { user } = useAuth();
@@ -23,8 +25,15 @@ export default function Homepage() {
   const [selectedFolderIds, setSelectedFolderIds] = useState(() => new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
-  const [viewMode, setViewMode] = useState('grid');
-  const [sortBy, setSortBy] = useState('name');
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem(STORAGE_VIEW_MODE) || 'grid');
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem(STORAGE_SORT_BY) || 'name');
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_VIEW_MODE, viewMode);
+  }, [viewMode]);
+  useEffect(() => {
+    localStorage.setItem(STORAGE_SORT_BY, sortBy);
+  }, [sortBy]);
 
   const notesUrl = useMemo(() => {
     const searchQ = searchQuery.trim();
@@ -165,6 +174,16 @@ export default function Homepage() {
               >
                 Search
               </button>
+              {searchInput.trim() && (
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => { setSearchInput(''); setSearchQuery(''); setNotesPage(1); }}
+                  aria-label="Clear search"
+                >
+                  Clear
+                </button>
+              )}
             </div>
           </div>
 

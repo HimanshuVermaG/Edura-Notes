@@ -89,7 +89,7 @@ export default function PublicProfile() {
       <Layout>
         <div className="edura-card p-4">
           <p className="text-danger mb-2">{error || 'User not found'}</p>
-          <Link to="/" className="btn btn-outline-primary">Home</Link>
+          <Link to="/explore" className="btn btn-outline-primary">Back to Explore</Link>
         </div>
       </Layout>
     );
@@ -189,7 +189,8 @@ export default function PublicProfile() {
 
       {notes.length === 0 ? (
         <div className="edura-card p-5 text-center text-muted">
-          <p className="mb-0">No public notes yet.</p>
+          <p className="mb-2">No public notes yet.</p>
+          <Link to="/explore" className="btn btn-sm btn-outline-primary">Browse Explore</Link>
         </div>
       ) : (
         <>

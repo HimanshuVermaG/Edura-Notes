@@ -1,10 +1,16 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { api } from '../api/client';
+import { useToast } from '../context/ToastContext';
+import ConfirmModal from './ConfirmModal';
 
 export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActions = true, folderName, showFileName = true, showVisibilityToggle = false, showUploadedBy = false }) {
   const [deleting, setDeleting] = useState(false);
   const [togglingVisibility, setTogglingVisibility] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const { addToast } = useToast();
+  const location = useLocation();
+  const viewLinkState = { from: location.pathname };
 
   const handleVisibilityChange = async (e) => {
     const isPublic = e.target.value === 'true';
@@ -16,22 +22,21 @@ export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActio
         body: JSON.stringify({ isPublic }),
       });
       onDeleted?.();
-    } catch {
-      // ignore
+    } catch (err) {
+      addToast(err.message || 'Failed to update visibility', 'error');
     } finally {
       setTogglingVisibility(false);
     }
   };
 
-  const handleDelete = async (e) => {
-    e.preventDefault();
-    if (!window.confirm('Delete this note? This cannot be undone.')) return;
+  const handleDeleteConfirm = async () => {
     setDeleting(true);
     try {
       await api(`/notes/${note._id}`, { method: 'DELETE' });
+      setShowDeleteModal(false);
       onDeleted?.();
-    } catch {
-      // ignore
+    } catch (err) {
+      addToast(err.message || 'Failed to delete note', 'error');
     } finally {
       setDeleting(false);
     }
@@ -44,56 +49,69 @@ export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActio
 
   if (isList) {
     return (
-      <div
-        className="edura-card p-2 px-3 d-flex align-items-center gap-3 flex-wrap"
-        style={{ cursor: showActions ? 'default' : 'default' }}
-      >
-        <div className="flex-grow-1 min-w-0 d-flex align-items-center gap-2 flex-wrap">
-          <h6 className="card-title mb-0 text-truncate" style={{ minWidth: 120 }}>{note.title}</h6>
-          {showFileName && (
-            <span className="text-muted small text-truncate" style={{ maxWidth: 200 }}>{label}</span>
-          )}
-          {folderName != null && (
-            <span className="badge bg-light text-dark small">{folderName}</span>
-          )}
-          {showVisibilityToggle && (
-            <select
-              className="form-select form-select-sm small"
-              style={{ width: 'auto', minWidth: 90 }}
-              value={note.isPublic === true ? 'true' : 'false'}
-              onChange={handleVisibilityChange}
-              disabled={togglingVisibility}
-              title="Visibility"
-            >
-              <option value="false">Private</option>
-              <option value="true">Public</option>
-            </select>
-          )}
-          {description && (
-            <span className="text-muted small text-truncate" style={{ maxWidth: 240 }} title={description}>{description}</span>
-          )}
-          {showUploadedBy && authorName && (
-            <span className="text-muted small">By {authorName}</span>
-          )}
-        </div>
-        <div className="d-flex gap-1 flex-shrink-0">
-          <Link to={`/notes/${note._id}/view`} className="btn btn-sm btn-outline-primary">View</Link>
-          {showActions && (
-            <>
-              <Link to={`/notes/${note._id}/edit`} className="btn btn-sm btn-outline-secondary">Edit</Link>
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-danger"
-                onClick={handleDelete}
-                disabled={deleting}
-                title="Delete note"
+      <>
+        <div
+          className="edura-card p-2 px-3 d-flex align-items-center gap-3 flex-wrap"
+          style={{ cursor: showActions ? 'default' : 'default' }}
+        >
+          <div className="flex-grow-1 min-w-0 d-flex align-items-center gap-2 flex-wrap">
+            <h6 className="card-title mb-0 text-truncate" style={{ minWidth: 120 }}>{note.title}</h6>
+            {showFileName && (
+              <span className="text-muted small text-truncate" style={{ maxWidth: 200 }}>{label}</span>
+            )}
+            {folderName != null && (
+              <span className="badge bg-light text-dark small">{folderName}</span>
+            )}
+            {showVisibilityToggle && (
+              <select
+                className="form-select form-select-sm small"
+                style={{ width: 'auto', minWidth: 90 }}
+                value={note.isPublic === true ? 'true' : 'false'}
+                onChange={handleVisibilityChange}
+                disabled={togglingVisibility}
+                title="Visibility"
               >
-                {deleting ? '…' : 'Delete'}
-              </button>
-            </>
-          )}
+                <option value="false">Private</option>
+                <option value="true">Public</option>
+              </select>
+            )}
+            {description && (
+              <span className="text-muted small text-truncate" style={{ maxWidth: 240 }} title={description}>{description}</span>
+            )}
+            {showUploadedBy && authorName && (
+              <span className="text-muted small">By {authorName}</span>
+            )}
+          </div>
+          <div className="d-flex gap-1 flex-shrink-0">
+            <Link to={`/notes/${note._id}/view`} state={viewLinkState} className="btn btn-sm btn-outline-primary">View</Link>
+            {showActions && (
+              <>
+                <Link to={`/notes/${note._id}/edit`} className="btn btn-sm btn-outline-secondary">Edit</Link>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={(e) => { e.preventDefault(); setShowDeleteModal(true); }}
+                  disabled={deleting}
+                  title="Delete note"
+                  aria-label="Delete note"
+                >
+                  {deleting ? '…' : 'Delete'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+        <ConfirmModal
+          show={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDeleteConfirm}
+          title="Delete note"
+          body="Delete this note? This cannot be undone."
+          confirmLabel="Delete"
+          variant="danger"
+          loading={deleting}
+        />
+      </>
     );
   }
 
@@ -131,16 +149,17 @@ export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActio
             </div>
           )}
           <div className="d-flex gap-2 flex-wrap">
-            <Link to={`/notes/${note._id}/view`} className="btn btn-sm btn-outline-primary">View</Link>
+            <Link to={`/notes/${note._id}/view`} state={viewLinkState} className="btn btn-sm btn-outline-primary">View</Link>
             {showActions && (
               <>
                 <Link to={`/notes/${note._id}/edit`} className="btn btn-sm btn-outline-secondary">Edit</Link>
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-danger"
-                  onClick={handleDelete}
+                  onClick={(e) => { e.preventDefault(); setShowDeleteModal(true); }}
                   disabled={deleting}
                   title="Delete note"
+                  aria-label="Delete note"
                 >
                   {deleting ? '…' : 'Delete'}
                 </button>
@@ -149,6 +168,16 @@ export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActio
           </div>
         </div>
       </div>
+      <ConfirmModal
+        show={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete note"
+        body="Delete this note? This cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleting}
+      />
     </div>
   );
 }

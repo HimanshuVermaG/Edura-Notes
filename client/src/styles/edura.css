@@ -1405,6 +1405,16 @@ body {
   display: flex;
   min-height: 100vh;
 }
+.admin-panel-fullscreen {
+  display: block;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+.admin-panel-fullscreen > * {
+  height: 100%;
+  min-height: 100%;
+}
 .admin-sidebar {
   width: 220px;
   flex-shrink: 0;
