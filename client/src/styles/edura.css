@@ -2110,23 +2110,121 @@ textarea:focus-visible {
   margin-left: auto;
 }
 
-/* Storage bar (Manage) */
+/* Storage card (Manage) – modernised */
 .edura-storage-card {
   border-radius: var(--edura-radius);
-  padding: 1rem 1.25rem;
-}
-
-.edura-storage-card .progress {
-  border-radius: 8px;
-  height: 12px;
+  padding: 1.375rem 1.5rem;
+  border: 1px solid var(--edura-border);
+  background: var(--edura-card-bg);
+  box-shadow: var(--edura-shadow);
+  transition: box-shadow var(--edura-transition), border-color var(--edura-transition);
+  position: relative;
   overflow: hidden;
-  background: var(--edura-bg);
 }
 
-.edura-storage-card .progress-bar {
-  border-radius: 8px;
-  background: linear-gradient(90deg, #3b82f6, #7c3aed);
-  transition: width 0.8s ease;
+.edura-storage-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #3b82f6, #6366f1);
+  border-radius: 4px 0 0 4px;
+}
+
+.edura-storage-card:hover {
+  box-shadow: var(--edura-shadow-hover);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.edura-storage-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.edura-storage-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(99, 102, 241, 0.1));
+  color: var(--edura-primary);
+  flex-shrink: 0;
+}
+
+.edura-storage-card-icon svg {
+  display: block;
+}
+
+.edura-storage-card-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.edura-storage-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--edura-text);
+  margin: 0 0 0.25rem 0;
+  letter-spacing: -0.01em;
+}
+
+.edura-storage-card-usage {
+  font-size: 0.875rem;
+  color: var(--edura-text-muted);
+}
+
+.edura-storage-card-used {
+  color: var(--edura-text);
+  font-weight: 600;
+}
+
+.edura-storage-card-sep,
+.edura-storage-card-label {
+  font-weight: 400;
+  color: var(--edura-text-muted);
+}
+
+.edura-storage-card-total {
+  color: var(--edura-text-muted);
+  font-weight: 500;
+}
+
+.edura-storage-card-bar-wrap {
+  margin-bottom: 0;
+}
+
+.edura-storage-card-progress {
+  height: 10px;
+  border-radius: 9999px;
+  background: var(--edura-bg);
+  overflow: hidden;
+}
+
+.edura-storage-card-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  transition: width 0.5s ease-out;
+}
+
+.edura-storage-card-progress--limit .edura-storage-card-progress-fill {
+  background: linear-gradient(90deg, #dc2626, #b91c1c);
+}
+
+.edura-storage-card-limit-msg {
+  font-size: 0.8125rem;
+  color: #dc2626;
+  margin: 0.75rem 0 0 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--edura-radius-sm);
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.2);
 }
 
 .upload-file-dropzone.upload-file-dropzone-dragover {
@@ -2989,6 +3087,15 @@ textarea:focus-visible {
   transition: transform 0.2s;
 }
 
+/* Keep initials centered in the middle of the avatar circle */
+.explore-avatar-gradient-ring .explore-avatar-initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  text-align: center;
+}
+
 .explore-contributor-card:hover .explore-avatar-gradient-ring img,
 .explore-contributor-card:hover .explore-avatar-gradient-ring span {
   transform: scale(1.06);
@@ -3350,24 +3457,57 @@ textarea:focus-visible {
   transform: translateY(-1px);
 }
 
-/* Hero stats — light mode: dark text */
+/* Hero stats — modernised pill chips (light hero bg) */
 .explore-hero-stats {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  gap: 0;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
 .explore-hero-stat {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 1.25rem;
+  gap: 0.625rem;
+  padding: 0.5rem 1rem 0.5rem 0.5rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 9999px;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.08);
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.explore-hero-stat:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(99, 102, 241, 0.25);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.12);
+  transform: translateY(-1px);
 }
 
 .explore-hero-stat-icon {
-  font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(59, 130, 246, 0.1));
+  color: var(--edura-primary);
+  flex-shrink: 0;
+}
+
+.explore-hero-stat-icon svg {
+  display: block;
+}
+
+.explore-hero-stat-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
 }
 
 .explore-hero-stat-value {
@@ -3375,19 +3515,15 @@ textarea:focus-visible {
   font-weight: 700;
   color: #0f172a;
   line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .explore-hero-stat-label {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.explore-hero-stat-divider {
-  width: 1px;
-  height: 32px;
-  background: rgba(99, 102, 241, 0.2);
+  letter-spacing: 0.06em;
+  font-weight: 500;
 }
 
 /* Scroll cue — light mode: dark muted */
@@ -3735,16 +3871,28 @@ textarea:focus-visible {
 }
 
 /* Dark mode stats */
+[data-theme="dark"] .explore-hero-stat {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .explore-hero-stat:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+[data-theme="dark"] .explore-hero-stat-icon {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+}
+
 [data-theme="dark"] .explore-hero-stat-value {
   color: #fff;
 }
 
 [data-theme="dark"] .explore-hero-stat-label {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-[data-theme="dark"] .explore-hero-stat-divider {
-  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* Dark mode scroll cue */

@@ -25,14 +25,37 @@ function isPdf(mimeType, originalName) {
   return ext === 'pdf';
 }
 
-// ─── Stat chip for hero ───────────────────────────────────────────
+// ─── Stat chip for hero (modernised) ───────────────────────────────
+const HeroStatIconDoc = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <line x1="10" y1="9" x2="8" y2="9" />
+  </svg>
+);
+const HeroStatIconPeople = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+const HeroStatIconFree = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+    <path d="M2 17l10 5 10-5" />
+  </svg>
+);
+
 function HeroStat({ icon, value, label }) {
   return (
     <div className="explore-hero-stat">
       <span className="explore-hero-stat-icon">{icon}</span>
-      <div>
-        <div className="explore-hero-stat-value">{value}</div>
-        <div className="explore-hero-stat-label">{label}</div>
+      <div className="explore-hero-stat-content">
+        <span className="explore-hero-stat-value">{value}</span>
+        <span className="explore-hero-stat-label">{label}</span>
       </div>
     </div>
   );
@@ -192,13 +215,11 @@ export default function Explore() {
             </div>
           </form>
 
-          {/* Stats row */}
+          {/* Stats row — modernised pill chips */}
           <div className="explore-hero-stats">
-            <HeroStat icon="📄" value="1000+" label="public notes" />
-            <div className="explore-hero-stat-divider" aria-hidden />
-            <HeroStat icon="👥" value="500+" label="contributors" />
-            <div className="explore-hero-stat-divider" aria-hidden />
-            <HeroStat icon="📚" value="Free" label="always" />
+            <HeroStat icon={<HeroStatIconDoc />} value="1000+" label="Public notes" />
+            <HeroStat icon={<HeroStatIconPeople />} value="500+" label="Contributors" />
+            <HeroStat icon={<HeroStatIconFree />} value="Free" label="Always" />
           </div>
         </div>
 
@@ -275,7 +296,15 @@ export default function Explore() {
                       <div className="explore-contributor-card-v2 text-center p-3 h-100">
                         <div className="explore-avatar-gradient-ring d-inline-block mb-2">
                           {u.picture ? (
-                            <img src={u.picture} alt="" className="rounded-circle d-block" width={72} height={72} style={{ border: '2px solid var(--edura-card-bg)' }} />
+                            <img
+                              src={u.picture}
+                              alt=""
+                              className="rounded-circle d-block"
+                              width={72}
+                              height={72}
+                              style={{ border: '2px solid var(--edura-card-bg)' }}
+                              referrerPolicy="no-referrer"
+                            />
                           ) : (
                             <span className="explore-avatar-initials explore-avatar-initials-lg rounded-circle">{getInitials(u.name)}</span>
                           )}
@@ -381,8 +410,8 @@ export default function Explore() {
                           <div className={`explore-file-card-v2-top ${pdf ? 'explore-file-top-pdf' : 'explore-file-top-img'}`}>
                             <div className="explore-file-card-v2-icon">
                               {pdf ? (
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-                                  <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-3 11H8v-2h3v2zm0-4H8v-2h3v2zm0-4H8V7h3v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z" />
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                                  <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 2 5 5h-5V4zm-2 10h2v-2h-2v2zm0-4h2v-2h-2v2zm0-4h2V9h-2v2z" />
                                 </svg>
                               ) : (
                                 <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
@@ -413,7 +442,14 @@ export default function Explore() {
                           <div className="explore-file-card-v2-footer d-flex align-items-center justify-content-between p-3">
                             <div className="d-flex align-items-center gap-2 min-w-0">
                               {note.userId?.picture ? (
-                                <img src={note.userId.picture} alt="" className="rounded-circle flex-shrink-0" width={22} height={22} />
+                                <img
+                                  src={note.userId.picture}
+                                  alt=""
+                                  className="rounded-circle flex-shrink-0"
+                                  width={22}
+                                  height={22}
+                                  referrerPolicy="no-referrer"
+                                />
                               ) : (
                                 <span className="explore-avatar-initials explore-avatar-initials-sm rounded-circle flex-shrink-0">{getInitials(note.userId?.name)}</span>
                               )}

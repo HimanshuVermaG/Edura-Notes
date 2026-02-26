@@ -253,27 +253,42 @@ export default function Manage() {
 
           {usedBytes != null && limitBytes != null && (
             <div className="edura-card edura-storage-card mb-4">
-              <h3 className="h6 mb-2 d-flex align-items-center gap-2">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M4 20h16V4H4v16zm0-18c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2H4z"/></svg>
-                Storage
-              </h3>
-              <div className="d-flex align-items-center gap-3 flex-wrap">
-                <span className="small text-muted">
-                  {(usedBytes / BYTES_PER_MB).toFixed(1)} MB / {(limitBytes / BYTES_PER_MB).toFixed(1)} MB used
+              <div className="edura-storage-card-header">
+                <span className="edura-storage-card-icon" aria-hidden>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="12" cy="5" rx="9" ry="3" />
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                  </svg>
                 </span>
-                <div className="progress flex-grow-1" style={{ maxWidth: 280 }}>
+                <div className="edura-storage-card-heading">
+                  <h3 className="edura-storage-card-title">Storage</h3>
+                  <span className="edura-storage-card-usage">
+                    <strong className="edura-storage-card-used">{(usedBytes / BYTES_PER_MB).toFixed(1)} MB</strong>
+                    <span className="edura-storage-card-sep"> of </span>
+                    <span className="edura-storage-card-total">{(limitBytes / BYTES_PER_MB).toFixed(1)} MB</span>
+                    <span className="edura-storage-card-label"> used</span>
+                  </span>
+                </div>
+              </div>
+              <div className="edura-storage-card-bar-wrap">
+                <div
+                  className={`edura-storage-card-progress ${atStorageLimit ? 'edura-storage-card-progress--limit' : ''}`}
+                  role="progressbar"
+                  aria-valuenow={usedBytes}
+                  aria-valuemin={0}
+                  aria-valuemax={limitBytes}
+                  aria-label={`Storage used: ${(usedBytes / BYTES_PER_MB).toFixed(1)} of ${(limitBytes / BYTES_PER_MB).toFixed(1)} MB`}
+                >
                   <div
-                    className={`progress-bar ${atStorageLimit ? 'bg-danger' : ''}`}
-                    role="progressbar"
+                    className="edura-storage-card-progress-fill"
                     style={{ width: `${Math.min(100, (usedBytes / limitBytes) * 100)}%` }}
-                    aria-valuenow={usedBytes}
-                    aria-valuemin={0}
-                    aria-valuemax={limitBytes}
                   />
                 </div>
               </div>
               {atStorageLimit && (
-                <p className="small text-danger mb-0 mt-2">
+                <p className="edura-storage-card-limit-msg" role="alert">
                   Storage limit reached. Delete some files or ask an admin to increase your limit.
                 </p>
               )}
