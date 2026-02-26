@@ -15,6 +15,8 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
 import AdminNoteView from './pages/admin/AdminNoteView';
+import AdminCommunities from './pages/admin/AdminCommunities';
+import AdminCommunitySetup from './pages/admin/AdminCommunitySetup';
 import SignIn from './pages/SignIn';
 
 function DashboardRedirect() {
@@ -33,6 +35,9 @@ export default function App() {
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="users/:userId" element={<AdminUserDetail />} />
+        <Route path="communities" element={<AdminCommunities />} />
+        <Route path="communities/new" element={<AdminCommunitySetup />} />
+        <Route path="communities/:communityId/edit" element={<AdminCommunitySetup />} />
         <Route path="view/note/:noteId" element={<AdminNoteView />} />
       </Route>
       <Route path="/profile/:userId" element={<PublicProfile />} />

@@ -8,6 +8,7 @@ import { adminMiddleware } from '../middleware/adminMiddleware.js';
 import { getUploadPath } from '../middleware/uploadMiddleware.js';
 import { getResourceType, destroyCloudinaryAsset } from '../lib/cloudinaryNotes.js';
 import { getUsedStorageBytes } from '../lib/storageHelper.js';
+import communityAdminRoutes from './communityAdminRoutes.js';
 
 const DEFAULT_STORAGE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
 
@@ -21,6 +22,8 @@ function getMimeType(note) {
 const router = express.Router();
 router.use(authMiddleware);
 router.use(adminMiddleware);
+
+router.use('/communities', communityAdminRoutes);
 
 // GET /api/admin/stats - dashboard totals (total users, notes, storage)
 router.get('/stats', async (req, res) => {

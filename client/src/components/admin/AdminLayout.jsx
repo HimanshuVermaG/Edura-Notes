@@ -20,6 +20,7 @@ export default function AdminLayout({ children }) {
         <nav className="admin-sidebar-nav">
           <NavLink to="/admin/dashboard" end className="admin-sidebar-link">Dashboard</NavLink>
           <NavLink to="/admin/users" className="admin-sidebar-link">Users</NavLink>
+          <NavLink to="/admin/communities" className="admin-sidebar-link">Communities</NavLink>
         </nav>
         <div className="admin-sidebar-footer">
           <button type="button" className="btn btn-sm btn-outline-light w-100" onClick={handleLogout}>
