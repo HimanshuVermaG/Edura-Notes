@@ -275,104 +275,128 @@ export default function Manage() {
           )}
 
           <section id="upload-section" className="upload-file-section edura-card p-4">
-            <h2 className="upload-file-title">Upload a file</h2>
-            <p className="upload-file-subtitle">
-              Images (JPEG, PNG, GIF, WebP) and PDFs. Max 10 MB.
-            </p>
+            <h2 className="upload-file-title">
+              <span className="upload-file-title-icon" aria-hidden>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
+                </svg>
+              </span>
+              Upload Note
+            </h2>
             <form className="edura-form" onSubmit={handleUploadSubmit}>
               {uploadError && (
                 <div className="alert alert-danger py-2 small mb-3" role="alert">
                   {uploadError}
                 </div>
               )}
-              <div
-                className={`upload-file-dropzone ${dropzoneDragging ? 'upload-file-dropzone-dragover' : ''}`}
-                onDragOver={handleDropzoneDragOver}
-                onDragLeave={handleDropzoneDragLeave}
-                onDrop={handleDropzoneDrop}
-              >
-                <input
-                  ref={fileInputRef}
-                  id="manage-upload-file"
-                  type="file"
-                  accept=".pdf,application/pdf,.jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
-                  onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
-                  aria-label="Choose file"
-                />
-                <label htmlFor="manage-upload-file" className="d-block mb-1">
-                  <span className="upload-file-dropzone-btn">Choose file</span>
-                </label>
-                <p className="upload-file-dropzone-text mb-0">or drag and drop here</p>
-                {uploadFile && (
-                  <p className="small mt-2 mb-0 text-muted">
-                    Selected: {uploadFile.name}
-                  </p>
-                )}
-              </div>
-              <div className="upload-file-meta">
-                <div style={{ minWidth: 200, flex: 1 }}>
-                  <label htmlFor="manage-upload-title" className="form-label small">Title</label>
+              <div className="upload-file-layout">
+                <div
+                  className={`upload-file-dropzone ${dropzoneDragging ? 'upload-file-dropzone-dragover' : ''}`}
+                  onDragOver={handleDropzoneDragOver}
+                  onDragLeave={handleDropzoneDragLeave}
+                  onDrop={handleDropzoneDrop}
+                >
                   <input
-                    id="manage-upload-title"
-                    type="text"
-                    className="form-control form-control-sm"
-                    value={uploadTitle}
-                    onChange={(e) => setUploadTitle(e.target.value)}
-                    placeholder="Note title"
+                    ref={fileInputRef}
+                    id="manage-upload-file"
+                    type="file"
+                    accept=".pdf,application/pdf,.jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
+                    onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+                    aria-label="Choose file"
                   />
+                  <label htmlFor="manage-upload-file" className="upload-file-dropzone-label">
+                    <span className="upload-file-dropzone-icon" aria-hidden>
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
+                      </svg>
+                    </span>
+                    <span className="upload-file-dropzone-text">Click to upload or drag and drop</span>
+                    <span className="upload-file-dropzone-hint">PDF, PNG, JPG up to 10MB</span>
+                  </label>
+                  {uploadFile && (
+                    <p className="upload-file-dropzone-selected small mb-0">
+                      Selected: {uploadFile.name}
+                    </p>
+                  )}
                 </div>
-                <div style={{ minWidth: 200 }}>
-                  <label id="manage-upload-folder-label" className="form-label small">Folder</label>
-                  <FolderTreeSelect
-                    id="manage-upload-folder"
-                    labelId="manage-upload-folder-label"
-                    folders={folders}
-                    value={uploadFolderId}
-                    onChange={setUploadFolderId}
-                    className="form-select-sm"
-                  />
+                <div className="upload-file-form-column">
+                  <div className="upload-file-field">
+                    <label htmlFor="manage-upload-title" className="form-label small">Title</label>
+                    <input
+                      id="manage-upload-title"
+                      type="text"
+                      className="form-control form-control-sm"
+                      value={uploadTitle}
+                      onChange={(e) => setUploadTitle(e.target.value)}
+                      placeholder="e.g. Chapter 4 Summary"
+                    />
+                  </div>
+                  <div className="upload-file-field">
+                    <label id="manage-upload-folder-label" className="form-label small">Folder</label>
+                    <FolderTreeSelect
+                      id="manage-upload-folder"
+                      labelId="manage-upload-folder-label"
+                      folders={folders}
+                      value={uploadFolderId}
+                      onChange={setUploadFolderId}
+                      className="form-select-sm"
+                    />
+                  </div>
+                  <div className="upload-file-field" role="group" aria-labelledby="manage-upload-visibility-label">
+                    <span id="manage-upload-visibility-label" className="form-label small d-block">Visibility</span>
+                    <div className="upload-file-visibility-radios">
+                      <label className="upload-file-radio-label">
+                        <input
+                          type="radio"
+                          name="manage-upload-visibility"
+                          value="false"
+                          checked={!uploadIsPublic}
+                          onChange={() => setUploadIsPublic(false)}
+                          className="form-check-input"
+                        />
+                        <span>Private</span>
+                      </label>
+                      <label className="upload-file-radio-label">
+                        <input
+                          type="radio"
+                          name="manage-upload-visibility"
+                          value="true"
+                          checked={uploadIsPublic}
+                          onChange={() => setUploadIsPublic(true)}
+                          className="form-check-input"
+                        />
+                        <span>Public</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="upload-file-field upload-file-description">
+                    <label htmlFor="manage-upload-description" className="form-label small">Description (Optional)</label>
+                    <textarea
+                      id="manage-upload-description"
+                      className="form-control form-control-sm upload-description-input"
+                      value={uploadDescription}
+                      onChange={(e) => setUploadDescription(e.target.value)}
+                      placeholder="Optional description for this note"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="upload-file-actions">
+                    <button
+                      type="button"
+                      className="btn btn-upload-clear"
+                      onClick={handleClear}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-upload-primary"
+                      disabled={submitting || !uploadFile || atStorageLimit}
+                    >
+                      {submitting ? 'Uploading...' : 'Upload File'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="upload-file-description">
-                <label htmlFor="manage-upload-description" className="form-label small">Description</label>
-                <textarea
-                  id="manage-upload-description"
-                  className="form-control form-control-sm upload-description-input"
-                  value={uploadDescription}
-                  onChange={(e) => setUploadDescription(e.target.value)}
-                  placeholder="Optional description for this note"
-                  rows={3}
-                />
-              </div>
-              <div className="mb-3">
-                <label htmlFor="manage-upload-visibility" className="form-label small">Visibility</label>
-                <select
-                  id="manage-upload-visibility"
-                  className="form-select form-select-sm"
-                  style={{ maxWidth: 160 }}
-                  value={uploadIsPublic ? 'true' : 'false'}
-                  onChange={(e) => setUploadIsPublic(e.target.value === 'true')}
-                >
-                  <option value="false">Private</option>
-                  <option value="true">Public</option>
-                </select>
-                <div className="form-text small">Public notes appear on your public profile and in Explore.</div>
-              </div>
-              <div className="upload-file-actions">
-                <button
-                  type="submit"
-                  className="btn btn-upload-primary"
-                  disabled={submitting || !uploadFile || atStorageLimit}
-                >
-                  {submitting ? 'Uploading...' : 'Upload'}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-upload-clear"
-                  onClick={handleClear}
-                >
-                  Clear
-                </button>
               </div>
             </form>
           </section>

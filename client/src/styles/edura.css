@@ -524,26 +524,47 @@ body {
   border-radius: 6px;
 }
 
-/* Upload file section – dashed drop zone style */
+/* Upload file section – two-column layout, dashed drop zone */
 .upload-file-section {
   margin-bottom: 1.5rem;
 }
 .upload-file-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--edura-text);
-  margin-bottom: 0.35rem;
+  margin-bottom: 1rem;
 }
-.upload-file-subtitle {
-  font-size: 0.9rem;
-  color: var(--edura-text-muted);
-  margin-bottom: 1.25rem;
+.upload-file-title-icon {
+  display: inline-flex;
+  color: var(--edura-primary);
+}
+.upload-file-title-icon svg {
+  display: block;
+}
+.upload-file-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+@media (max-width: 768px) {
+  .upload-file-layout {
+    grid-template-columns: 1fr;
+  }
 }
 .upload-file-dropzone {
   border: 2px dashed var(--edura-border);
   border-radius: var(--edura-radius);
   background: #f8f9fa;
   padding: 2rem;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   transition: border-color 0.2s, background 0.2s;
 }
@@ -552,24 +573,36 @@ body {
   border-color: var(--edura-primary);
   background: rgba(37, 99, 235, 0.04);
 }
-.upload-file-dropzone-btn {
-  display: inline-block;
-  padding: 0.5rem 1.25rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #fff;
-  background: var(--edura-text);
-  border: none;
-  border-radius: var(--edura-radius);
-  cursor: pointer;
-  margin-bottom: 0.5rem;
+.upload-file-dropzone:hover .upload-file-dropzone-icon,
+.upload-file-dropzone.upload-file-dropzone-dragover .upload-file-dropzone-icon {
+  color: var(--edura-primary);
 }
-.upload-file-dropzone-btn:hover {
-  background: #374151;
-  color: #fff;
+.upload-file-dropzone-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  margin: 0;
+}
+.upload-file-dropzone-icon {
+  color: var(--edura-text-muted);
+  transition: color 0.2s;
+}
+.upload-file-dropzone-icon svg {
+  display: block;
 }
 .upload-file-dropzone-text {
-  font-size: 0.875rem;
+  font-size: 0.95rem;
+  color: var(--edura-text);
+  font-weight: 500;
+}
+.upload-file-dropzone-hint {
+  font-size: 0.8rem;
+  color: var(--edura-text-muted);
+}
+.upload-file-dropzone-selected {
+  margin-top: 0.75rem;
   color: var(--edura-text-muted);
 }
 .upload-file-dropzone input[type="file"] {
@@ -580,36 +613,56 @@ body {
   overflow: hidden;
   z-index: -1;
 }
-.upload-file-meta {
-  margin-top: 1.25rem;
+.upload-file-form-column {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 1rem;
-  align-items: flex-end;
 }
-.upload-file-description {
-  margin-top: 1rem;
+.upload-file-field {
   width: 100%;
+}
+.upload-file-field.upload-file-description {
+  flex: 1;
+  min-height: 0;
 }
 .upload-file-description .upload-description-input {
   resize: vertical;
   min-height: 4rem;
 }
+.upload-file-visibility-radios {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.upload-file-radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--edura-text);
+  margin: 0;
+}
+.upload-file-radio-label .form-check-input {
+  margin: 0;
+}
 .upload-file-actions {
   display: flex;
   gap: 0.75rem;
-  margin-top: 1.25rem;
+  margin-top: 0.5rem;
+  justify-content: flex-end;
 }
 .upload-file-actions .btn-upload-primary {
   padding: 0.5rem 1.25rem;
   font-weight: 600;
-  background: #6b7280;
+  background: var(--edura-primary);
   color: #fff;
   border: none;
   border-radius: var(--edura-radius);
 }
 .upload-file-actions .btn-upload-primary:hover:not(:disabled) {
-  background: #4b5563;
+  background: var(--edura-primary-dark);
   color: #fff;
 }
 .upload-file-actions .btn-upload-clear {
