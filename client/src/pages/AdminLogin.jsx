@@ -67,13 +67,13 @@ export default function AdminLogin() {
   }, []);
 
   return (
-    <div className="admin-login-page min-vh-100 d-flex align-items-center justify-content-center bg-dark">
+    <div className="admin-login-page min-vh-100 d-flex align-items-center justify-content-center">
       <div className="admin-login-card card shadow-lg" style={{ width: '100%', maxWidth: 400 }}>
         <div className="card-body p-4">
           <h2 className="h4 mb-2 text-center">Admin Login</h2>
           <p className="text-muted small text-center mb-4">Sign in with your Google admin account.</p>
           {error && (
-            <div className="alert alert-danger py-2 small mb-3" role="alert">
+            <div className="alert alert-danger py-2 small mb-3 admin-login-error" role="alert">
               {error}
             </div>
           )}
@@ -88,7 +88,7 @@ export default function AdminLogin() {
             </div>
           )}
           <p className="text-muted small text-center mt-3 mb-0">Only Google accounts with admin access can sign in here.</p>
-          <Link to="/explore" className="btn btn-link btn-sm mt-2">Back to main site</Link>
+          <Link to="/explore" className="admin-login-back-link d-block text-center small mt-2">Back to main site</Link>
         </div>
       </div>
     </div>

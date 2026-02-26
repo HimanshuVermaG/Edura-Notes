@@ -78,7 +78,7 @@ export default function PublicNoteView() {
       onDragStart={preventDrag}
     >
       <div className="fullscreen-pdf-bar">
-        <span className="fullscreen-pdf-title text-truncate">{note.title}</span>
+        <span className="fullscreen-pdf-title text-truncate" title={note.title}>{note.title}</span>
         <div className="d-flex align-items-center gap-2">
           <div className="fullscreen-pdf-zoom" role="group" aria-label="Zoom">
             <button
@@ -89,7 +89,7 @@ export default function PublicNoteView() {
               title="Zoom out"
               aria-label="Zoom out"
             >
-              −
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M19 13H5v-2h14v2z"/></svg>
             </button>
             <span className="fullscreen-pdf-zoom-value" aria-live="polite">
               {Math.round(zoom * 100)}%
@@ -102,7 +102,7 @@ export default function PublicNoteView() {
               title="Zoom in"
               aria-label="Zoom in"
             >
-              +
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </button>
           </div>
           <button type="button" className="btn btn-sm btn-outline-light" onClick={handleBack} aria-label="Back to profile">

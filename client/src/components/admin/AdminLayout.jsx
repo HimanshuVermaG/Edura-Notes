@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminLayout({ children }) {
@@ -13,10 +13,13 @@ export default function AdminLayout({ children }) {
   return (
     <div className="admin-panel">
       <aside className="admin-sidebar">
-        <div className="admin-sidebar-brand">Admin</div>
+        <div className="admin-sidebar-brand">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+          Admin
+        </div>
         <nav className="admin-sidebar-nav">
-          <Link to="/admin/dashboard" className="admin-sidebar-link">Dashboard</Link>
-          <Link to="/admin/users" className="admin-sidebar-link">Users</Link>
+          <NavLink to="/admin/dashboard" end className="admin-sidebar-link">Dashboard</NavLink>
+          <NavLink to="/admin/users" className="admin-sidebar-link">Users</NavLink>
         </nav>
         <div className="admin-sidebar-footer">
           <button type="button" className="btn btn-sm btn-outline-light w-100" onClick={handleLogout}>

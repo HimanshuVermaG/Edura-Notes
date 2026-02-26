@@ -152,6 +152,9 @@ export default function Homepage() {
           <div className="mb-4 search-bar-wrap">
             <label htmlFor="homepage-search" className="form-label visually-hidden">Search folders and notes</label>
             <div className="search-bar input-group" style={{ maxWidth: 400 }}>
+              <span className="search-bar-icon" aria-hidden>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+              </span>
               <input
                 id="homepage-search"
                 type="search"
@@ -187,9 +190,9 @@ export default function Homepage() {
             </div>
           </div>
 
-          <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <h2 className="h5 mb-0">{headingLabel}</h2>
-            <div className="d-flex align-items-center gap-3 flex-wrap">
+          <div className="edura-toolbar-strip mb-3">
+            <h2 className="h6 mb-0">{headingLabel}</h2>
+            <div className="d-flex align-items-center gap-3 flex-wrap ms-auto">
               <div className="d-flex align-items-center gap-2">
                 <label htmlFor="homepage-notes-per-page" className="form-label small mb-0 text-nowrap">
                   Per page
@@ -229,7 +232,7 @@ export default function Homepage() {
                 <div className="row g-3 mb-4">
                   {sortedNotes.filter((n) => !n.folderId).length > 0 && (
                     <div className="col-12">
-                      <h6 className="text-muted small text-uppercase mb-2">Uncategorized</h6>
+                      <h6 className="edura-section-heading">Uncategorized</h6>
                       {isList ? (
                         <div className="d-flex flex-column gap-2">
                           {sortedNotes.filter((n) => !n.folderId).map((note) => noteWrapper(note, null))}
@@ -249,7 +252,7 @@ export default function Homepage() {
                     if (folderNotes.length === 0) return null;
                     return (
                       <div key={folder._id} className="mb-4">
-                        <h6 className="text-muted small text-uppercase mb-2">{folder.name}</h6>
+                        <h6 className="edura-section-heading">{folder.name}</h6>
                         {isList ? (
                           <div className="d-flex flex-column gap-2">
                             {folderNotes.map((note) => noteWrapper(note, folder.name))}
@@ -276,7 +279,7 @@ export default function Homepage() {
                       });
                       return sections.map(({ key, title, notes: sectionNotes }) => (
                         <div key={key} className="mb-4">
-                          <h6 className="text-muted small text-uppercase mb-2">{title}</h6>
+                          <h6 className="edura-section-heading">{title}</h6>
                           {isList ? (
                             <div className="d-flex flex-column gap-2">
                               {sectionNotes.map((note) => noteWrapper(note, title))}
@@ -305,7 +308,7 @@ export default function Homepage() {
                     </div>
                   )}
               {notes.length === 0 && !loading && (
-                <div className="edura-card p-5 text-center text-muted">
+                <div className="edura-card edura-empty-state text-muted">
                   {searchQuery.trim() ? (
                     <>
                       <p className="mb-2">No folders or notes match &quot;{searchQuery.trim()}&quot;</p>
@@ -323,11 +326,11 @@ export default function Homepage() {
                 </div>
               )}
               {notesTotal > 0 && (
-                <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+                <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-4">
                   <p className="small text-muted mb-0">
                     Showing {notesStart}–{notesEnd} of {notesTotal} note{notesTotal !== 1 ? 's' : ''}
                   </p>
-                  <nav aria-label="Notes pagination" className="d-flex align-items-center gap-1">
+                  <nav aria-label="Notes pagination" className="d-flex align-items-center gap-2">
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-primary"

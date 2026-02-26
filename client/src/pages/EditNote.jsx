@@ -130,12 +130,12 @@ export default function EditNote() {
 
   return (
     <Layout>
-      <nav aria-label="Breadcrumb" className="mb-3">
-        <Link to="/manage" className="text-muted small">Manage</Link>
-        <span className="text-muted small mx-2">/</span>
-        <span className="small">Edit note</span>
+      <nav aria-label="Breadcrumb" className="edura-breadcrumb">
+        <Link to="/manage">Manage</Link>
+        <span className="text-muted">/</span>
+        <span className="breadcrumb-current">Edit note</span>
       </nav>
-      <div className="edura-card p-4">
+      <div className="edura-card edura-card-lg p-4">
         <h2 className="edura-section-title mb-2">Edit note</h2>
         <p className="edura-section-subtitle mb-4">Update title, description, folder, visibility, or replace the file (PDF or image).</p>
         <form className="edura-form" onSubmit={handleSubmit}>
@@ -209,7 +209,7 @@ export default function EditNote() {
               </div>
             )}
           </div>
-          <div className="d-flex flex-wrap gap-2 align-items-center">
+          <div className="edura-form-actions">
             <button type="submit" className="edura-btn-primary btn btn-primary" disabled={submitting}>
               {submitting ? 'Saving...' : 'Save Changes'}
             </button>
@@ -218,7 +218,7 @@ export default function EditNote() {
             </Link>
             <button
               type="button"
-              className="btn btn-outline-danger ms-auto"
+              className="btn btn-outline-danger"
               onClick={() => setShowDeleteModal(true)}
               disabled={deleting}
               aria-label="Delete note"

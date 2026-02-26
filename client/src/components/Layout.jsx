@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getInitials } from '../utils/avatar';
 
@@ -38,19 +38,19 @@ export default function Layout({ children }) {
               {isAuthenticated ? (
                 <>
                   <li className="nav-item">
-                    <Link className="nav-link" to="/home">
+                    <NavLink className="nav-link" to="/home" end>
                       Home
-                    </Link>
+                    </NavLink>
                   </li>
                   <li className="nav-item">
-                    <Link className="nav-link" to="/manage">
+                    <NavLink className="nav-link" to="/manage">
                       Manage
-                    </Link>
+                    </NavLink>
                   </li>
                   <li className="nav-item">
-                    <Link className="nav-link" to="/explore">
+                    <NavLink className="nav-link" to="/explore">
                       Explore
-                    </Link>
+                    </NavLink>
                   </li>
                   {user?._id && (
                     <li className="nav-item">
@@ -61,7 +61,7 @@ export default function Layout({ children }) {
                   )}
                   <li className="nav-item d-flex align-items-center gap-2">
                     {user?.picture ? (
-                      <img src={user.picture} alt="" className="nav-user-avatar rounded-circle" width={28} height={28} />
+                      <img src={user.picture} alt="" className="nav-user-avatar rounded-circle" width={32} height={32} />
                     ) : (
                       <span className="nav-user-initials rounded-circle" aria-hidden>{getInitials(user?.name)}</span>
                     )}

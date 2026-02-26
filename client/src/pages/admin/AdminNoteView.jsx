@@ -124,7 +124,7 @@ export default function AdminNoteView() {
               title="Zoom out"
               aria-label="Zoom out"
             >
-              −
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M19 13H5v-2h14v2z"/></svg>
             </button>
             <span className="fullscreen-pdf-zoom-value" aria-live="polite">
               {Math.round(zoom * 100)}%
@@ -137,7 +137,7 @@ export default function AdminNoteView() {
               title="Zoom in"
               aria-label="Zoom in"
             >
-              +
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </button>
           </div>
           <button type="button" className="btn btn-sm btn-outline-light" onClick={handleBack} aria-label="Back to user">

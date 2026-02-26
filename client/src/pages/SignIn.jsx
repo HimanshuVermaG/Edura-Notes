@@ -133,7 +133,7 @@ export default function SignIn() {
             <h2 className="edura-section-title mb-2">Sign in / Sign up</h2>
             <p className="edura-section-subtitle mb-3">Use Google or email to access your notes.</p>
             {error && (
-              <div className="alert alert-danger py-2 small mb-3" role="alert">
+              <div className="alert alert-danger py-2 small mb-3 edura-auth-error" role="alert">
                 {error}
               </div>
             )}
@@ -143,36 +143,34 @@ export default function SignIn() {
                 {submitting && (
                   <p className="small text-muted mt-2 mb-0">Signing in...</p>
                 )}
-                <span className="small text-muted my-3">or</span>
+                <div className="edura-auth-divider">
+                  <span>or</span>
+                </div>
               </div>
             )}
             {!GOOGLE_CLIENT_ID && (
               <p className="text-muted small mb-3">Google Sign-In is not configured. Set VITE_GOOGLE_CLIENT_ID in the client environment.</p>
             )}
-            <ul className="nav nav-tabs nav-fill mb-3" role="tablist">
-              <li className="nav-item" role="presentation">
-                <button
-                  type="button"
-                  className={`nav-link ${mode === 'signin' ? 'active' : ''}`}
-                  onClick={() => setMode('signin')}
-                  role="tab"
-                  aria-selected={mode === 'signin'}
-                >
-                  Sign in
-                </button>
-              </li>
-              <li className="nav-item" role="presentation">
-                <button
-                  type="button"
-                  className={`nav-link ${mode === 'signup' ? 'active' : ''}`}
-                  onClick={() => setMode('signup')}
-                  role="tab"
-                  aria-selected={mode === 'signup'}
-                >
-                  Sign up
-                </button>
-              </li>
-            </ul>
+            <div className="edura-auth-tabs" role="tablist">
+              <button
+                type="button"
+                className={`nav-link ${mode === 'signin' ? 'active' : ''}`}
+                onClick={() => setMode('signin')}
+                role="tab"
+                aria-selected={mode === 'signin'}
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                className={`nav-link ${mode === 'signup' ? 'active' : ''}`}
+                onClick={() => setMode('signup')}
+                role="tab"
+                aria-selected={mode === 'signup'}
+              >
+                Sign up
+              </button>
+            </div>
             {mode === 'signin' ? (
               <form onSubmit={handleEmailSignIn}>
                 <div className="mb-3">
@@ -255,8 +253,8 @@ export default function SignIn() {
               </form>
                 </>
               )}
-            <p className="text-center text-muted small mt-4 mb-0">
-              <Link to="/explore">Explore public files and profiles</Link>
+            <p className="text-center small mt-4 mb-0">
+              <Link to="/explore" className="edura-auth-explore-link">Explore public files and profiles</Link>
             </p>
           </div>
         </div>

@@ -7,24 +7,63 @@
   --edura-bg: #f9fafb;
   --edura-card-bg: #ffffff;
   --edura-border: #e5e7eb;
-  --edura-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --edura-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --edura-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --edura-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.08);
   --edura-radius: 8px;
+  --edura-radius-sm: 6px;
+  --edura-radius-lg: 12px;
   --edura-font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --edura-transition: 0.18s ease;
+}
+
+/* Optional dark theme (toggle via data-theme="dark" on html) */
+[data-theme="dark"] {
+  --edura-bg: #111827;
+  --edura-card-bg: #1f2937;
+  --edura-text: #f9fafb;
+  --edura-text-muted: #9ca3af;
+  --edura-border: #374151;
 }
 
 body {
   font-family: var(--edura-font);
+  font-size: 16px;
   color: var(--edura-text);
   background-color: var(--edura-bg);
   margin: 0;
   min-height: 100vh;
 }
 
+/* Type scale: h1 ~1.5, h2 ~1.25 */
+h1 { font-size: 1.5rem; font-weight: 700; }
+h2 { font-size: 1.25rem; font-weight: 700; }
+
+/* Focus states – visible ring for accessibility */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--edura-primary);
+  outline-offset: 2px;
+}
+
+/* Transitions on interactive elements */
+.btn,
+.nav-link,
+.edura-card,
+.edura-header .btn-edura,
+.edura-header .btn-outline-primary {
+  transition: background-color var(--edura-transition), color var(--edura-transition),
+    border-color var(--edura-transition), box-shadow var(--edura-transition),
+    transform var(--edura-transition);
+}
+
 /* Header – Edura style */
 .edura-header {
   background: var(--edura-card-bg);
   box-shadow: var(--edura-shadow);
+  border-bottom: 1px solid var(--edura-border);
   padding: 0.75rem 0;
 }
 .edura-header .navbar-brand {
@@ -35,11 +74,16 @@ body {
 .edura-header .nav-link {
   color: var(--edura-text) !important;
   font-weight: 500;
-  padding: 0.5rem 1rem !important;
+  padding: 0.6rem 1rem !important;
+  border-radius: var(--edura-radius-sm);
 }
 .edura-header .nav-link:hover,
 .edura-header .nav-link.active {
   color: var(--edura-primary) !important;
+  background: rgba(37, 99, 235, 0.06);
+}
+.edura-header .nav-link.active {
+  font-weight: 600;
 }
 .edura-header .btn-edura {
   background: var(--edura-primary);
@@ -52,6 +96,7 @@ body {
 .edura-header .btn-edura:hover {
   background: var(--edura-primary-dark);
   color: #fff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
 .edura-header .btn-outline-primary {
   border: 1px solid var(--edura-primary);
@@ -74,17 +119,21 @@ body {
 }
 .nav-user-avatar {
   object-fit: cover;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--edura-border);
 }
 .nav-user-initials {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   font-size: 0.75rem;
   font-weight: 600;
   background: var(--edura-primary);
   color: #fff;
+  border: 1px solid var(--edura-border);
 }
 
 /* Section titles – About Our University style */
@@ -228,7 +277,7 @@ body {
 .folders-categories-underline {
   height: 2px;
   margin-top: 0.5rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
   position: relative;
   border-radius: 2px;
   background: var(--edura-border);
@@ -718,12 +767,28 @@ body {
   overflow: hidden;
   border: 1px solid var(--edura-border);
   background: var(--edura-card-bg);
+  transition: border-color var(--edura-transition), box-shadow var(--edura-transition);
+}
+.search-bar.input-group:focus-within {
+  border-color: var(--edura-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.search-bar .search-bar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.75rem;
+  color: var(--edura-text-muted);
+  background: var(--edura-bg);
+  border-right: 1px solid var(--edura-border);
+  flex-shrink: 0;
 }
 .search-bar .search-bar-input {
   border: none;
   border-radius: 0;
   flex: 1;
   min-width: 0;
+  padding-left: 0.5rem;
 }
 .search-bar .search-bar-input:focus {
   box-shadow: none;
@@ -744,17 +809,22 @@ body {
   color: #fff;
 }
 .search-bar .search-bar-btn:focus {
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
-  outline: none;
+  box-shadow: none;
+  outline: 2px solid var(--edura-primary);
+  outline-offset: 2px;
+}
+.search-bar .btn-outline-secondary {
+  border-radius: 0;
+  border-left: 1px solid var(--edura-border);
 }
 
 /* Explore page – hero, search, contributors, public files (reference design) */
 .explore-hero-wrap {
   background: linear-gradient(to bottom, rgba(37, 99, 235, 0.06), transparent);
-  padding: 3rem 1rem 4rem;
+  padding: 4rem 1rem 5rem;
 }
 .explore-hero-inner {
-  max-width: 42rem;
+  max-width: 48rem;
   margin-left: auto;
   margin-right: auto;
 }
@@ -907,7 +977,7 @@ body {
   transition: box-shadow 0.2s;
 }
 .explore-contributor-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--edura-shadow-hover);
 }
 .explore-avatar-wrap {
   margin-bottom: 0.5rem;
@@ -915,6 +985,7 @@ body {
 .explore-avatar-img {
   object-fit: cover;
   border: 1px solid var(--edura-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 .explore-avatar-initials {
   display: inline-flex;
@@ -1139,6 +1210,10 @@ body {
   transition: box-shadow 0.2s, transform 0.2s;
   overflow: hidden;
 }
+.edura-card.edura-card-lg {
+  border-radius: var(--edura-radius-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
 .edura-card:hover {
   box-shadow: var(--edura-shadow-hover);
   transform: translateY(-2px);
@@ -1147,10 +1222,25 @@ body {
   font-weight: 600;
   color: var(--edura-text);
   margin-bottom: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .edura-card .card-text {
   color: var(--edura-text-muted);
   font-size: 0.9rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.edura-card.note-card-wrap {
+  padding: 1rem;
+}
+@media (min-width: 768px) {
+  .edura-card.note-card-wrap {
+    padding: 1rem;
+  }
 }
 
 /* Forms – Login / Register style */
@@ -1163,9 +1253,20 @@ body {
   border-color: var(--edura-primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
+.edura-form .form-select {
+  border-radius: var(--edura-radius);
+  min-height: 38px;
+}
 .edura-form .form-label {
   font-weight: 500;
   color: var(--edura-text);
+}
+.edura-form .mb-3,
+.edura-form .mb-4 {
+  margin-bottom: 1rem;
+}
+.edura-form .mb-4 {
+  margin-bottom: 1.25rem;
 }
 .edura-btn-primary {
   background: var(--edura-primary);
@@ -1183,10 +1284,11 @@ body {
 
 /* Footer – Quick Links style */
 .edura-footer {
-  background: #111827;
+  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
   color: #9ca3af;
-  padding: 2.5rem 0 1.5rem;
+  padding: 3rem 0 1.5rem;
   margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 .edura-footer h6 {
   color: #fff;
@@ -1198,6 +1300,7 @@ body {
   color: #9ca3af;
   text-decoration: none;
   font-size: 0.9rem;
+  transition: color var(--edura-transition);
 }
 .edura-footer a:hover {
   color: #fff;
@@ -1221,6 +1324,74 @@ body {
   max-width: 420px;
   width: 100%;
 }
+.edura-auth-card .edura-card {
+  border-radius: var(--edura-radius-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+/* Pill-style tabs for Sign in / Sign up */
+.edura-auth-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--edura-bg);
+  border-radius: 9999px;
+  margin-bottom: 1rem;
+}
+.edura-auth-tabs .nav-link {
+  padding: 0.5rem 1rem !important;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: var(--edura-text-muted);
+  font-weight: 500;
+  transition: background var(--edura-transition), color var(--edura-transition);
+}
+.edura-auth-tabs .nav-link:hover {
+  color: var(--edura-text);
+  background: var(--edura-card-bg);
+}
+.edura-auth-tabs .nav-link.active {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--edura-primary);
+  border-bottom: none;
+}
+.edura-auth-card .form-control {
+  border-radius: var(--edura-radius);
+  padding: 0.65rem 1rem;
+}
+.edura-auth-card .form-control:focus {
+  border-color: var(--edura-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.edura-auth-error {
+  border-left: 4px solid #dc3545;
+  border-radius: var(--edura-radius-sm);
+  background: rgba(220, 53, 69, 0.06);
+}
+.edura-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  color: var(--edura-text-muted);
+  font-size: 0.875rem;
+}
+.edura-auth-divider::before,
+.edura-auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--edura-border);
+}
+.edura-auth-explore-link {
+  color: var(--edura-text-muted);
+  text-decoration: none;
+  transition: color var(--edura-transition);
+}
+.edura-auth-explore-link:hover {
+  color: var(--edura-primary);
+  text-decoration: underline;
+}
 
 /* Hero and explore section (e.g. Explore page) */
 .landing-hero {
@@ -1236,6 +1407,95 @@ body {
   font-weight: 700;
   color: var(--edura-text);
   margin-bottom: 0.5rem;
+}
+.edura-section-subtitle.mb-4 {
+  margin-bottom: 1.5rem !important;
+}
+
+/* Toolbar strip – Per page, Sort, View mode */
+.edura-toolbar-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--edura-bg);
+  border-radius: var(--edura-radius);
+  border: 1px solid var(--edura-border);
+}
+
+/* Section headings (Uncategorized, folder names) */
+.edura-section-heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--edura-text-muted);
+  margin-bottom: 0.75rem;
+  margin-top: 0;
+}
+
+/* Empty state card */
+.edura-empty-state {
+  padding: 2.5rem 1.5rem !important;
+  text-align: center;
+}
+.edura-empty-state .btn-edura {
+  padding: 0.6rem 1.5rem;
+  font-size: 1rem;
+}
+
+/* Breadcrumb nav */
+.edura-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.5rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--edura-border);
+  font-size: 0.875rem;
+}
+.edura-breadcrumb a {
+  color: var(--edura-text-muted);
+  text-decoration: none;
+}
+.edura-breadcrumb a:hover {
+  color: var(--edura-primary);
+}
+.edura-breadcrumb .breadcrumb-current {
+  color: var(--edura-text);
+  font-weight: 500;
+}
+
+/* Edit note form action row */
+.edura-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.edura-form-actions .btn-outline-danger {
+  margin-left: auto;
+}
+
+/* Storage bar (Manage) */
+.edura-storage-card {
+  border-radius: var(--edura-radius);
+  padding: 1rem 1.25rem;
+}
+.edura-storage-card .progress {
+  border-radius: 8px;
+  height: 10px;
+  overflow: hidden;
+}
+.edura-storage-card .progress-bar {
+  border-radius: 8px;
+}
+.upload-file-dropzone.upload-file-dropzone-dragover {
+  border-color: var(--edura-primary);
+  background: rgba(37, 99, 235, 0.08);
+  border-width: 3px;
 }
 
 /* Secure note viewer – no copy/print */
@@ -1298,6 +1558,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  min-height: 52px;
   padding: 0.5rem 1rem;
   background: #111;
   color: #fff;
@@ -1307,14 +1568,17 @@ body {
   font-weight: 600;
   font-size: 1rem;
   max-width: 60vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .fullscreen-pdf-zoom {
   display: flex;
   align-items: center;
   gap: 0.35rem;
   background: #222;
-  border-radius: 6px;
-  padding: 0.15rem 0.25rem;
+  border-radius: var(--edura-radius);
+  padding: 0.25rem 0.35rem;
 }
 .fullscreen-pdf-zoom-btn {
   width: 2rem;
@@ -1322,15 +1586,19 @@ body {
   border: 1px solid #444;
   background: #333;
   color: #fff;
-  font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--edura-radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   transition: background 0.15s, border-color 0.15s;
+}
+.fullscreen-pdf-zoom-btn svg {
+  display: block;
+  width: 1rem;
+  height: 1rem;
 }
 .fullscreen-pdf-zoom-btn:hover:not(:disabled) {
   background: #444;
@@ -1339,6 +1607,10 @@ body {
 .fullscreen-pdf-zoom-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+.fullscreen-pdf-zoom-btn:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
 }
 .fullscreen-pdf-zoom-value {
   min-width: 3rem;
@@ -1425,9 +1697,12 @@ body {
 }
 .admin-sidebar-brand {
   font-weight: 700;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #333;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .admin-sidebar-nav {
   flex: 1;
@@ -1439,15 +1714,29 @@ body {
   color: #ccc;
   text-decoration: none;
   transition: color 0.15s, background 0.15s;
+  border-left: 3px solid transparent;
 }
 .admin-sidebar-link:hover,
 .admin-sidebar-link:focus {
   color: #fff;
   background: #333;
 }
+.admin-sidebar-link.active {
+  background: #333;
+  color: #fff;
+  border-left-color: var(--edura-primary);
+}
 .admin-sidebar-footer {
   padding: 1rem 1.25rem;
   border-top: 1px solid #333;
+}
+.admin-sidebar-footer .btn {
+  border-radius: var(--edura-radius);
+  transition: background var(--edura-transition), border-color var(--edura-transition);
+}
+.admin-sidebar-footer .btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 .admin-main {
   flex: 1;
@@ -1464,14 +1753,15 @@ body {
   padding: 0.75rem 1.5rem;
   background: #fff;
   border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 .admin-topbar-title {
   font-weight: 600;
   font-size: 1rem;
 }
 .admin-topbar-user {
-  font-size: 0.875rem;
-  color: #666;
+  font-size: 0.8125rem;
+  color: #6b7280;
 }
 .admin-content {
   flex: 1;
@@ -1483,12 +1773,116 @@ body {
 }
 .admin-card.card {
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: var(--edura-radius);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* ViewModeToggle – same radius as app */
+.edura-toolbar-strip .btn-group,
+.view-mode-toggle-wrap .btn-group {
+  border-radius: var(--edura-radius);
+  overflow: hidden;
+}
+.edura-toolbar-strip .btn-group .btn,
+.view-mode-toggle-wrap .btn-group .btn {
+  border-radius: 0;
+}
+.edura-toolbar-strip .btn-group .btn:first-child,
+.view-mode-toggle-wrap .btn-group .btn:first-child {
+  border-radius: var(--edura-radius) 0 0 var(--edura-radius);
+}
+.edura-toolbar-strip .btn-group .btn:last-child,
+.view-mode-toggle-wrap .btn-group .btn:last-child {
+  border-radius: 0 var(--edura-radius) var(--edura-radius) 0;
+}
+
+/* SortBySelect – consistent height and radius */
+.edura-toolbar-strip .form-select-sm,
+.sort-by-select-wrap .form-select {
+  border-radius: var(--edura-radius);
+  min-height: 31px;
+}
+.sort-by-select-wrap .form-label {
+  color: var(--edura-text-muted);
+  align-self: center;
+}
+
+/* Admin Dashboard – stats cards */
+.admin-page .admin-card .h2,
+.admin-page .admin-card .h3 {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+.admin-page .admin-card .small {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--edura-text-muted);
+}
+
+/* Admin table – row hover, cell padding */
+.admin-page .table {
+  --bs-table-border-color: #e0e0e0;
+}
+.admin-page .table tbody tr:hover {
+  background: rgba(37, 99, 235, 0.04);
+}
+.admin-page .table td,
+.admin-page .table th {
+  padding: 0.75rem;
+  vertical-align: middle;
+}
+
+/* Admin fullscreen bar – List on Explore alignment */
+.fullscreen-pdf-bar .form-check-label {
+  margin-left: 0.35rem;
+}
+.fullscreen-pdf-bar .d-flex.gap-3 {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.fullscreen-pdf-bar .small.opacity-75 {
+  color: #9ca3af;
 }
 .admin-login-page {
   padding: 1rem;
+  background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+}
+.admin-login-card {
+  border-radius: var(--edura-radius-lg);
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 .admin-login-card .card-body {
-  border-radius: 8px;
+  border-radius: 0;
+  padding: 1.5rem;
+  background: var(--edura-card-bg);
+}
+.admin-login-error {
+  border-left: 4px solid #dc3545;
+  border-radius: var(--edura-radius-sm);
+  background: rgba(220, 53, 69, 0.06);
+}
+.admin-login-back-link {
+  color: var(--edura-text-muted);
+  text-decoration: none;
+  transition: color var(--edura-transition);
+}
+.admin-login-back-link:hover {
+  color: var(--edura-primary);
+  text-decoration: underline;
+}
+
+/* Modal backdrop – reusable */
+.modal-backdrop-custom {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.modal-content.edura-modal-content {
+  border-radius: var(--edura-radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+.modal-content.edura-modal-content .modal-header .btn-close:focus-visible,
+.modal-content.edura-modal-content .modal-footer .btn:focus-visible {
+  outline: 2px solid var(--edura-primary);
+  outline-offset: 2px;
 }

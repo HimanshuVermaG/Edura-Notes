@@ -252,13 +252,16 @@ export default function Manage() {
           </p>
 
           {usedBytes != null && limitBytes != null && (
-            <div className="edura-card p-3 mb-4">
-              <h3 className="h6 mb-2">Storage</h3>
+            <div className="edura-card edura-storage-card mb-4">
+              <h3 className="h6 mb-2 d-flex align-items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M4 20h16V4H4v16zm0-18c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2H4z"/></svg>
+                Storage
+              </h3>
               <div className="d-flex align-items-center gap-3 flex-wrap">
                 <span className="small text-muted">
                   {(usedBytes / BYTES_PER_MB).toFixed(1)} MB / {(limitBytes / BYTES_PER_MB).toFixed(1)} MB used
                 </span>
-                <div className="progress flex-grow-1" style={{ maxWidth: 280, height: 8 }}>
+                <div className="progress flex-grow-1" style={{ maxWidth: 280 }}>
                   <div
                     className={`progress-bar ${atStorageLimit ? 'bg-danger' : ''}`}
                     role="progressbar"
@@ -412,6 +415,9 @@ export default function Manage() {
           <div className="mb-4 search-bar-wrap">
             <label htmlFor="manage-search" className="form-label visually-hidden">Search folders and notes</label>
             <div className="search-bar input-group" style={{ maxWidth: 400 }}>
+              <span className="search-bar-icon" aria-hidden>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+              </span>
               <input
                 id="manage-search"
                 type="search"
@@ -437,9 +443,9 @@ export default function Manage() {
             </div>
           </div>
 
-          <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <h2 className="h5 mb-0">{headingLabel}</h2>
-            <div className="d-flex align-items-center gap-3 flex-wrap">
+          <div className="edura-toolbar-strip mb-3">
+            <h2 className="h6 mb-0">{headingLabel}</h2>
+            <div className="d-flex align-items-center gap-3 flex-wrap ms-auto">
               <div className="d-flex align-items-center gap-2">
                 <label htmlFor="manage-notes-per-page" className="form-label small mb-0 text-nowrap">
                   Per page

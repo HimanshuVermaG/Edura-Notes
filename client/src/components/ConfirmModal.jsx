@@ -42,12 +42,11 @@ export default function ConfirmModal({
 
   const modal = (
     <div
-      className="modal show d-block"
+      className="modal show d-block modal-backdrop-custom"
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 1050,
-        backgroundColor: 'rgba(0,0,0,0.5)',
       }}
       role="dialog"
       aria-modal="true"
@@ -55,7 +54,7 @@ export default function ConfirmModal({
       onClick={handleBackdropClick}
     >
       <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-content edura-modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h5 id="confirm-modal-title" className="modal-title">
               {title}
