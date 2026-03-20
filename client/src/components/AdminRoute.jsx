@@ -21,6 +21,10 @@ export default function AdminRoute() {
   if (user.role !== 'admin') {
     return <Navigate to="/home" replace />;
   }
+  const isNoteView = /^\/admin\/view\/note\/[^/]+$/.test(location.pathname);
+  if (isNoteView) {
+    return <Outlet />;
+  }
   return (
     <AdminLayout>
       <Outlet />

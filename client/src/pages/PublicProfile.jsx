@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { api } from '../api/client';
+import { getInitials } from '../utils/avatar';
 import { buildFolderTree } from '../utils/folderTree';
 import { sortNotes } from '../utils/sortNotes';
 import SortBySelect from '../components/SortBySelect';
@@ -88,7 +89,7 @@ export default function PublicProfile() {
       <Layout>
         <div className="edura-card p-4">
           <p className="text-danger mb-2">{error || 'User not found'}</p>
-          <Link to="/" className="btn btn-outline-primary">Home</Link>
+          <Link to="/explore" className="btn btn-outline-primary">Back to Explore</Link>
         </div>
       </Layout>
     );
@@ -172,14 +173,24 @@ export default function PublicProfile() {
 
   return (
     <Layout>
-      <div className="edura-card p-4 mb-4">
-        <h1 className="edura-section-title mb-2">{user.name}&apos;s profile</h1>
-        <p className="edura-section-subtitle mb-0">Public notes and files</p>
+      <div className="edura-card p-4 mb-4 d-flex align-items-center gap-3">
+        {user.picture ? (
+          <img src={user.picture} alt="" className="rounded-circle" width={56} height={56} style={{ objectFit: 'cover' }} />
+        ) : (
+          <span className="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold text-white" style={{ width: 56, height: 56, background: 'var(--edura-primary)', fontSize: '1.25rem' }} aria-hidden>
+            {getInitials(user.name)}
+          </span>
+        )}
+        <div>
+          <h1 className="edura-section-title mb-1">{user.name}&apos;s profile</h1>
+          <p className="edura-section-subtitle mb-0">Public notes and files</p>
+        </div>
       </div>
 
       {notes.length === 0 ? (
         <div className="edura-card p-5 text-center text-muted">
-          <p className="mb-0">No public notes yet.</p>
+          <p className="mb-2">No public notes yet.</p>
+          <Link to="/explore" className="btn btn-sm btn-outline-primary">Browse Explore</Link>
         </div>
       ) : (
         <>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { api, apiForm } from '../api/client';
 import FolderList from '../components/FolderList';
 import FolderTreeSelect from '../components/FolderTreeSelect';
@@ -14,6 +15,7 @@ const NOTES_PAGE_SIZES = [10, 20, 50, 100];
 
 export default function Manage() {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [folders, setFolders] = useState([]);
   const [notes, setNotes] = useState([]);
   const [notesTotal, setNotesTotal] = useState(0);
@@ -125,6 +127,7 @@ export default function Manage() {
       if (uploadFolderId) formData.append('folderId', uploadFolderId);
       formData.append('isPublic', String(uploadIsPublic));
       await apiForm('/notes', formData, { method: 'POST' });
+      addToast('Note uploaded successfully.', 'success');
       setUploadTitle('');
       setUploadDescription('');
       setUploadFile(null);
@@ -249,130 +252,177 @@ export default function Manage() {
           </p>
 
           {usedBytes != null && limitBytes != null && (
-            <div className="edura-card p-3 mb-4">
-              <h3 className="h6 mb-2">Storage</h3>
-              <div className="d-flex align-items-center gap-3 flex-wrap">
-                <span className="small text-muted">
-                  {(usedBytes / BYTES_PER_MB).toFixed(1)} MB / {(limitBytes / BYTES_PER_MB).toFixed(1)} MB used
+            <div className="edura-card edura-storage-card mb-4">
+              <div className="edura-storage-card-header">
+                <span className="edura-storage-card-icon" aria-hidden>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="12" cy="5" rx="9" ry="3" />
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                  </svg>
                 </span>
-                <div className="progress flex-grow-1" style={{ maxWidth: 280, height: 8 }}>
+                <div className="edura-storage-card-heading">
+                  <h3 className="edura-storage-card-title">Storage</h3>
+                  <span className="edura-storage-card-usage">
+                    <strong className="edura-storage-card-used">{(usedBytes / BYTES_PER_MB).toFixed(1)} MB</strong>
+                    <span className="edura-storage-card-sep"> of </span>
+                    <span className="edura-storage-card-total">{(limitBytes / BYTES_PER_MB).toFixed(1)} MB</span>
+                    <span className="edura-storage-card-label"> used</span>
+                  </span>
+                </div>
+              </div>
+              <div className="edura-storage-card-bar-wrap">
+                <div
+                  className={`edura-storage-card-progress ${atStorageLimit ? 'edura-storage-card-progress--limit' : ''}`}
+                  role="progressbar"
+                  aria-valuenow={usedBytes}
+                  aria-valuemin={0}
+                  aria-valuemax={limitBytes}
+                  aria-label={`Storage used: ${(usedBytes / BYTES_PER_MB).toFixed(1)} of ${(limitBytes / BYTES_PER_MB).toFixed(1)} MB`}
+                >
                   <div
-                    className={`progress-bar ${atStorageLimit ? 'bg-danger' : ''}`}
-                    role="progressbar"
+                    className="edura-storage-card-progress-fill"
                     style={{ width: `${Math.min(100, (usedBytes / limitBytes) * 100)}%` }}
-                    aria-valuenow={usedBytes}
-                    aria-valuemin={0}
-                    aria-valuemax={limitBytes}
                   />
                 </div>
               </div>
               {atStorageLimit && (
-                <p className="small text-danger mb-0 mt-2">
+                <p className="edura-storage-card-limit-msg" role="alert">
                   Storage limit reached. Delete some files or ask an admin to increase your limit.
                 </p>
               )}
             </div>
           )}
 
+          {atStorageLimit && (
+            <div className="alert alert-warning mb-3" role="alert">
+              <strong>Storage limit reached.</strong> Delete some files or ask an admin to increase your limit. Upload is disabled until you free space.
+            </div>
+          )}
           <section id="upload-section" className="upload-file-section edura-card p-4">
-            <h2 className="upload-file-title">Upload a file</h2>
-            <p className="upload-file-subtitle">
-              Images (JPEG, PNG, GIF, WebP) and PDFs. Max 10 MB.
-            </p>
+            <h2 className="upload-file-title">
+              <span className="upload-file-title-icon" aria-hidden>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
+                </svg>
+              </span>
+              Upload Note
+            </h2>
             <form className="edura-form" onSubmit={handleUploadSubmit}>
               {uploadError && (
                 <div className="alert alert-danger py-2 small mb-3" role="alert">
                   {uploadError}
                 </div>
               )}
-              <div
-                className={`upload-file-dropzone ${dropzoneDragging ? 'upload-file-dropzone-dragover' : ''}`}
-                onDragOver={handleDropzoneDragOver}
-                onDragLeave={handleDropzoneDragLeave}
-                onDrop={handleDropzoneDrop}
-              >
-                <input
-                  ref={fileInputRef}
-                  id="manage-upload-file"
-                  type="file"
-                  accept=".pdf,application/pdf,.jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
-                  onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
-                  aria-label="Choose file"
-                />
-                <label htmlFor="manage-upload-file" className="d-block mb-1">
-                  <span className="upload-file-dropzone-btn">Choose file</span>
-                </label>
-                <p className="upload-file-dropzone-text mb-0">or drag and drop here</p>
-                {uploadFile && (
-                  <p className="small mt-2 mb-0 text-muted">
-                    Selected: {uploadFile.name}
-                  </p>
-                )}
-              </div>
-              <div className="upload-file-meta">
-                <div style={{ minWidth: 200, flex: 1 }}>
-                  <label htmlFor="manage-upload-title" className="form-label small">Title</label>
+              <div className="upload-file-layout">
+                <div
+                  className={`upload-file-dropzone ${dropzoneDragging ? 'upload-file-dropzone-dragover' : ''}`}
+                  onDragOver={handleDropzoneDragOver}
+                  onDragLeave={handleDropzoneDragLeave}
+                  onDrop={handleDropzoneDrop}
+                >
                   <input
-                    id="manage-upload-title"
-                    type="text"
-                    className="form-control form-control-sm"
-                    value={uploadTitle}
-                    onChange={(e) => setUploadTitle(e.target.value)}
-                    placeholder="Note title"
+                    ref={fileInputRef}
+                    id="manage-upload-file"
+                    type="file"
+                    accept=".pdf,application/pdf,.jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
+                    onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+                    aria-label="Choose file"
                   />
+                  <label htmlFor="manage-upload-file" className="upload-file-dropzone-label">
+                    <span className="upload-file-dropzone-icon" aria-hidden>
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
+                      </svg>
+                    </span>
+                    <span className="upload-file-dropzone-text">Click to upload or drag and drop</span>
+                    <span className="upload-file-dropzone-hint">PDF, PNG, JPG up to 10MB</span>
+                  </label>
+                  {uploadFile && (
+                    <p className="upload-file-dropzone-selected small mb-0">
+                      Selected: {uploadFile.name}
+                    </p>
+                  )}
                 </div>
-                <div style={{ minWidth: 200 }}>
-                  <label id="manage-upload-folder-label" className="form-label small">Folder</label>
-                  <FolderTreeSelect
-                    id="manage-upload-folder"
-                    labelId="manage-upload-folder-label"
-                    folders={folders}
-                    value={uploadFolderId}
-                    onChange={setUploadFolderId}
-                    className="form-select-sm"
-                  />
+                <div className="upload-file-form-column">
+                  <div className="upload-file-field">
+                    <label htmlFor="manage-upload-title" className="form-label small">Title</label>
+                    <input
+                      id="manage-upload-title"
+                      type="text"
+                      className="form-control form-control-sm"
+                      value={uploadTitle}
+                      onChange={(e) => setUploadTitle(e.target.value)}
+                      placeholder="e.g. Chapter 4 Summary"
+                    />
+                  </div>
+                  <div className="upload-file-field">
+                    <label id="manage-upload-folder-label" className="form-label small">Folder</label>
+                    <FolderTreeSelect
+                      id="manage-upload-folder"
+                      labelId="manage-upload-folder-label"
+                      folders={folders}
+                      value={uploadFolderId}
+                      onChange={setUploadFolderId}
+                      className="form-select-sm"
+                    />
+                  </div>
+                  <div className="upload-file-field" role="group" aria-labelledby="manage-upload-visibility-label">
+                    <span id="manage-upload-visibility-label" className="form-label small d-block">Visibility</span>
+                    <div className="upload-file-visibility-radios">
+                      <label className="upload-file-radio-label">
+                        <input
+                          type="radio"
+                          name="manage-upload-visibility"
+                          value="false"
+                          checked={!uploadIsPublic}
+                          onChange={() => setUploadIsPublic(false)}
+                          className="form-check-input"
+                        />
+                        <span>Private</span>
+                      </label>
+                      <label className="upload-file-radio-label">
+                        <input
+                          type="radio"
+                          name="manage-upload-visibility"
+                          value="true"
+                          checked={uploadIsPublic}
+                          onChange={() => setUploadIsPublic(true)}
+                          className="form-check-input"
+                        />
+                        <span>Public</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="upload-file-field upload-file-description">
+                    <label htmlFor="manage-upload-description" className="form-label small">Description (Optional)</label>
+                    <textarea
+                      id="manage-upload-description"
+                      className="form-control form-control-sm upload-description-input"
+                      value={uploadDescription}
+                      onChange={(e) => setUploadDescription(e.target.value)}
+                      placeholder="Optional description for this note"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="upload-file-actions">
+                    <button
+                      type="button"
+                      className="btn btn-upload-clear"
+                      onClick={handleClear}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-upload-primary"
+                      disabled={submitting || !uploadFile || atStorageLimit}
+                    >
+                      {submitting ? 'Uploading...' : 'Upload File'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="upload-file-description">
-                <label htmlFor="manage-upload-description" className="form-label small">Description</label>
-                <textarea
-                  id="manage-upload-description"
-                  className="form-control form-control-sm upload-description-input"
-                  value={uploadDescription}
-                  onChange={(e) => setUploadDescription(e.target.value)}
-                  placeholder="Optional description for this note"
-                  rows={3}
-                />
-              </div>
-              <div className="mb-3">
-                <label htmlFor="manage-upload-visibility" className="form-label small">Visibility</label>
-                <select
-                  id="manage-upload-visibility"
-                  className="form-select form-select-sm"
-                  style={{ maxWidth: 160 }}
-                  value={uploadIsPublic ? 'true' : 'false'}
-                  onChange={(e) => setUploadIsPublic(e.target.value === 'true')}
-                >
-                  <option value="false">Private</option>
-                  <option value="true">Public</option>
-                </select>
-                <div className="form-text small">Public notes appear on your public profile and in Explore.</div>
-              </div>
-              <div className="upload-file-actions">
-                <button
-                  type="submit"
-                  className="btn btn-upload-primary"
-                  disabled={submitting || !uploadFile || atStorageLimit}
-                >
-                  {submitting ? 'Uploading...' : 'Upload'}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-upload-clear"
-                  onClick={handleClear}
-                >
-                  Clear
-                </button>
               </div>
             </form>
           </section>
@@ -380,6 +430,9 @@ export default function Manage() {
           <div className="mb-4 search-bar-wrap">
             <label htmlFor="manage-search" className="form-label visually-hidden">Search folders and notes</label>
             <div className="search-bar input-group" style={{ maxWidth: 400 }}>
+              <span className="search-bar-icon" aria-hidden>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+              </span>
               <input
                 id="manage-search"
                 type="search"
@@ -405,9 +458,9 @@ export default function Manage() {
             </div>
           </div>
 
-          <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <h2 className="h5 mb-0">{headingLabel}</h2>
-            <div className="d-flex align-items-center gap-3 flex-wrap">
+          <div className="edura-toolbar-strip mb-3">
+            <h2 className="h6 mb-0">{headingLabel}</h2>
+            <div className="d-flex align-items-center gap-3 flex-wrap ms-auto">
               <div className="d-flex align-items-center gap-2">
                 <label htmlFor="manage-notes-per-page" className="form-label small mb-0 text-nowrap">
                   Per page

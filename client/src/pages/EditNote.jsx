@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import FolderTreeSelect from '../components/FolderTreeSelect';
+import ConfirmModal from '../components/ConfirmModal';
 import { api, apiForm } from '../api/client';
 
 export default function EditNote() {
@@ -17,22 +18,45 @@ export default function EditNote() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const initialRef = useRef({ title: '', description: '', folderId: '', isPublic: false });
   const navigate = useNavigate();
 
   useEffect(() => {
     Promise.all([api(`/notes/${id}`), api('/folders')])
       .then(([note, foldersList]) => {
-        setTitle(note.title);
-        setDescription(note.description || '');
-        setIsPublic(note.isPublic === true);
-        setCurrentFileName(note.originalName || note.fileName || '');
+        const desc = note.description || '';
+        const isPub = note.isPublic === true;
         const fid = note.folderId && (typeof note.folderId === 'object' ? note.folderId._id : note.folderId);
-        setFolderId(fid || '');
+        const fidStr = fid || '';
+        setTitle(note.title);
+        setDescription(desc);
+        setIsPublic(isPub);
+        setCurrentFileName(note.originalName || note.fileName || '');
+        setFolderId(fidStr);
         setFolders(foldersList);
+        initialRef.current = { title: note.title, description: desc, folderId: fidStr, isPublic: isPub };
       })
       .catch(() => setError('Note not found'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const init = initialRef.current;
+  const isDirty = init.title !== '' && (
+    file != null ||
+    title !== init.title ||
+    description !== init.description ||
+    folderId !== init.folderId ||
+    isPublic !== init.isPublic
+  );
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) e.preventDefault();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -70,11 +94,11 @@ export default function EditNote() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm('Delete this note? This cannot be undone.')) return;
+  const handleDeleteConfirm = async () => {
     setDeleting(true);
     try {
       await api(`/notes/${id}`, { method: 'DELETE' });
+      setShowDeleteModal(false);
       navigate('/manage');
     } catch (err) {
       setError(err.message || 'Failed to delete note');
@@ -106,7 +130,12 @@ export default function EditNote() {
 
   return (
     <Layout>
-      <div className="edura-card p-4">
+      <nav aria-label="Breadcrumb" className="edura-breadcrumb">
+        <Link to="/manage">Manage</Link>
+        <span className="text-muted">/</span>
+        <span className="breadcrumb-current">Edit note</span>
+      </nav>
+      <div className="edura-card edura-card-lg p-4">
         <h2 className="edura-section-title mb-2">Edit note</h2>
         <p className="edura-section-subtitle mb-4">Update title, description, folder, visibility, or replace the file (PDF or image).</p>
         <form className="edura-form" onSubmit={handleSubmit}>
@@ -173,8 +202,14 @@ export default function EditNote() {
             {currentFileName && !file && (
               <div className="form-text small">Current file: {currentFileName}</div>
             )}
+            {file && (
+              <div className="form-text small">
+                New file: {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                {file.type && ` · ${file.type}`}
+              </div>
+            )}
           </div>
-          <div className="d-flex flex-wrap gap-2 align-items-center">
+          <div className="edura-form-actions">
             <button type="submit" className="edura-btn-primary btn btn-primary" disabled={submitting}>
               {submitting ? 'Saving...' : 'Save Changes'}
             </button>
@@ -183,15 +218,26 @@ export default function EditNote() {
             </Link>
             <button
               type="button"
-              className="btn btn-outline-danger ms-auto"
-              onClick={handleDelete}
+              className="btn btn-outline-danger"
+              onClick={() => setShowDeleteModal(true)}
               disabled={deleting}
+              aria-label="Delete note"
             >
               {deleting ? 'Deleting...' : 'Delete note'}
             </button>
           </div>
         </form>
       </div>
+      <ConfirmModal
+        show={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete note"
+        body="Delete this note? This cannot be undone."
+        confirmLabel="Delete note"
+        variant="danger"
+        loading={deleting}
+      />
     </Layout>
   );
 }

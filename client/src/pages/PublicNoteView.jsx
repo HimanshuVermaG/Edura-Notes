@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
 import SecureNoteViewerLazy from '../components/SecureNoteViewerLazy';
@@ -9,10 +9,14 @@ const ZOOM_STEP = 0.25;
 
 export default function PublicNoteView() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [note, setNote] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
+
+  const backUrl = note?.userId?._id ? `/profile/${note.userId._id}` : '/';
+  const handleBack = useCallback(() => navigate(backUrl), [navigate, backUrl]);
 
   const zoomIn = useCallback(() => {
     setZoom((z) => Math.min(z + ZOOM_STEP, ZOOM_MAX));
@@ -35,6 +39,17 @@ export default function PublicNoteView() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') handleBack();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [handleBack]);
+
+  const preventContextMenu = useCallback((e) => e.preventDefault(), []);
+  const preventDrag = useCallback((e) => e.preventDefault(), []);
+
   if (loading) {
     return (
       <div className="fullscreen-pdf-loading">
@@ -56,10 +71,6 @@ export default function PublicNoteView() {
     );
   }
 
-  const backUrl = note.userId?._id ? `/profile/${note.userId._id}` : '/';
-  const preventContextMenu = (e) => e.preventDefault();
-  const preventDrag = (e) => e.preventDefault();
-
   return (
     <div
       className="fullscreen-pdf-wrapper secure-note-viewer secure-note-watermark no-drag"
@@ -67,7 +78,7 @@ export default function PublicNoteView() {
       onDragStart={preventDrag}
     >
       <div className="fullscreen-pdf-bar">
-        <span className="fullscreen-pdf-title text-truncate">{note.title}</span>
+        <span className="fullscreen-pdf-title text-truncate" title={note.title}>{note.title}</span>
         <div className="d-flex align-items-center gap-2">
           <div className="fullscreen-pdf-zoom" role="group" aria-label="Zoom">
             <button
@@ -78,7 +89,7 @@ export default function PublicNoteView() {
               title="Zoom out"
               aria-label="Zoom out"
             >
-              −
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M19 13H5v-2h14v2z"/></svg>
             </button>
             <span className="fullscreen-pdf-zoom-value" aria-live="polite">
               {Math.round(zoom * 100)}%
@@ -91,12 +102,12 @@ export default function PublicNoteView() {
               title="Zoom in"
               aria-label="Zoom in"
             >
-              +
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </button>
           </div>
-          <Link to={backUrl} className="btn btn-sm btn-outline-light">
+          <button type="button" className="btn btn-sm btn-outline-light" onClick={handleBack} aria-label="Back to profile">
             Back to profile
-          </Link>
+          </button>
         </div>
       </div>
       <div className="fullscreen-pdf-content">

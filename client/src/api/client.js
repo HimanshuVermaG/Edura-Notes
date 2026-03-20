@@ -43,6 +43,13 @@ export async function apiGetBlob(url) {
   const res = await fetch(getApiUrl(url), {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) throw new Error('Failed to load file');
+  if (!res.ok) {
+    const contentType = res.headers.get('Content-Type') || '';
+    const isJson = contentType.includes('application/json');
+    const message = isJson
+      ? (await res.json().catch(() => ({}))).message
+      : null;
+    throw new Error(message || res.statusText || 'Failed to load file');
+  }
   return res.blob();
 }

@@ -145,7 +145,14 @@ export default function AdminUsers() {
           </table>
         </div>
         {users.length === 0 && !loading && (
-          <div className="card-body text-center text-muted">No users found.</div>
+          <div className="card-body text-center text-muted">
+            <p className="mb-2">{appliedSearch.trim() ? 'No users match your search.' : 'No users found.'}</p>
+            {appliedSearch.trim() && (
+              <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => { setSearchInput(''); setAppliedSearch(''); setPage(1); }}>
+                Clear search
+              </button>
+            )}
+          </div>
         )}
       </div>
       {total > 0 && (

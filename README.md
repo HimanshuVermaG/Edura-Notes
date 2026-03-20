@@ -8,6 +8,10 @@ A full-stack notes app where users sign in with Google, organize notes in folder
 
 - [Tech stack](#tech-stack)
 - [Main features](#main-features)
+- [Site structure and routes](#site-structure-and-routes)
+- [Page and feature index](#page-and-feature-index)
+- [Linking and navigation](#linking-and-navigation)
+- [Data flow](#data-flow)
 - [Prerequisites](#prerequisites)
 - [Install & run](#install--run)
 - [Environment variables](#environment-variables)
@@ -15,6 +19,8 @@ A full-stack notes app where users sign in with Google, organize notes in folder
 - [External services & setup](#external-services--setup)
 - [Project structure](#project-structure)
 - [Scripts](#scripts)
+- [Security (note viewer)](#security-note-viewer)
+- [Important points](#important-points)
 
 ---
 
@@ -32,18 +38,132 @@ A full-stack notes app where users sign in with Google, organize notes in folder
 
 ## Main features
 
-- **Landing page** – Hero, “Sign in with Google”, and Explore (profiles + public files) for guests.
+- **Explore (default for guests)** – Root `/` redirects to `/explore`. Public profiles and public files; “Sign in with Google”; sign in via `/signin`.
 - **Google Sign-In** – One-click sign-in; JWT stored in client; optional redirect back after login.
 - **Home (signed-in)** – Browse notes by folder, search, sort (name/size/date), grid/list view, pagination (10/20/50/100 per page).
 - **Manage** – Upload PDF/images (max 10 MB), create/edit folders, move notes, set public/private, pagination.
 - **Folders** – Two-level (root + subfolder); filter notes by folder; sidebar on Home and Manage.
 - **Secure note viewer** – PDF/images in-app; no copy, no print, no drag; PDF.js worker served from app origin.
-- **Public profiles & files** – Users can mark notes public; public profile page shows public notes; anyone can view via `/profile/:userId` and `/view/note/:id`.
-- **Explore** – Lists admin-curated and owner-public profiles and files; separate pagination for profiles and files; search; Profiles section above Public files.
+- **Public profiles & files** – Users can mark notes public; public profile page shows public notes; anyone can view via `/profile/:userId` and `/view/note/:id`. A profile or note is visible if the owner set it public **or** an admin set "List on Explore" / "List profile on Explore".
+- **Explore** – Lists only **admin-curated** content: profiles with "List profile on Explore" and notes with "List on Explore"; separate pagination for Top Contributors and Public Files; search; filter All / Profiles / Notes.
 - **Admin panel** – Separate login at `/admin/login`; list users (paginated, search, per-page 10/20/50/100); user detail: storage limit, “List profile on Explore”, per-note “List on Explore”, paginated files; delete users/notes; view any note.
-- **Admin Explore curation** – Admin can set “List profile on Explore” and “List on Explore” per note; Explore and public routes show owner-public or admin-listed content.
+- **Admin Explore curation** – Admin sets "List profile on Explore" (user) and "List on Explore" (per note). Explore page shows only that curated content; public profile and public note view show owner-public **or** admin-listed content.
 - **Storage** – Per-user limit (default 50 MB); enforced on upload; admin can change limit per user.
 - **Pagination** – Home, Manage, Explore (profiles + files), Admin users list, Admin user detail (files); per-page options 10/20/50/100 where applicable.
+
+---
+
+## Site structure and routes
+
+All routes are defined in `client/src/App.jsx`. Protected routes use `ProtectedRoute`; admin routes use `AdminRoute` (and `AdminLayout` except for the admin note viewer).
+
+### Public / unauthenticated
+
+| Path | Renders | Layout | Notes |
+|------|--------|--------|--------|
+| `/` | Redirect → `/explore` | — | Always |
+| `/explore` | Explore | Layout | Default landing; hero, search, Top Contributors, Public Files |
+| `/signin` | SignIn | Layout | Google + email sign-in/sign-up tabs; `state.mode === 'signup'`; link to Explore |
+| `/signup` | Redirect → `/signin` with `state.mode: 'signup'` | — | — |
+| `/profile/:userId` | PublicProfile | Layout | Public profile: user card, search, sort, grid/list, notes by folder |
+| `/view/note/:id` | PublicNoteView | **No** (full-screen viewer) | Secure viewer; zoom; Back to profile / Home |
+| `/admin/login` | AdminLogin | **No** (standalone dark card) | Google only; "Back to main site" → `/explore` |
+
+### Protected (signed-in, non-admin)
+
+| Path | Renders | Layout | Notes |
+|------|--------|--------|--------|
+| `/home` | Homepage | Layout | Sidebar FolderList (readOnly), search, sort, view mode, pagination, NoteCard (View only) |
+| `/manage` | Manage | Layout | Upload section, storage bar, FolderList (editable), notes grid/list, NoteCard (View/Edit/Delete) |
+| `/notes/new` | Redirect → `/manage` | — | — |
+| `/notes/:id` | ViewNote | — | Redirect → `/notes/:id/view` |
+| `/notes/:id/view` | FullScreenPdfView | **No** | Secure viewer; zoom; Close → `location.state.from` or `/home` |
+| `/notes/:id/edit` | EditNote | Layout | Breadcrumb Manage; form: title, description, folder, visibility, replace file; Save/Cancel/Delete (ConfirmModal) |
+
+### Dashboard redirect
+
+| Path | Behavior |
+|------|----------|
+| `/dashboard` | If authenticated → `/home`; else → `/explore` |
+
+### Admin (requires `user.role === 'admin'`)
+
+`AdminRoute`: loading → spinner; no user → redirect `/admin/login`; not admin → redirect `/home`. For `/admin/view/note/:noteId` it renders only the page (no AdminLayout). All other admin paths render `AdminLayout` + page.
+
+| Path | Renders | Layout | Notes |
+|------|--------|--------|--------|
+| `/admin` | Redirect → `/admin/users` | — | — |
+| `/admin/dashboard` | AdminDashboard | AdminLayout | Stats: total users, notes, storage; "View all users" → `/admin/users` |
+| `/admin/users` | AdminUsers | AdminLayout | Table: name, email, notes count, storage, created; search; per-page 10/20/50/100; "View files" → user detail |
+| `/admin/users/:userId` | AdminUserDetail | AdminLayout | User card, delete user (unless self), storage limit (MB + Save), "List profile on Explore", paginated notes with "List on Explore" per note, View note link, delete selected notes |
+| `/admin/view/note/:noteId` | AdminNoteView | **No** (full-screen) | Secure viewer; "List on Explore" checkbox; zoom; Back to user |
+
+**AdminLayout:** Sidebar (Dashboard, Users), logout → `/admin/login`, topbar with user name.
+
+### Catch-all
+
+| Path | Behavior |
+|------|----------|
+| `*` | Redirect → `/` (then `/explore`) |
+
+---
+
+## Page and feature index
+
+- **SignIn** – Google (if `VITE_GOOGLE_CLIENT_ID`) and email/password sign-in and sign-up tabs; redirect after login to `location.state.from` or `/home`; link "Explore public files and profiles" → `/explore`.
+- **Explore** – Hero; single search with filter (All / Profiles / Notes); Top Contributors from `GET /api/public/explore/users` (paginated, per-page 4/8/12/20/50/100); Public Files from `GET /api/public/explore/notes` (sort: name/size/time, per-page same, exclude current user if signed in); cards link to `/profile/:userId` and `/view/note/:id`. **Visibility:** Explore shows only admin-curated content (`listedOnExplore` for notes, `profileListedOnExplore` for users).
+- **Homepage** – FolderList sidebar (readOnly, multi-select, cascading); search (button + Enter); per-page 10/20/50/100; SortBySelect (name/size/time); ViewModeToggle (grid/list); notes grouped by folder/uncategorized; NoteCard View only; view mode and sort persisted in localStorage; empty state "Go to Manage"; pagination "Showing X–Y of Z".
+- **Manage** – Same sidebar (readOnly=false: add/rename/delete folders); storage card (used/limit MB, progress bar, warning at limit); upload form: dropzone + file input, title, FolderTreeSelect, visibility (Private/Public), description, Upload/Clear; file validation 10 MB, PDF/images; notes list with sort, view mode, pagination; NoteCard with View, Edit, Delete (ConfirmModal); empty state scroll to upload.
+- **EditNote** – Load note + folders; form: title, description, folder, visibility (Private/Public), optional file replace; beforeunload when dirty; Save (PUT with or without file), Cancel → `/manage`, Delete → ConfirmModal then redirect `/manage`.
+- **FullScreenPdfView** – Fetches note by id; bar: title, zoom (0.5–3, step 0.25), Close; SecureNoteViewerLazy with `noteId`; no Layout; Escape → back; context menu/drag disabled.
+- **PublicProfile** – `GET /api/public/profile/:userId`; profile card (avatar/initials, name); Back to Explore; search; SortBySelect; ViewModeToggle; notes by folder (tree); cards link to `/view/note/:id`; empty "Browse Explore". **Visibility:** Profile visible if user has any note with `isPublic` or `listedOnExplore`, or `profileListedOnExplore`.
+- **PublicNoteView** – `GET /api/public/notes/:id`; full-screen viewer; zoom; Back to profile or Home; no Layout; Escape → back. **Visibility:** Note visible if `isPublic` or `listedOnExplore`.
+- **AdminDashboard** – `GET /api/admin/stats`; three stat cards; link to Users.
+- **AdminUsers** – `GET /api/admin/users`; search by name/email; per-page 10/20/50/100; table with "View files" → user detail.
+- **AdminUserDetail** – `GET /api/admin/users/:userId`; storage limit (MB) + Save; "List profile on Explore" toggle; notes table with per-note "List on Explore", View note → `/admin/view/note/:noteId`; pagination; delete selected notes (modal); delete user (modal, disabled for self).
+- **AdminNoteView** – `GET /api/admin/notes/:noteId`; full-screen viewer; "List on Explore" checkbox; zoom; Back to user; ErrorBoundary around viewer.
+
+---
+
+## Linking and navigation
+
+- **Layout header (main site):** Brand → `/` (if authenticated) or `/explore`; when signed in: Home → `/home`, Manage → `/manage`, Explore → `/explore`, Public profile → `/profile/:userId`, Sign out (→ `/`); when guest: Explore → `/explore`, Sign In → `/signin`, Sign Up → `/signin` with `state.mode: 'signup'`.
+- **Layout footer:** Quick links to Explore, Sign In, Home, Manage; placeholder links for Privacy Policy, Terms of Service, Help Center.
+- **Cross-page flows:** Explore → profile card "View Profile" → `/profile/:userId` → note "View" → `/view/note/:id`; Manage → NoteCard "View" → `/notes/:id/view`, "Edit" → `/notes/:id/edit`; EditNote breadcrumb and Cancel → `/manage`; Admin Users → "View files" → `/admin/users/:userId` → "View" on note → `/admin/view/note/:noteId`; AdminNoteView "Back to user" → `/admin/users/:userId`.
+
+---
+
+## Data flow
+
+```mermaid
+flowchart LR
+  subgraph entry [Entry]
+    Root["/"]
+    Root --> Explore["/explore"]
+  end
+  subgraph auth [Auth]
+    SignIn["/signin"]
+    SignIn --> Token["token + user"]
+    Token --> Protected["ProtectedRoute"]
+    Token --> AdminCheck["AdminRoute"]
+  end
+  subgraph guest [Guest]
+    Explore --> Profile["/profile/:userId"]
+    Profile --> PublicView["/view/note/:id"]
+  end
+  subgraph user [Signed-in user]
+    Home["/home"]
+    Manage["/manage"]
+    Manage --> EditNote["/notes/:id/edit"]
+    Home --> FullView["/notes/:id/view"]
+    Manage --> FullView
+  end
+  subgraph admin [Admin]
+    AdminCheck --> AdminUsers["/admin/users"]
+    AdminUsers --> AdminDetail["/admin/users/:userId"]
+    AdminDetail --> AdminNoteView["/admin/view/note/:noteId"]
+  end
+```
 
 ---
 
@@ -155,7 +275,7 @@ Serve the `client/dist` folder with any static host; set `CLIENT_ORIGIN` (and op
 - **Protected routes:** `ProtectedRoute` checks `AuthContext`; if not authenticated, redirects to `/` with `state.from` so user returns after login.
 - **Admin:** `AdminRoute` checks JWT and `user.role === 'admin'`; admin role is set when `user.email === process.env.ADMIN_EMAIL` (see `authRoutes`).
 
-**Implementing auth elsewhere:** Use `AuthContext` (`useAuth()`) for `user`, `isAuthenticated`, `setToken`, `signOut`. Call `api()` from `client/src/api/client.js` which sends `Authorization: Bearer <token>`.
+**Implementing auth elsewhere:** Use `AuthContext` (`useAuth()`) for `user`, `isAuthenticated`, `setToken`, `signOut`. Call `api()` from `client/src/api/client.js` which sends `Authorization: Bearer <token>`. `ToastContext` (`addToast`) is used for upload success and error feedback; `ConfirmModal` is used for delete confirmation on NoteCard and EditNote.
 
 ### Notes & folders
 
@@ -168,8 +288,8 @@ Serve the `client/dist` folder with any static host; set `CLIENT_ORIGIN` (and op
 
 ### Public & Explore
 
-- **Explore notes:** Without search: only notes with **List on Explore** checked in admin. With search: also includes public files so they can be found. Paginated.
-- **Explore users:** Without search: only users with **List profile on Explore** checked in admin (shown automatically). With search: also includes users who have public/listed notes so public profiles can be found by name. Paginated.
+- **Explore notes:** `GET /api/public/explore/notes?page=1&limit=10&search=...&excludeUserId=...&sortBy=...` – returns only notes with `listedOnExplore: true` (admin-curated); paginated.
+- **Explore users:** `GET /api/public/explore/users?page=1&limit=10&search=...` – returns only users with `profileListedOnExplore: true` (admin-curated); paginated.
 - **Public profile:** `GET /api/public/profile/:userId` – profile viewable if user has explore-visible notes or `profileListedOnExplore`; returns user + folders + notes (isPublic or listedOnExplore).
 - **Public note:** `GET /api/public/notes/:id` and `GET /api/public/notes/:id/file` – note viewable if `isPublic` or `listedOnExplore`.
 
@@ -235,18 +355,23 @@ Notes Handling/
 │   │   └── pdf.worker.min.mjs   # PDF.js worker (same-origin)
 │   ├── src/
 │   │   ├── api/            # API client (fetch + auth header)
-│   │   ├── components/    # Layout, NoteCard, SecureNoteViewer, etc.
-│   │   ├── context/        # AuthContext
-│   │   ├── pages/          # Landing, Home, Manage, Explore, Admin, Public*, etc.
+│   │   ├── components/     # Layout, ProtectedRoute, AdminRoute, AdminLayout,
+│   │   │                   # FolderList, FolderTreeSelect, NoteCard, SortBySelect,
+│   │   │                   # ViewModeToggle, SecureNoteViewer, SecureNoteViewerLazy,
+│   │   │                   # ConfirmModal, ErrorBoundary
+│   │   ├── context/        # AuthContext, ToastContext
+│   │   ├── pages/          # Explore, SignIn, Homepage, Manage, EditNote, ViewNote,
+│   │   │                   # FullScreenPdfView, PublicProfile, PublicNoteView, AdminLogin,
+│   │   │                   # admin/ (AdminDashboard, AdminUsers, AdminUserDetail, AdminNoteView)
 │   │   ├── styles/         # edura.css (theme)
-│   │   └── utils/          # folderTree, sortNotes
+│   │   └── utils/          # folderTree, sortNotes, avatar
 │   ├── .env.example
 │   ├── package.json
 │   └── vite.config.js
 ├── server/                 # Express backend
 │   ├── middleware/         # auth, admin, upload (Multer)
 │   ├── models/             # User, Note, Folder
-│   ├── routes/             # auth, admin, folders, notes, public
+│   ├── routes/             # authRoutes, folderRoutes, noteRoutes, publicRoutes, adminRoutes
 │   ├── scripts/            # seedAdminUser, seedDemoUser
 │   ├── .env.example
 │   └── package.json
@@ -289,6 +414,7 @@ Notes Handling/
 
 1. **PDF viewer:** The worker must be served from your app. The client copies it to `public/pdf.worker.min.mjs` on install; do not remove that file or the postinstall script.
 2. **Admin:** Only the account whose email matches `ADMIN_EMAIL` can access `/admin`. Sign in at `/admin/login` with that Google account.
-3. **Explore visibility:** A note or profile appears on Explore if the owner set it public **or** an admin set “List on Explore” / “List profile on Explore”.
+3. **Explore visibility:** The Explore page shows only admin-curated content (notes with "List on Explore", profiles with "List profile on Explore"). Public profile and public note view show owner-public or admin-listed content.
 4. **Upload limit:** 10 MB per file (client and server); change in `uploadMiddleware.js` and Manage.jsx if you need a different limit.
 5. **CORS:** For production, set `CLIENT_ORIGIN` in `server/.env` to your frontend URL so the API only accepts requests from that origin.
+6. **Audit:** See [AUDIT.md](AUDIT.md) for project logic, abandoned-code list, and a checklist for cleanup and doc alignment.

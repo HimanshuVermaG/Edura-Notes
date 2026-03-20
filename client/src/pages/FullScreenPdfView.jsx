@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
 import SecureNoteViewerLazy from '../components/SecureNoteViewerLazy';
@@ -9,10 +9,25 @@ const ZOOM_STEP = 0.25;
 
 export default function FullScreenPdfView() {
   const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const from = location.state?.from || '/home';
   const [note, setNote] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
+
+  const handleClose = useCallback(() => {
+    navigate(from);
+  }, [navigate, from]);
+
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [handleClose]);
 
   const zoomIn = useCallback(() => {
     setZoom((z) => Math.min(z + ZOOM_STEP, ZOOM_MAX));
@@ -59,7 +74,7 @@ export default function FullScreenPdfView() {
       onDragStart={preventDrag}
     >
       <div className="fullscreen-pdf-bar">
-        <span className="fullscreen-pdf-title text-truncate">{note.title}</span>
+        <span className="fullscreen-pdf-title text-truncate" title={note.title}>{note.title}</span>
         <div className="d-flex align-items-center gap-2">
           <div className="fullscreen-pdf-zoom" role="group" aria-label="Zoom">
             <button
@@ -70,7 +85,7 @@ export default function FullScreenPdfView() {
               title="Zoom out"
               aria-label="Zoom out"
             >
-              −
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M19 13H5v-2h14v2z"/></svg>
             </button>
             <span className="fullscreen-pdf-zoom-value" aria-live="polite">
               {Math.round(zoom * 100)}%
@@ -83,12 +98,12 @@ export default function FullScreenPdfView() {
               title="Zoom in"
               aria-label="Zoom in"
             >
-              +
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </button>
           </div>
-          <Link to="/home" className="btn btn-sm btn-outline-light">
+          <button type="button" className="btn btn-sm btn-outline-light" onClick={handleClose} aria-label="Close">
             Close
-          </Link>
+          </button>
         </div>
       </div>
       <div className="fullscreen-pdf-content">

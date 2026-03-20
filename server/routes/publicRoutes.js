@@ -17,10 +17,15 @@ const router = express.Router();
 const EXPLORE_NOTES_MAX_LIMIT = 100;
 const EXPLORE_USERS_MAX_LIMIT = 100;
 
-/** Notes that are listed on Explore by admin – shown automatically on explore page. */
-const listedOnExploreFilter = { listedOnExplore: true };
-/** Notes that are public or listed – used when searching so public files can be found. */
-const exploreNotesFilter = { $or: [ { isPublic: true }, { listedOnExplore: true } ] };
+/** Explore page: only notes explicitly approved by admin to show on explore. */
+const exploreNotesFilter = { listedOnExplore: true };
+
+function getExploreNotesSort(sortBy) {
+  const key = (sortBy || 'time').toLowerCase();
+  if (key === 'name') return { title: 1 };
+  if (key === 'size') return { size: 1 };
+  return { updatedAt: -1 }; // time: newest first
+}
 
 router.get('/explore/notes', async (req, res) => {
   try {
@@ -28,6 +33,7 @@ router.get('/explore/notes', async (req, res) => {
     const limit = Math.min(EXPLORE_NOTES_MAX_LIMIT, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const search = (req.query.search || '').trim();
     const excludeUserId = (req.query.excludeUserId || '').trim();
+    const sortBy = (req.query.sortBy || 'time').trim();
     const mongoose = (await import('mongoose')).default;
     // No search: only admin-listed files. With search: include public files so they can be found.
     const visibilityFilter = search ? exploreNotesFilter : listedOnExploreFilter;
@@ -45,39 +51,32 @@ router.get('/explore/notes', async (req, res) => {
         ],
       });
     }
+    const sort = getExploreNotesSort(sortBy);
     const [total, notes] = await Promise.all([
       Note.countDocuments(filter),
       Note.find(filter)
-        .populate('userId', 'name')
+        .populate('userId', 'name picture')
         .populate('folderId', 'name')
-        .sort({ updatedAt: -1 })
+        .sort(sort)
         .skip((page - 1) * limit)
         .limit(limit)
         .lean(),
     ]);
     res.json({ notes, total, page, limit });
   } catch (err) {
+    console.error('[publicRoutes] /explore/notes error:', err);
     res.status(500).json({ message: err.message || 'Failed to search notes' });
   }
 });
 
+/** Explore page: only users whose profile is approved by admin to show on explore. */
 router.get('/explore/users', async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(EXPLORE_USERS_MAX_LIMIT, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const search = (req.query.search || '').trim();
-    const mongoose = (await import('mongoose')).default;
-    let userFilter;
+    const userFilter = { profileListedOnExplore: true };
     if (search) {
-      // With search: show users who are listed on explore OR have public/listed notes (so public profiles can be found).
-      const noteUserIds = await Note.distinct('userId', exploreNotesFilter);
-      const listedUsers = await User.find({ profileListedOnExplore: true }).select('_id').lean();
-      const listedIds = listedUsers.map((u) => u._id.toString());
-      const allIds = [...new Set([...noteUserIds.map((id) => id.toString()), ...listedIds])];
-      if (allIds.length === 0) {
-        return res.json({ users: [], total: 0, page, limit });
-      }
-      userFilter = { _id: { $in: allIds.map((id) => new mongoose.Types.ObjectId(id)) } };
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       userFilter.name = { $regex: escaped, $options: 'i' };
     } else {
@@ -87,7 +86,7 @@ router.get('/explore/users', async (req, res) => {
     const [total, users] = await Promise.all([
       User.countDocuments(userFilter),
       User.find(userFilter)
-        .select('_id name')
+        .select('_id name picture')
         .sort({ name: 1 })
         .skip((page - 1) * limit)
         .limit(limit)
@@ -95,6 +94,7 @@ router.get('/explore/users', async (req, res) => {
     ]);
     res.json({ users, total, page, limit });
   } catch (err) {
+    console.error('[publicRoutes] /explore/users error:', err);
     res.status(500).json({ message: err.message || 'Failed to search users' });
   }
 });
@@ -102,7 +102,7 @@ router.get('/explore/users', async (req, res) => {
 router.get('/profile/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(userId).select('_id name profileListedOnExplore').lean();
+    const user = await User.findById(userId).select('_id name profileListedOnExplore picture').lean();
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const hasVisibleNotes = await Note.exists({ userId, $or: [ { isPublic: true }, { listedOnExplore: true } ] });
@@ -121,7 +121,7 @@ router.get('/profile/:userId', async (req, res) => {
       .sort({ updatedAt: -1 })
       .lean();
 
-    res.json({ user: { _id: user._id, name: user.name }, folders, notes });
+    res.json({ user: { _id: user._id, name: user.name, picture: user.picture || '' }, folders, notes });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to load profile' });
   }
