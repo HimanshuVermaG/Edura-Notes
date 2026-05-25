@@ -22,13 +22,13 @@
 
 /* Dark theme (toggle via data-theme="dark" on html) */
 [data-theme="dark"] {
-  --edura-bg: #0a0f1a;
-  --edura-card-bg: #111827;
-  --edura-text: #f1f5f9;
-  --edura-text-muted: #94a3b8;
-  --edura-border: #1e293b;
-  --edura-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.3);
-  --edura-shadow-hover: 0 12px 32px -4px rgba(0, 0, 0, 0.4);
+  --edura-bg: #141c30;
+  --edura-card-bg: #1f2937;
+  --edura-text: #f8fafc;
+  --edura-text-muted: #9ca3af;
+  --edura-border: #374151;
+  --edura-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.25);
+  --edura-shadow-hover: 0 12px 32px -4px rgba(0, 0, 0, 0.35);
 }
 
 body {
@@ -67,8 +67,8 @@ h3 {
 }
 
 [data-theme="dark"] .glass {
-  background: rgba(17, 24, 39, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(31, 41, 55, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* =============================================
@@ -3921,4 +3921,45 @@ textarea:focus-visible {
 [data-theme="dark"] .explore-hero-filter-select {
   background: rgba(0, 0, 0, 0.3);
   color: rgba(255, 255, 255, 0.8);
+}
+
+/* --- Secure Viewer Lazy Loading & Indicator --- */
+
+.lazy-page-wrapper {
+  position: relative;
+  background: transparent;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.lazy-page-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+  color: var(--edura-text-muted);
+}
+
+[data-theme="dark"] .lazy-page-placeholder {
+  background-color: #1a1a1a;
+}
+
+.secure-note-page-indicator {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  z-index: 100;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: opacity 0.3s ease;
 }

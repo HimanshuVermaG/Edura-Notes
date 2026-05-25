@@ -1,11 +1,13 @@
 import express from 'express';
 import fs from 'fs';
+import { Readable } from 'stream';
 import Note from '../models/Note.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { uploadPdf, getUploadPath } from '../middleware/uploadMiddleware.js';
 import cloudinary, { isCloudinaryConfigured } from '../lib/cloudinary.js';
 import { getResourceType, destroyCloudinaryAsset } from '../lib/cloudinaryNotes.js';
 import { getUsedStorageBytes } from '../lib/storageHelper.js';
+import { fetchDriveStream } from '../lib/driveHelper.js';
 
 const CLOUDINARY_FOLDER = 'notes-app';
 const DEFAULT_STORAGE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
@@ -96,19 +98,44 @@ router.get('/:id/file', async (req, res) => {
   try {
     const note = await Note.findOne({ _id: req.params.id, userId: req.user._id });
     if (!note) return res.status(404).json({ message: 'Note not found' });
+    
+    if (note.driveLink) {
+      const fileIdMatch = note.driveLink.match(/[-\w]{25,}/);
+      if (!fileIdMatch) return res.status(400).json({ message: 'Invalid Google Drive link' });
+      const fileId = fileIdMatch[0];
+      
+      try {
+        const fetchResponse = await fetchDriveStream(fileId);
+        const contentType = fetchResponse.headers.get('content-type') || note.mimeType || 'application/pdf';
+        const contentLength = fetchResponse.headers.get('content-length');
+        const dispName = note.originalName || 'drive_file';
+        
+        res.setHeader('Content-Type', contentType);
+        if (contentLength) res.setHeader('Content-Length', contentLength);
+        res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+        
+        return Readable.fromWeb(fetchResponse.body).pipe(res);
+      } catch (err) {
+        return res.status(500).json({ message: err.message });
+      }
+    }
+    
     if (!note.fileName) return res.status(404).json({ message: 'No file for this note' });
     if (note.fileUrl) {
       return res.redirect(302, note.fileUrl);
     }
     const filePath = getUploadPath(note.fileName);
     if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'File not found' });
+    const stat = fs.statSync(filePath);
     const contentType = getMimeType(note);
     const dispName = note.originalName || note.fileName || 'file';
     res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', stat.size);
     res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);
   } catch (err) {
+    console.error('File fetch error:', err);
     res.status(500).json({ message: err.message || 'Failed to get file' });
   }
 });
@@ -125,33 +152,58 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', uploadPdf.single('file'), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: 'PDF or image file is required' });
+    const hasFile = !!req.file;
+    const driveLink = req.body.driveLink ? req.body.driveLink.trim() : null;
+    
+    if (!hasFile && !driveLink) return res.status(400).json({ message: 'PDF/image file OR Google Drive link is required' });
+    
     const limitBytes = req.user.storageLimitBytes ?? DEFAULT_STORAGE_LIMIT_BYTES;
     const usedBytes = await getUsedStorageBytes(req.user._id);
-    const newTotal = usedBytes + (req.file.size ?? 0);
-    if (newTotal > limitBytes) {
-      return res.status(413).json({
-        message: formatStorageMessage(newTotal, limitBytes),
-      });
+    
+    let fileName = null;
+    let fileUrl = null;
+    let originalName = '';
+    let mimeType = 'application/pdf';
+    let size = null;
+    
+    if (hasFile) {
+      const newTotal = usedBytes + (req.file.size ?? 0);
+      if (newTotal > limitBytes) {
+        return res.status(413).json({
+          message: formatStorageMessage(newTotal, limitBytes),
+        });
+      }
+      if (!isCloudinaryConfigured) {
+        return res.status(503).json({
+          message: 'File upload is not configured. Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET to server/.env.',
+        });
+      }
+      const result = await uploadBufferToCloudinary(req.file.buffer, req.file.mimetype);
+      fileName = result.public_id;
+      fileUrl = result.secure_url;
+      originalName = req.file.originalname || '';
+      mimeType = req.file.mimetype || 'application/pdf';
+      size = req.file.size ?? null;
+    } else {
+      const fileIdMatch = driveLink.match(/[-\w]{25,}/);
+      if (!fileIdMatch) return res.status(400).json({ message: 'Invalid Google Drive link format' });
+      originalName = 'Drive File';
     }
-    if (!isCloudinaryConfigured) {
-      return res.status(503).json({
-        message: 'File upload is not configured. Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET to server/.env.',
-      });
-    }
-    const title = (req.body.title || req.file.originalname || 'Untitled').trim() || 'Untitled';
+    
+    const title = (req.body.title || (hasFile ? req.file.originalname : 'Drive Note')).trim() || 'Untitled';
     const description = (req.body.description || '').trim();
     const folderId = req.body.folderId || null;
     const isPublic = req.body.isPublic === 'true' || req.body.isPublic === true;
-    const result = await uploadBufferToCloudinary(req.file.buffer, req.file.mimetype);
+    
     const note = await Note.create({
       title,
       description: description || '',
-      fileName: result.public_id,
-      fileUrl: result.secure_url,
-      originalName: req.file.originalname || '',
-      mimeType: req.file.mimetype || 'application/pdf',
-      size: req.file.size ?? null,
+      fileName,
+      fileUrl,
+      driveLink,
+      originalName,
+      mimeType,
+      size,
       userId: req.user._id,
       folderId: folderId || null,
       isPublic,
@@ -172,6 +224,8 @@ router.put('/:id', uploadPdf.single('file'), async (req, res) => {
     if (req.body.description !== undefined) note.description = (req.body.description || '').trim();
     if (req.body.folderId !== undefined) note.folderId = req.body.folderId || null;
     if (req.body.isPublic !== undefined) note.isPublic = req.body.isPublic === 'true' || req.body.isPublic === true;
+
+    const driveLink = req.body.driveLink ? req.body.driveLink.trim() : null;
 
     if (req.file) {
       const limitBytes = req.user.storageLimitBytes ?? DEFAULT_STORAGE_LIMIT_BYTES;
@@ -196,11 +250,11 @@ router.put('/:id', uploadPdf.single('file'), async (req, res) => {
       } catch (uploadErr) {
         return res.status(500).json({ message: uploadErr.message || 'Failed to upload file' });
       }
-      if (hadCloudinary) {
+      if (hadCloudinary && !note.driveLink) {
         try {
           await destroyCloudinaryAsset(oldPublicId, getResourceType(note.mimeType));
         } catch {}
-      } else {
+      } else if (note.fileName && !note.driveLink) {
         const oldPath = getUploadPath(oldPublicId);
         if (fs.existsSync(oldPath)) {
           try { fs.unlinkSync(oldPath); } catch {}
@@ -208,9 +262,31 @@ router.put('/:id', uploadPdf.single('file'), async (req, res) => {
       }
       note.fileName = result.public_id;
       note.fileUrl = result.secure_url;
+      note.driveLink = null;
       note.originalName = req.file.originalname || '';
       note.mimeType = req.file.mimetype || note.mimeType || 'application/pdf';
       note.size = req.file.size ?? note.size ?? null;
+    } else if (driveLink) {
+      const fileIdMatch = driveLink.match(/[-\w]{25,}/);
+      if (!fileIdMatch) return res.status(400).json({ message: 'Invalid Google Drive link format' });
+      
+      if (note.fileUrl && !note.driveLink) {
+        try {
+          await destroyCloudinaryAsset(note.fileName, getResourceType(note.mimeType));
+        } catch {}
+      } else if (note.fileName && !note.driveLink) {
+        const oldPath = getUploadPath(note.fileName);
+        if (fs.existsSync(oldPath)) {
+          try { fs.unlinkSync(oldPath); } catch {}
+        }
+      }
+      
+      note.driveLink = driveLink;
+      note.fileName = null;
+      note.fileUrl = null;
+      note.originalName = 'Drive File';
+      note.mimeType = 'application/pdf';
+      note.size = null;
     }
 
     await note.save();
@@ -224,7 +300,9 @@ router.delete('/:id', async (req, res) => {
   try {
     const note = await Note.findOne({ _id: req.params.id, userId: req.user._id });
     if (!note) return res.status(404).json({ message: 'Note not found' });
-    if (note.fileUrl) {
+    if (note.driveLink) {
+      // No external file to delete
+    } else if (note.fileUrl) {
       try {
         await destroyCloudinaryAsset(note.fileName, getResourceType(note.mimeType));
       } catch {}

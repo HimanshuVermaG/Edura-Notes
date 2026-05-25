@@ -1,5 +1,6 @@
 import express from 'express';
 import fs from 'fs';
+import { Readable } from 'stream';
 import User from '../models/User.js';
 import Note from '../models/Note.js';
 import Folder from '../models/Folder.js';
@@ -8,6 +9,7 @@ import { adminMiddleware } from '../middleware/adminMiddleware.js';
 import { getUploadPath } from '../middleware/uploadMiddleware.js';
 import { getResourceType, destroyCloudinaryAsset } from '../lib/cloudinaryNotes.js';
 import { getUsedStorageBytes } from '../lib/storageHelper.js';
+import { fetchDriveStream } from '../lib/driveHelper.js';
 
 const DEFAULT_STORAGE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
 
@@ -212,15 +214,39 @@ router.get('/notes/:id/file', async (req, res) => {
   try {
     const note = await Note.findById(req.params.id).lean();
     if (!note) return res.status(404).json({ message: 'Note not found' });
+    
+    if (note.driveLink) {
+      const fileIdMatch = note.driveLink.match(/[-\w]{25,}/);
+      if (!fileIdMatch) return res.status(400).json({ message: 'Invalid Google Drive link' });
+      const fileId = fileIdMatch[0];
+      
+      try {
+        const fetchResponse = await fetchDriveStream(fileId);
+        const contentType = fetchResponse.headers.get('content-type') || note.mimeType || 'application/pdf';
+        const contentLength = fetchResponse.headers.get('content-length');
+        const dispName = note.originalName || 'drive_file';
+        
+        res.setHeader('Content-Type', contentType);
+        if (contentLength) res.setHeader('Content-Length', contentLength);
+        res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+        
+        return Readable.fromWeb(fetchResponse.body).pipe(res);
+      } catch (err) {
+        return res.status(500).json({ message: err.message });
+      }
+    }
+    
     if (!note.fileName) return res.status(404).json({ message: 'No file for this note' });
     if (note.fileUrl) {
       return res.redirect(302, note.fileUrl);
     }
     const filePath = getUploadPath(note.fileName);
     if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'File not found' });
+    const stat = fs.statSync(filePath);
     const contentType = getMimeType(note);
     const dispName = note.originalName || note.fileName || 'file';
     res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', stat.size);
     res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);

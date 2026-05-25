@@ -67,7 +67,7 @@ All routes are defined in `client/src/App.jsx`. Protected routes use `ProtectedR
 | `/signup` | Redirect → `/signin` with `state.mode: 'signup'` | — | — |
 | `/profile/:userId` | PublicProfile | Layout | Public profile: user card, search, sort, grid/list, notes by folder |
 | `/view/note/:id` | PublicNoteView | **No** (full-screen viewer) | Secure viewer; zoom; Back to profile / Home |
-| `/admin/login` | AdminLogin | **No** (standalone dark card) | Google only; "Back to main site" → `/explore` |
+| `/admin/login` | AdminLogin | **No** (standalone dark card) | Google + email/password sign-in; "Back to main site" → `/explore` |
 
 ### Protected (signed-in, non-admin)
 
@@ -76,7 +76,6 @@ All routes are defined in `client/src/App.jsx`. Protected routes use `ProtectedR
 | `/home` | Homepage | Layout | Sidebar FolderList (readOnly), search, sort, view mode, pagination, NoteCard (View only) |
 | `/manage` | Manage | Layout | Upload section, storage bar, FolderList (editable), notes grid/list, NoteCard (View/Edit/Delete) |
 | `/notes/new` | Redirect → `/manage` | — | — |
-| `/notes/:id` | ViewNote | — | Redirect → `/notes/:id/view` |
 | `/notes/:id/view` | FullScreenPdfView | **No** | Secure viewer; zoom; Close → `location.state.from` or `/home` |
 | `/notes/:id/edit` | EditNote | Layout | Breadcrumb Manage; form: title, description, folder, visibility, replace file; Save/Cancel/Delete (ConfirmModal) |
 
@@ -92,8 +91,8 @@ All routes are defined in `client/src/App.jsx`. Protected routes use `ProtectedR
 
 | Path | Renders | Layout | Notes |
 |------|--------|--------|--------|
-| `/admin` | Redirect → `/admin/users` | — | — |
-| `/admin/dashboard` | AdminDashboard | AdminLayout | Stats: total users, notes, storage; "View all users" → `/admin/users` |
+| `/admin` | Redirect → `/admin/dashboard` | — | — |
+| `/admin/dashboard` | AdminDashboard | AdminLayout | Stats: total users, notes, storage, plus paginated user table; "View files" → user detail |
 | `/admin/users` | AdminUsers | AdminLayout | Table: name, email, notes count, storage, created; search; per-page 10/20/50/100; "View files" → user detail |
 | `/admin/users/:userId` | AdminUserDetail | AdminLayout | User card, delete user (unless self), storage limit (MB + Save), "List profile on Explore", paginated notes with "List on Explore" per note, View note link, delete selected notes |
 | `/admin/view/note/:noteId` | AdminNoteView | **No** (full-screen) | Secure viewer; "List on Explore" checkbox; zoom; Back to user |
@@ -118,7 +117,7 @@ All routes are defined in `client/src/App.jsx`. Protected routes use `ProtectedR
 - **FullScreenPdfView** – Fetches note by id; bar: title, zoom (0.5–3, step 0.25), Close; SecureNoteViewerLazy with `noteId`; no Layout; Escape → back; context menu/drag disabled.
 - **PublicProfile** – `GET /api/public/profile/:userId`; profile card (avatar/initials, name); Back to Explore; search; SortBySelect; ViewModeToggle; notes by folder (tree); cards link to `/view/note/:id`; empty "Browse Explore". **Visibility:** Profile visible if user has any note with `isPublic` or `listedOnExplore`, or `profileListedOnExplore`.
 - **PublicNoteView** – `GET /api/public/notes/:id`; full-screen viewer; zoom; Back to profile or Home; no Layout; Escape → back. **Visibility:** Note visible if `isPublic` or `listedOnExplore`.
-- **AdminDashboard** – `GET /api/admin/stats`; three stat cards; link to Users.
+- **AdminDashboard** – `GET /api/admin/stats` and `GET /api/admin/users`; three stat cards plus full paginated user list.
 - **AdminUsers** – `GET /api/admin/users`; search by name/email; per-page 10/20/50/100; table with "View files" → user detail.
 - **AdminUserDetail** – `GET /api/admin/users/:userId`; storage limit (MB) + Save; "List profile on Explore" toggle; notes table with per-note "List on Explore", View note → `/admin/view/note/:noteId`; pagination; delete selected notes (modal); delete user (modal, disabled for self).
 - **AdminNoteView** – `GET /api/admin/notes/:noteId`; full-screen viewer; "List on Explore" checkbox; zoom; Back to user; ErrorBoundary around viewer.
@@ -230,14 +229,9 @@ npm run dev
 
 Client runs at `http://localhost:5173`. Vite proxies `/api` to the server.
 
-### 5. Production build (optional)
+### 5. Production build & Hosting
 
-```bash
-cd client
-npm run build
-```
-
-Serve the `client/dist` folder with any static host; set `CLIENT_ORIGIN` (and optionally `MONGODB_URI`, Cloudinary, etc.) for the production server.
+For detailed instructions on deploying the server (Vercel/Railway/Render) and client (Vercel/Netlify/Cloudflare), setting up external services, and linking the frontend and backend, please see the **[Hosting Guide (hosting.md)](hosting.md)**.
 
 ---
 
@@ -255,7 +249,7 @@ Serve the `client/dist` folder with any static host; set `CLIENT_ORIGIN` (and op
 | `CLOUDINARY_CLOUD_NAME` | Yes* | Cloudinary cloud name |
 | `CLOUDINARY_API_KEY` | Yes* | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Yes* | Cloudinary API secret (keep server-side only) |
-| `ADMIN_EMAIL` | No | Google email that receives admin role; used for `/admin` |
+| `ADMIN_EMAIL` | No | Email used when seeding admin user (can log in with password via `/admin/login`) |
 
 \*Required for full functionality (Sign-In and uploads).
 
@@ -263,6 +257,7 @@ Serve the `client/dist` folder with any static host; set `CLIENT_ORIGIN` (and op
 
 | Variable | Required | Description |
 |----------|----------|-------------|
+| `VITE_API_URL` | Yes (prod) | Full URL of the hosted backend. Leave empty for local dev to use Vite proxy. |
 | `VITE_GOOGLE_CLIENT_ID` | Yes* | Same as server `GOOGLE_CLIENT_ID` for Google Sign-In button |
 
 ---

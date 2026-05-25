@@ -13,30 +13,12 @@ function getStripClass(note) {
   return 'note-card-strip-other';
 }
 
-export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActions = true, folderName, showFileName = true, showVisibilityToggle = false, showUploadedBy = false }) {
+export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActions = true, folderName, showFileName = true }) {
   const [deleting, setDeleting] = useState(false);
-  const [togglingVisibility, setTogglingVisibility] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const { addToast } = useToast();
   const location = useLocation();
   const viewLinkState = { from: location.pathname };
-
-  const handleVisibilityChange = async (e) => {
-    const isPublic = e.target.value === 'true';
-    if (note.isPublic === isPublic) return;
-    setTogglingVisibility(true);
-    try {
-      await api(`/notes/${note._id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ isPublic }),
-      });
-      onDeleted?.();
-    } catch (err) {
-      addToast(err.message || 'Failed to update visibility', 'error');
-    } finally {
-      setTogglingVisibility(false);
-    }
-  };
 
   const handleDeleteConfirm = async () => {
     setDeleting(true);
@@ -53,7 +35,7 @@ export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActio
 
   const label = note.originalName || 'Note';
   const description = note.description?.trim() || '';
-  const authorName = note.userId?.name || '';
+
   const isList = viewMode === 'list';
 
   if (isList) {
@@ -71,24 +53,8 @@ export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActio
             {folderName != null && (
               <span className="badge bg-light text-dark small" style={{ borderRadius: '9999px' }}>{folderName}</span>
             )}
-            {showVisibilityToggle && (
-              <select
-                className="form-select form-select-sm small"
-                style={{ width: 'auto', minWidth: 90 }}
-                value={note.isPublic === true ? 'true' : 'false'}
-                onChange={handleVisibilityChange}
-                disabled={togglingVisibility}
-                title="Visibility"
-              >
-                <option value="false">Private</option>
-                <option value="true">Public</option>
-              </select>
-            )}
             {description && (
               <span className="text-muted small text-truncate" style={{ maxWidth: 240 }} title={description}>{description}</span>
-            )}
-            {showUploadedBy && authorName && (
-              <span className="text-muted small">By {authorName}</span>
             )}
           </div>
           <div className="d-flex gap-1 flex-shrink-0">
@@ -139,26 +105,6 @@ export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActio
               <p className="card-text small mb-1 text-muted note-card-description" title={description}>
                 {description.length > 80 ? description.slice(0, 80) + '…' : description}
               </p>
-            )}
-            {showUploadedBy && authorName && (
-              <p className="card-text small mb-2 text-muted">Uploaded by {authorName}</p>
-            )}
-            {showVisibilityToggle && (
-              <div className="mb-2">
-                <label htmlFor={`visibility-${note._id}`} className="form-label small visually-hidden">Visibility</label>
-                <select
-                  id={`visibility-${note._id}`}
-                  className="form-select form-select-sm small"
-                  style={{ width: 'auto', minWidth: 90 }}
-                  value={note.isPublic === true ? 'true' : 'false'}
-                  onChange={handleVisibilityChange}
-                  disabled={togglingVisibility}
-                  title="Visibility"
-                >
-                  <option value="false">Private</option>
-                  <option value="true">Public</option>
-                </select>
-              </div>
             )}
             {folderName != null && (
               <span className="badge bg-light text-dark small mb-2" style={{ borderRadius: '9999px' }}>{folderName}</span>

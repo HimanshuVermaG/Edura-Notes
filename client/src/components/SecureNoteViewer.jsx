@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { apiGetBlob } from '../api/client';
+import { apiGetBlob, apiGetBlobWithProgress } from '../api/client';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
@@ -15,16 +15,76 @@ function inferMimeType(fileName) {
   return mime[ext] || 'application/pdf';
 }
 
+function LazyPage({ pageNumber, width, onActive }) {
+  const [isRendered, setIsRendered] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    // Observer 1: Lazy loading (triggers early, unobserves after rendering)
+    const loadObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsRendered(true);
+          loadObserver.disconnect();
+        }
+      },
+      { rootMargin: '150% 0px' }
+    );
+    loadObserver.observe(el);
+
+    // Observer 2: Active page tracking (triggers when near the center of the viewport)
+    const activeObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          onActive(pageNumber);
+        }
+      },
+      { rootMargin: '-40% 0px -40% 0px' }
+    );
+    activeObserver.observe(el);
+
+    return () => {
+      loadObserver.disconnect();
+      activeObserver.disconnect();
+    };
+  }, [pageNumber, onActive]);
+
+  const estimatedHeight = width * 1.414;
+
+  return (
+    <div ref={ref} className="lazy-page-wrapper" style={{ minHeight: isRendered ? 'auto' : estimatedHeight, width, marginBottom: 16 }}>
+      {isRendered ? (
+        <Page
+          pageNumber={pageNumber}
+          width={width}
+          renderTextLayer={false}
+          renderAnnotationLayer={true}
+          className="secure-note-pdf-page"
+        />
+      ) : (
+        <div className="lazy-page-placeholder" style={{ width: '100%', height: estimatedHeight }}>
+          <div className="spinner-border spinner-border-sm text-primary" role="status" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pdfBlobUrl, fullScreen: fullScreenProp = false, mimeType: mimeTypeProp, fileName, zoom: zoomProp = 1 }) {
   const mimeType = mimeTypeProp || (fileName ? inferMimeType(fileName) : 'application/pdf');
   const isImage = mimeType && mimeType.startsWith('image/');
   const containerRef = useRef(null);
   const [url, setUrl] = useState(pdfBlobUrl || null);
   const [numPages, setNumPages] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [pageWidth, setPageWidth] = useState(800);
   const zoom = typeof zoomProp === 'number' && zoomProp > 0 ? zoomProp : 1;
   const fileId = adminNoteId || publicNoteId || noteId;
   const [loading, setLoading] = useState(!!fileId && !pdfBlobUrl);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   const [error, setError] = useState(null);
   const createdUrlRef = useRef(null);
 
@@ -45,8 +105,11 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
         : `/notes/${noteId}/file`;
     let cancelled = false;
     setLoading(true);
+    setDownloadProgress(0);
     setError(null);
-    apiGetBlob(fileUrl)
+    apiGetBlobWithProgress(fileUrl, (percent) => {
+      if (!cancelled) setDownloadProgress(percent);
+    })
       .then((blob) => {
         if (cancelled) return;
         const u = URL.createObjectURL(blob);
@@ -97,6 +160,10 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
     setError(err?.message || 'Failed to load file');
   }, []);
 
+  const handlePageActive = useCallback((pageNumber) => {
+    setCurrentPage(pageNumber);
+  }, []);
+
   const preventContextMenu = useCallback((e) => {
     e.preventDefault();
   }, []);
@@ -107,9 +174,14 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
 
   if (loading) {
     return (
-      <div className="secure-note-viewer p-4 text-center">
+      <div className="secure-note-viewer p-4 text-center d-flex flex-column align-items-center justify-content-center" style={{ minHeight: 480 }}>
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
+        </div>
+        <div className="mt-3 text-white fw-medium">
+          {downloadProgress > 0 && downloadProgress < 100 
+            ? `Downloading... ${downloadProgress}%` 
+            : 'Loading...'}
         </div>
       </div>
     );
@@ -179,7 +251,7 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
       className={`secure-note-viewer secure-note-watermark no-drag ${fullScreen ? 'secure-note-viewer-fullscreen' : ''}`}
       onContextMenu={preventContextMenu}
       onDragStart={preventDrag}
-      style={fullScreen ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' } : { minHeight: 480 }}
+      style={fullScreen ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' } : { minHeight: 480, position: 'relative' }}
     >
       <div className="secure-note-pdf-container" style={pdfContainerStyle}>
         <Document
@@ -196,17 +268,20 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
         >
           {numPages != null &&
             Array.from(new Array(numPages), (_, i) => (
-              <Page
+              <LazyPage
                 key={`page-${i + 1}`}
                 pageNumber={i + 1}
                 width={pageWidth * zoom}
-                renderTextLayer={false}
-                renderAnnotationLayer={true}
-                className="secure-note-pdf-page"
+                onActive={handlePageActive}
               />
             ))}
         </Document>
       </div>
+      {numPages != null && numPages > 1 && (
+        <div className="secure-note-page-indicator">
+          Page {currentPage} of {numPages}
+        </div>
+      )}
     </div>
   );
 }

@@ -168,7 +168,7 @@ export default function Layout({ children }) {
                     </Link>
                   </li>
                   <li className="nav-item ms-2">
-                    <Link className="btn btn-edura btn-sm" to={{ pathname: '/signin', state: { mode: 'signup' } }}>
+                    <Link className="btn btn-edura btn-sm" to="/signin" state={{ mode: 'signup' }}>
                       Sign Up
                     </Link>
                   </li>
@@ -200,9 +200,9 @@ export default function Layout({ children }) {
             <div className="col-md-2">
               <h6>Resources</h6>
               <ul className="list-unstyled small">
-                <li><a href="#privacy">Privacy Policy</a></li>
-                <li><a href="#terms">Terms of Service</a></li>
-                <li><a href="#help">Help Center</a></li>
+                <li><span className="text-muted">Privacy Policy</span></li>
+                <li><span className="text-muted">Terms of Service</span></li>
+                <li><span className="text-muted">Help Center</span></li>
               </ul>
             </div>
             <div className="col-md-4">

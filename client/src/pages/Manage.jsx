@@ -29,6 +29,8 @@ export default function Manage() {
   const [sortBy, setSortBy] = useState('name');
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadDescription, setUploadDescription] = useState('');
+  const [uploadMode, setUploadMode] = useState('file'); // 'file' or 'link'
+  const [uploadDriveLink, setUploadDriveLink] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadFolderId, setUploadFolderId] = useState('');
   const [uploadIsPublic, setUploadIsPublic] = useState(false);
@@ -109,10 +111,17 @@ export default function Manage() {
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
     setUploadError('');
-    const fileErr = validateFile(uploadFile);
-    if (fileErr) {
-      setUploadError(fileErr);
-      return;
+    if (uploadMode === 'file') {
+      const fileErr = validateFile(uploadFile);
+      if (fileErr) {
+        setUploadError(fileErr);
+        return;
+      }
+    } else {
+      if (!uploadDriveLink.trim() || !uploadDriveLink.match(/[-\w]{25,}/)) {
+        setUploadError('Please provide a valid Google Drive link');
+        return;
+      }
     }
     if (!uploadTitle.trim()) {
       setUploadError('Title is required');
@@ -121,7 +130,11 @@ export default function Manage() {
     setSubmitting(true);
     try {
       const formData = new FormData();
-      formData.append('file', uploadFile);
+      if (uploadMode === 'file') {
+        formData.append('file', uploadFile);
+      } else {
+        formData.append('driveLink', uploadDriveLink.trim());
+      }
       formData.append('title', uploadTitle.trim());
       if (uploadDescription.trim()) formData.append('description', uploadDescription.trim());
       if (uploadFolderId) formData.append('folderId', uploadFolderId);
@@ -131,6 +144,8 @@ export default function Manage() {
       setUploadTitle('');
       setUploadDescription('');
       setUploadFile(null);
+      setUploadDriveLink('');
+      setUploadMode('file');
       setUploadFolderId('');
       setUploadIsPublic(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -171,6 +186,8 @@ export default function Manage() {
 
   const handleClear = () => {
     setUploadFile(null);
+    setUploadDriveLink('');
+    setUploadMode('file');
     setUploadTitle('');
     setUploadDescription('');
     setUploadFolderId('');
@@ -316,35 +333,61 @@ export default function Manage() {
                 </div>
               )}
               <div className="upload-file-layout">
-                <div
-                  className={`upload-file-dropzone ${dropzoneDragging ? 'upload-file-dropzone-dragover' : ''}`}
-                  onDragOver={handleDropzoneDragOver}
-                  onDragLeave={handleDropzoneDragLeave}
-                  onDrop={handleDropzoneDrop}
-                >
-                  <input
-                    ref={fileInputRef}
-                    id="manage-upload-file"
-                    type="file"
-                    accept=".pdf,application/pdf,.jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
-                    onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
-                    aria-label="Choose file"
-                  />
-                  <label htmlFor="manage-upload-file" className="upload-file-dropzone-label">
-                    <span className="upload-file-dropzone-icon" aria-hidden>
-                      <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
-                      </svg>
-                    </span>
-                    <span className="upload-file-dropzone-text">Click to upload or drag and drop</span>
-                    <span className="upload-file-dropzone-hint">PDF, PNG, JPG up to 10MB</span>
-                  </label>
-                  {uploadFile && (
-                    <p className="upload-file-dropzone-selected small mb-0">
-                      Selected: {uploadFile.name}
-                    </p>
-                  )}
+                <div className="w-100 mb-3" style={{ gridColumn: '1 / -1' }}>
+                  <div className="btn-group" role="group">
+                    <input type="radio" className="btn-check" name="uploadMode" id="modeFile" autoComplete="off" checked={uploadMode === 'file'} onChange={() => setUploadMode('file')} />
+                    <label className="btn btn-outline-primary btn-sm" htmlFor="modeFile">Upload File</label>
+                    <input type="radio" className="btn-check" name="uploadMode" id="modeLink" autoComplete="off" checked={uploadMode === 'link'} onChange={() => setUploadMode('link')} />
+                    <label className="btn btn-outline-primary btn-sm" htmlFor="modeLink">Google Drive Link</label>
+                  </div>
                 </div>
+
+                {uploadMode === 'file' ? (
+                  <div
+                    className={`upload-file-dropzone ${dropzoneDragging ? 'upload-file-dropzone-dragover' : ''}`}
+                    onDragOver={handleDropzoneDragOver}
+                    onDragLeave={handleDropzoneDragLeave}
+                    onDrop={handleDropzoneDrop}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      id="manage-upload-file"
+                      type="file"
+                      accept=".pdf,application/pdf,.jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
+                      onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+                      aria-label="Choose file"
+                    />
+                    <label htmlFor="manage-upload-file" className="upload-file-dropzone-label">
+                      <span className="upload-file-dropzone-icon" aria-hidden>
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
+                        </svg>
+                      </span>
+                      <span className="upload-file-dropzone-text">Click to upload or drag and drop</span>
+                      <span className="upload-file-dropzone-hint">PDF, PNG, JPG up to 10MB</span>
+                    </label>
+                    {uploadFile && (
+                      <p className="upload-file-dropzone-selected small mb-0">
+                        Selected: {uploadFile.name}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="upload-file-field" style={{ minHeight: '200px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <label htmlFor="manage-upload-link" className="form-label small fw-bold">Google Drive Public Link</label>
+                    <input
+                      id="manage-upload-link"
+                      type="url"
+                      className="form-control form-control-sm"
+                      value={uploadDriveLink}
+                      onChange={(e) => setUploadDriveLink(e.target.value)}
+                      placeholder="e.g. https://drive.google.com/file/d/1vN_XYZ.../view"
+                    />
+                    <small className="text-muted mt-2 d-block">
+                      Ensure the link sharing is set to "<strong>Anyone with the link</strong>". The secure viewer will proxy the file automatically.
+                    </small>
+                  </div>
+                )}
                 <div className="upload-file-form-column">
                   <div className="upload-file-field">
                     <label htmlFor="manage-upload-title" className="form-label small">Title</label>
@@ -417,9 +460,9 @@ export default function Manage() {
                     <button
                       type="submit"
                       className="btn btn-upload-primary"
-                      disabled={submitting || !uploadFile || atStorageLimit}
+                      disabled={submitting || (uploadMode === 'file' ? !uploadFile : !uploadDriveLink) || atStorageLimit}
                     >
-                      {submitting ? 'Uploading...' : 'Upload File'}
+                      {submitting ? 'Processing...' : (uploadMode === 'file' ? 'Upload File' : 'Save Link')}
                     </button>
                   </div>
                 </div>

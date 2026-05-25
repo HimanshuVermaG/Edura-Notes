@@ -11,6 +11,8 @@ export default function EditNote() {
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   const [file, setFile] = useState(null);
+  const [driveLink, setDriveLink] = useState('');
+  const [editMode, setEditMode] = useState('keep'); // 'keep', 'file', 'link'
   const [folderId, setFolderId] = useState('');
   const [folders, setFolders] = useState([]);
   const [currentFileName, setCurrentFileName] = useState('');
@@ -33,9 +35,10 @@ export default function EditNote() {
         setDescription(desc);
         setIsPublic(isPub);
         setCurrentFileName(note.originalName || note.fileName || '');
+        setDriveLink(note.driveLink || '');
         setFolderId(fidStr);
         setFolders(foldersList);
-        initialRef.current = { title: note.title, description: desc, folderId: fidStr, isPublic: isPub };
+        initialRef.current = { title: note.title, description: desc, folderId: fidStr, isPublic: isPub, driveLink: note.driveLink || '' };
       })
       .catch(() => setError('Note not found'))
       .finally(() => setLoading(false));
@@ -43,7 +46,8 @@ export default function EditNote() {
 
   const init = initialRef.current;
   const isDirty = init.title !== '' && (
-    file != null ||
+    (editMode === 'file' && file != null) ||
+    (editMode === 'link' && driveLink !== init.driveLink) ||
     title !== init.title ||
     description !== init.description ||
     folderId !== init.folderId ||
@@ -67,7 +71,7 @@ export default function EditNote() {
     }
     setSubmitting(true);
     try {
-      if (file) {
+      if (editMode === 'file' && file) {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('title', title.trim());
@@ -76,14 +80,18 @@ export default function EditNote() {
         if (folderId) formData.append('folderId', folderId);
         await apiForm(`/notes/${id}`, formData, { method: 'PUT' });
       } else {
+        const payload = {
+          title: title.trim(),
+          description: description.trim(),
+          isPublic,
+          folderId: folderId || null,
+        };
+        if (editMode === 'link' && driveLink.trim()) {
+          payload.driveLink = driveLink.trim();
+        }
         await api(`/notes/${id}`, {
           method: 'PUT',
-          body: JSON.stringify({
-            title: title.trim(),
-            description: description.trim(),
-            isPublic,
-            folderId: folderId || null,
-          }),
+          body: JSON.stringify(payload),
         });
       }
       navigate('/manage');
@@ -191,22 +199,55 @@ export default function EditNote() {
             <div className="form-text small">Public notes appear on your public profile and in Explore.</div>
           </div>
           <div className="mb-4">
-            <label htmlFor="file" className="form-label">Replace file (optional)</label>
-            <input
-              id="file"
-              type="file"
-              className="form-control"
-              accept=".pdf,application/pdf,.jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-            />
-            {currentFileName && !file && (
-              <div className="form-text small">Current file: {currentFileName}</div>
+            <label className="form-label">Update File or Link (optional)</label>
+            <div className="btn-group w-100 mb-3" role="group">
+              <input type="radio" className="btn-check" name="editMode" id="editKeep" checked={editMode === 'keep'} onChange={() => setEditMode('keep')} />
+              <label className="btn btn-outline-primary btn-sm" htmlFor="editKeep">Keep Current</label>
+              
+              <input type="radio" className="btn-check" name="editMode" id="editFile" checked={editMode === 'file'} onChange={() => setEditMode('file')} />
+              <label className="btn btn-outline-primary btn-sm" htmlFor="editFile">Upload New File</label>
+              
+              <input type="radio" className="btn-check" name="editMode" id="editLink" checked={editMode === 'link'} onChange={() => setEditMode('link')} />
+              <label className="btn btn-outline-primary btn-sm" htmlFor="editLink">New Drive Link</label>
+            </div>
+            
+            {editMode === 'keep' && (
+               <div className="form-text mt-0">
+                 Current file: {init.driveLink ? 'Google Drive Link' : (currentFileName || 'None')}
+               </div>
             )}
-            {file && (
-              <div className="form-text small">
-                New file: {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                {file.type && ` · ${file.type}`}
-              </div>
+            
+            {editMode === 'file' && (
+              <>
+                <input
+                  id="file"
+                  type="file"
+                  className="form-control"
+                  accept=".pdf,application/pdf,.jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                />
+                {file && (
+                  <div className="form-text small mt-1">
+                    New file: {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                  </div>
+                )}
+              </>
+            )}
+
+            {editMode === 'link' && (
+              <>
+                <input
+                  id="driveLink"
+                  type="url"
+                  className="form-control"
+                  value={driveLink}
+                  onChange={(e) => setDriveLink(e.target.value)}
+                  placeholder="e.g. https://drive.google.com/file/d/1vN_XYZ.../view"
+                />
+                <small className="text-muted mt-2 d-block">
+                  Ensure the link sharing is set to "<strong>Anyone with the link</strong>".
+                </small>
+              </>
             )}
           </div>
           <div className="edura-form-actions">

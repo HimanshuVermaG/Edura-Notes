@@ -12,8 +12,25 @@ import publicRoutes from './routes/publicRoutes.js';
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Allow any origin (no CLIENT_ORIGIN restriction)
-app.use(cors({ origin: true, credentials: true }));
+// CORS: allow origins listed in CLIENT_ORIGIN (comma-separated) or any origin if unset (dev mode)
+const rawOrigins = (process.env.CLIENT_ORIGIN || '').trim();
+const allowedOrigins = rawOrigins
+  ? rawOrigins.split(',').map((o) => o.trim()).filter(Boolean)
+  : null; // null = allow any (local dev)
+
+app.use(
+  cors({
+    origin: allowedOrigins
+      ? (origin, cb) => {
+          // Allow requests with no origin (curl, mobile apps, same-origin SSR)
+          if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+          cb(new Error(`CORS: origin ${origin} not allowed`));
+        }
+      : true,
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);

@@ -38,6 +38,9 @@ export async function apiForm(url, formData, options = {}) {
   return data;
 }
 
+// Simple in-memory cache for downloaded blobs to avoid re-downloading during the same session
+const blobCache = new Map();
+
 export async function apiGetBlob(url) {
   const token = getToken();
   const res = await fetch(getApiUrl(url), {
@@ -51,5 +54,55 @@ export async function apiGetBlob(url) {
       : null;
     throw new Error(message || res.statusText || 'Failed to load file');
   }
-  return res.blob();
+  const blob = await res.blob();
+  blobCache.set(url, blob);
+  return blob;
+}
+
+export async function apiGetBlobWithProgress(url, onProgress) {
+  if (blobCache.has(url)) {
+    if (onProgress) onProgress(100);
+    return blobCache.get(url);
+  }
+
+  const token = getToken();
+  const res = await fetch(getApiUrl(url), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  
+  if (!res.ok) {
+    const contentType = res.headers.get('Content-Type') || '';
+    const isJson = contentType.includes('application/json');
+    const message = isJson
+      ? (await res.json().catch(() => ({}))).message
+      : null;
+    throw new Error(message || res.statusText || 'Failed to load file');
+  }
+
+  const contentLength = res.headers.get('content-length');
+  const total = parseInt(contentLength, 10);
+  
+  if (!contentLength || isNaN(total)) {
+    // If no content-length, we can't show percentage, just return the blob
+    return res.blob();
+  }
+
+  const reader = res.body.getReader();
+  let loaded = 0;
+  const chunks = [];
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    loaded += value.byteLength;
+    if (onProgress) {
+      onProgress(Math.round((loaded / total) * 100));
+    }
+  }
+
+  const contentType = res.headers.get('content-type') || 'application/octet-stream';
+  const blob = new Blob(chunks, { type: contentType });
+  blobCache.set(url, blob);
+  return blob;
 }

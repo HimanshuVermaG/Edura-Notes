@@ -1,9 +1,11 @@
 import express from 'express';
 import fs from 'fs';
+import { Readable } from 'stream';
 import Note from '../models/Note.js';
 import User from '../models/User.js';
 import Folder from '../models/Folder.js';
 import { getUploadPath } from '../middleware/uploadMiddleware.js';
+import { fetchDriveStream } from '../lib/driveHelper.js';
 
 function getMimeType(note) {
   if (note.mimeType) return note.mimeType;
@@ -35,8 +37,8 @@ router.get('/explore/notes', async (req, res) => {
     const excludeUserId = (req.query.excludeUserId || '').trim();
     const sortBy = (req.query.sortBy || 'time').trim();
     const mongoose = (await import('mongoose')).default;
-    // No search: only admin-listed files. With search: include public files so they can be found.
-    const visibilityFilter = search ? exploreNotesFilter : listedOnExploreFilter;
+    // Always filter to admin-listed files only (public notes must be explicitly approved).
+    const visibilityFilter = exploreNotesFilter;
     const filter = { $and: [ visibilityFilter ] };
     if (excludeUserId && mongoose.Types.ObjectId.isValid(excludeUserId)) {
       filter.$and.push({ userId: { $ne: new mongoose.Types.ObjectId(excludeUserId) } });
@@ -79,9 +81,6 @@ router.get('/explore/users', async (req, res) => {
     if (search) {
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       userFilter.name = { $regex: escaped, $options: 'i' };
-    } else {
-      // No search: only users with "List profile on Explore" checked (shown automatically).
-      userFilter = { profileListedOnExplore: true };
     }
     const [total, users] = await Promise.all([
       User.countDocuments(userFilter),
@@ -150,15 +149,39 @@ router.get('/notes/:id/file', async (req, res) => {
       $or: [ { isPublic: true }, { listedOnExplore: true } ],
     });
     if (!note) return res.status(404).json({ message: 'Note not found or private' });
+    
+    if (note.driveLink) {
+      const fileIdMatch = note.driveLink.match(/[-\w]{25,}/);
+      if (!fileIdMatch) return res.status(400).json({ message: 'Invalid Google Drive link' });
+      const fileId = fileIdMatch[0];
+      
+      try {
+        const fetchResponse = await fetchDriveStream(fileId);
+        const contentType = fetchResponse.headers.get('content-type') || note.mimeType || 'application/pdf';
+        const contentLength = fetchResponse.headers.get('content-length');
+        const dispName = note.originalName || 'drive_file';
+        
+        res.setHeader('Content-Type', contentType);
+        if (contentLength) res.setHeader('Content-Length', contentLength);
+        res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+        
+        return Readable.fromWeb(fetchResponse.body).pipe(res);
+      } catch (err) {
+        return res.status(500).json({ message: err.message });
+      }
+    }
+    
     if (!note.fileName) return res.status(404).json({ message: 'No file for this note' });
     if (note.fileUrl) {
       return res.redirect(302, note.fileUrl);
     }
     const filePath = getUploadPath(note.fileName);
     if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'File not found' });
+    const stat = fs.statSync(filePath);
     const contentType = getMimeType(note);
     const dispName = note.originalName || note.fileName || 'file';
     res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', stat.size);
     res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);

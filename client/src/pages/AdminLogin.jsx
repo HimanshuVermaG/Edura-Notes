@@ -26,6 +26,8 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [shakeError, setShakeError] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const buttonRef = useRef(null);
   const initDoneRef = useRef(false);
   const { setToken } = useAuth();
@@ -36,6 +38,17 @@ export default function AdminLogin() {
     setTimeout(() => setShakeError(false), 500);
   };
 
+  const handleAdminSuccess = (data) => {
+    if (data.user?.role !== 'admin') {
+      setError('Not an admin account. Use an account that has admin access.');
+      triggerShake();
+      setSubmitting(false);
+      return;
+    }
+    setToken(data.token, data.user);
+    navigate('/admin', { replace: true });
+  };
+
   const handleCredential = (response) => {
     if (!response?.credential) return;
     setError('');
@@ -44,16 +57,20 @@ export default function AdminLogin() {
       method: 'POST',
       body: JSON.stringify({ credential: response.credential }),
     })
-      .then((data) => {
-        if (data.user?.role !== 'admin') {
-          setError('Not an admin account. Sign in with a Google account that has admin access.');
-          triggerShake();
-          setSubmitting(false);
-          return;
-        }
-        setToken(data.token, data.user);
-        navigate('/admin', { replace: true });
-      })
+      .then(handleAdminSuccess)
+      .catch((err) => { setError(err.message || 'Sign in failed'); triggerShake(); })
+      .finally(() => setSubmitting(false));
+  };
+
+  const handleEmailSignIn = (e) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    api('/auth/signin', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+    })
+      .then(handleAdminSuccess)
       .catch((err) => { setError(err.message || 'Sign in failed'); triggerShake(); })
       .finally(() => setSubmitting(false));
   };
@@ -102,23 +119,61 @@ export default function AdminLogin() {
             <ShieldIcon />
             <h2 className="h4 mb-0" style={{ color: '#1f2937' }}>Admin Login</h2>
           </div>
-          <p className="text-muted small text-center mb-4">Sign in with your Google admin account.</p>
+          <p className="text-muted small text-center mb-4">Admin accounts only.</p>
+
           {error && (
             <div className={`alert alert-danger py-2 small mb-3 admin-login-error${shakeError ? ' edura-shake' : ''}`} role="alert">
               {error}
             </div>
           )}
-          {!GOOGLE_CLIENT_ID ? (
-            <p className="text-muted small text-center">Google Sign-In is not configured.</p>
-          ) : (
-            <div className="d-flex flex-column align-items-center">
+
+          {/* Email / Password form */}
+          <form onSubmit={handleEmailSignIn} className="mb-3">
+            <div className="mb-2">
+              <label htmlFor="admin-email" className="form-label small mb-1">Email</label>
+              <input
+                id="admin-email"
+                type="email"
+                className="form-control form-control-sm"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                disabled={submitting}
+                placeholder="admin@example.com"
+              />
+            </div>
+            <div className="mb-3">
+              <label htmlFor="admin-password" className="form-label small mb-1">Password</label>
+              <input
+                id="admin-password"
+                type="password"
+                className="form-control form-control-sm"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                disabled={submitting}
+                placeholder="••••••••"
+              />
+            </div>
+            <button type="submit" className="btn btn-primary w-100 btn-sm" disabled={submitting}>
+              {submitting ? 'Signing in...' : 'Sign in'}
+            </button>
+          </form>
+
+          {/* Google OAuth — shown only if configured */}
+          {GOOGLE_CLIENT_ID && (
+            <div className="d-flex flex-column align-items-center mt-3">
+              <p className="text-muted small mb-2">Or sign in with Google</p>
               <div ref={buttonRef} />
               {submitting && (
                 <p className="small text-muted mt-2 mb-0">Signing in...</p>
               )}
             </div>
           )}
-          <p className="text-muted small text-center mt-3 mb-0">Only Google accounts with admin access can sign in here.</p>
+
+          <p className="text-muted small text-center mt-3 mb-0">Only accounts with admin access can sign in here.</p>
           <div className="text-center mt-2">
             <Link to="/explore" className="admin-login-back-link small d-inline-flex align-items-center gap-1">
               <ArrowLeftIcon /> Back to main site

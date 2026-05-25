@@ -7,7 +7,6 @@ import AdminLogin from './pages/AdminLogin';
 import Homepage from './pages/Homepage';
 import Manage from './pages/Manage';
 import EditNote from './pages/EditNote';
-import ViewNote from './pages/ViewNote';
 import FullScreenPdfView from './pages/FullScreenPdfView';
 import PublicProfile from './pages/PublicProfile';
 import PublicNoteView from './pages/PublicNoteView';
@@ -29,7 +28,7 @@ export default function App() {
       <Route path="/signin" element={<SignIn />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={<AdminRoute />}>
-        <Route index element={<Navigate to="users" replace />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="users/:userId" element={<AdminUserDetail />} />
@@ -71,14 +70,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/notes/:id"
-        element={
-          <ProtectedRoute>
-            <ViewNote />
-          </ProtectedRoute>
-        }
-      />
+
       <Route path="/" element={<Navigate to="/explore" replace />} />
       <Route path="/dashboard" element={<DashboardRedirect />} />
       <Route path="*" element={<Navigate to="/" replace />} />
