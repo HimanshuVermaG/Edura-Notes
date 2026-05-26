@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import FolderTreeSelect from '../components/FolderTreeSelect';
 import ConfirmModal from '../components/ConfirmModal';
-import { api, apiForm } from '../api/client';
+import { api, apiForm, invalidateBlobCache, getApiUrl } from '../api/client';
 
 export default function EditNote() {
   const { id } = useParams();
@@ -94,6 +94,9 @@ export default function EditNote() {
           body: JSON.stringify(payload),
         });
       }
+      // Bust the blob cache so the viewer re-downloads the updated file
+      const fileUrl = `/notes/${id}/file`;
+      await invalidateBlobCache(getApiUrl(fileUrl));
       navigate('/manage');
     } catch (err) {
       setError(err.message || 'Failed to update note');
@@ -106,6 +109,7 @@ export default function EditNote() {
     setDeleting(true);
     try {
       await api(`/notes/${id}`, { method: 'DELETE' });
+      await invalidateBlobCache(getApiUrl(`/notes/${id}/file`));
       setShowDeleteModal(false);
       navigate('/manage');
     } catch (err) {

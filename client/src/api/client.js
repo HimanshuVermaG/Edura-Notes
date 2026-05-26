@@ -38,10 +38,106 @@ export async function apiForm(url, formData, options = {}) {
   return data;
 }
 
-// Simple in-memory cache for downloaded blobs to avoid re-downloading during the same session
-const blobCache = new Map();
+// ─── IndexedDB Blob Cache ─────────────────────────────────────────────────────
+// Persists downloaded file blobs across page reloads and browser sessions.
+// Uses a TTL of 1 hour so stale files don't linger forever.
+
+const IDB_NAME = 'edura-blob-cache';
+const IDB_STORE = 'blobs';
+const IDB_VERSION = 1;
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+let _db = null;
+
+function openDB() {
+  if (_db) return Promise.resolve(_db);
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = (e) => {
+      e.target.result.createObjectStore(IDB_STORE, { keyPath: 'url' });
+    };
+    req.onsuccess = (e) => {
+      _db = e.target.result;
+      resolve(_db);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbGet(url) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const req = tx.objectStore(IDB_STORE).get(url);
+      req.onsuccess = () => {
+        const record = req.result;
+        if (!record) return resolve(null);
+        // Expire stale entries
+        if (Date.now() - record.cachedAt > CACHE_TTL_MS) {
+          idbDelete(url);
+          return resolve(null);
+        }
+        resolve(record.blob);
+      };
+      req.onerror = () => resolve(null);
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function idbSet(url, blob) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put({ url, blob, cachedAt: Date.now() });
+      tx.oncomplete = resolve;
+      tx.onerror = resolve; // fail silently
+    });
+  } catch {
+    // IndexedDB unavailable (private browsing, etc.) — no-op
+  }
+}
+
+async function idbDelete(url) {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(url);
+  } catch {
+    // no-op
+  }
+}
+
+// In-memory cache as a fast first-layer (avoids IndexedDB round-trip in the
+// same tab session — still useful when navigating between notes quickly)
+const memCache = new Map();
+
+async function cacheGet(url) {
+  if (memCache.has(url)) return memCache.get(url);
+  const blob = await idbGet(url);
+  if (blob) memCache.set(url, blob);
+  return blob || null;
+}
+
+async function cacheSet(url, blob) {
+  memCache.set(url, blob);
+  await idbSet(url, blob);
+}
+
+// Export so other modules can explicitly invalidate an entry (e.g. after edit)
+export async function invalidateBlobCache(url) {
+  memCache.delete(url);
+  await idbDelete(url);
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 export async function apiGetBlob(url) {
+  const cached = await cacheGet(url);
+  if (cached) return cached;
+
   const token = getToken();
   const res = await fetch(getApiUrl(url), {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -55,14 +151,15 @@ export async function apiGetBlob(url) {
     throw new Error(message || res.statusText || 'Failed to load file');
   }
   const blob = await res.blob();
-  blobCache.set(url, blob);
+  await cacheSet(url, blob);
   return blob;
 }
 
 export async function apiGetBlobWithProgress(url, onProgress) {
-  if (blobCache.has(url)) {
+  const cached = await cacheGet(url);
+  if (cached) {
     if (onProgress) onProgress(100);
-    return blobCache.get(url);
+    return cached;
   }
 
   const token = getToken();
@@ -83,8 +180,10 @@ export async function apiGetBlobWithProgress(url, onProgress) {
   const total = parseInt(contentLength, 10);
   
   if (!contentLength || isNaN(total)) {
-    // If no content-length, we can't show percentage, just return the blob
-    return res.blob();
+    // No content-length — can't show percentage; stream without progress
+    const blob = await res.blob();
+    await cacheSet(url, blob);
+    return blob;
   }
 
   const reader = res.body.getReader();
@@ -103,6 +202,6 @@ export async function apiGetBlobWithProgress(url, onProgress) {
 
   const contentType = res.headers.get('content-type') || 'application/octet-stream';
   const blob = new Blob(chunks, { type: contentType });
-  blobCache.set(url, blob);
+  await cacheSet(url, blob);
   return blob;
 }
