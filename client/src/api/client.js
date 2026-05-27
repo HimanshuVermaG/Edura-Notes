@@ -103,7 +103,7 @@ async function idbSet(url, blob) {
 
 async function idbDelete(url) {
   try {
-    const db = await openDB();
+    const db = await openDB(); 
     const tx = db.transaction(IDB_STORE, 'readwrite');
     tx.objectStore(IDB_STORE).delete(url);
   } catch {
