@@ -136,8 +136,8 @@ export default function GateHomepageGrid({
     <div className="container py-4" style={{ color: 'var(--edura-text)' }}>
       
       <div className="mb-5 text-center text-md-start">
-        <h1 className="display-5 mb-3 text-dark-emphasis" style={{ color: 'var(--edura-text)', fontWeight: 700 }}>
-          Explore Communities
+        <h1 className="display-5 mb-3 text-edura" style={{ fontWeight: 700 }}>
+          Community Spaces
         </h1>
         <p className="mb-0 mx-auto mx-md-0" style={{ maxWidth: '600px', color: 'var(--edura-text-muted)' }}>
           Find your niche and connect with thousands of experts and enthusiasts. Join custom spaces, share knowledge, and publish notes.
@@ -247,10 +247,15 @@ export default function GateHomepageGrid({
       ) : (
         <div className="card shadow-sm border-0 py-5 text-center" style={{ maxWidth: '400px', margin: '0 auto', background: 'var(--edura-card-bg)' }}>
           <div className="card-body">
-            <div className="d-inline-flex p-3 rounded-4 bg-white shadow-sm border mb-3 text-muted">
-              <Compass size={32} />
+            <div className="d-inline-flex p-3 rounded-4 bg-edura-card shadow-sm border border-edura mb-3 text-edura-muted">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
             </div>
-            <h3 className="h6 fw-bold mb-2" style={{ color: 'var(--edura-text)' }}>No spaces found</h3>
+            <h4 className="fw-bold mb-2 text-edura">No communities found</h4>
             <p className="small mb-4 px-4" style={{ color: 'var(--edura-text-muted)' }}>
               Try adjusting your search criteria, selecting a different category, or wait for new spaces to be added.
             </p>

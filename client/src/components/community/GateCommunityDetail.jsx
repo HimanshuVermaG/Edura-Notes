@@ -85,14 +85,14 @@ export default function GateCommunityDetail({
           <div className="btn-group shadow-sm border rounded overflow-hidden" style={{ borderColor: 'var(--edura-border)', background: 'var(--edura-bg)' }}>
             <button 
               onClick={() => setViewMode('grid')}
-              className={`btn btn-sm ${viewMode === 'grid' ? 'btn-primary' : 'btn-light border-0'}`}
+              className={`btn btn-sm ${viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary border-0 text-edura'}`}
               style={{ padding: '0.25rem 0.5rem' }}
             >
               <Grid size={16} />
             </button>
             <button 
               onClick={() => setViewMode('list')}
-              className={`btn btn-sm ${viewMode === 'list' ? 'btn-primary' : 'btn-light border-0'}`}
+              className={`btn btn-sm ${viewMode === 'list' ? 'btn-primary' : 'btn-outline-secondary border-0 text-edura'}`}
               style={{ padding: '0.25rem 0.5rem' }}
             >
               <ListIcon size={16} />
@@ -127,8 +127,8 @@ export default function GateCommunityDetail({
             onClick={() => toggleJoinSpace(space.id)}
             className={`btn fw-semibold px-4 rounded shadow-sm ${
               isJoined 
-                ? 'btn-light text-dark'
-                : 'btn-light text-dark'
+                ? 'btn-outline-secondary bg-edura-card text-edura border-edura'
+                : 'btn-primary'
             }`}
           >
             {isJoined ? (
@@ -179,7 +179,7 @@ export default function GateCommunityDetail({
                     >
                       <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--edura-text-muted)' }}></div>
                       {section.title}
-                      <span className="ms-auto small badge bg-light text-secondary border rounded-pill">{section.notes.length}</span>
+                      <span className="ms-auto small badge bg-edura-card text-edura border border-edura rounded-pill">{section.notes.length}</span>
                     </button>
                   ))}
                 </div>

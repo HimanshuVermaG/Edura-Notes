@@ -611,7 +611,7 @@ export default function AdminDashboard() {
                             </div>
                             <div>
                             <div className="d-flex align-items-center gap-2 mb-2">
-                              <span className="badge bg-warning text-dark border">PENDING</span>
+                              <span className="badge bg-warning text-edura border border-warning">PENDING</span>
                               <span className="small text-muted">Submitted by <span className="fw-bold" style={{ color: 'var(--edura-text)' }}>{note.userId?.name || 'Unknown User'}</span></span>
                             </div>
                             <h4 className="h6 fw-bold mb-1" style={{ color: 'var(--edura-text)' }}>{note.title}</h4>

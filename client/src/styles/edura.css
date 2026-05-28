@@ -73,6 +73,69 @@ h3 {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* Edura Utilities for React Components */
+.bg-edura-card {
+  background-color: var(--edura-card-bg) !important;
+}
+
+.text-edura {
+  color: var(--edura-text) !important;
+}
+
+.text-edura-muted {
+  color: var(--edura-text-muted) !important;
+}
+
+.border-edura {
+  border-color: var(--edura-border) !important;
+}
+
+/* Dark theme overrides for standard Bootstrap elements */
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .dropdown-menu {
+  background-color: var(--edura-card-bg);
+  color: var(--edura-text);
+  border-color: var(--edura-border);
+}
+
+[data-theme="dark"] .dropdown-item {
+  color: var(--edura-text);
+}
+
+[data-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] .dropdown-item:focus {
+  background-color: var(--edura-border);
+  color: var(--edura-text);
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+  background-color: var(--edura-bg);
+  color: var(--edura-text);
+  border-color: var(--edura-border);
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+  background-color: var(--edura-bg);
+  color: var(--edura-text);
+}
+
+[data-theme="dark"] .table {
+  color: var(--edura-text);
+  border-color: var(--edura-border);
+}
+
+[data-theme="dark"] .table-hover tbody tr:hover {
+  color: var(--edura-text);
+}
+
+[data-theme="dark"] .table > :not(caption) > * > * {
+  background-color: var(--edura-card-bg);
+  color: var(--edura-text);
+  border-bottom-color: var(--edura-border);
+}
+
 /* =============================================
    ANIMATION KEYFRAMES
    ============================================= */
@@ -1571,6 +1634,32 @@ textarea:focus-visible {
     border-right: none;
     border-bottom: 1px solid var(--edura-border);
     border-radius: 0;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .categories-sidebar::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for cleaner look on mobile */
+  }
+
+  .categories-sidebar .folder-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .categories-sidebar .folder-list-item {
+    white-space: nowrap;
+    margin-bottom: 0;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .categories-sidebar .folder-list-item-row {
+    flex-direction: row;
+    flex-wrap: nowrap;
   }
 }
 

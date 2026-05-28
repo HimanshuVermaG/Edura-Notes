@@ -199,7 +199,7 @@ export default function PublicProfile() {
             {user.picture ? (
               <img src={user.picture} alt="" className="rounded-circle shadow" width={80} height={80} style={{ objectFit: 'cover', border: '4px solid rgba(255,255,255,0.2)' }} />
             ) : (
-              <span className="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold shadow text-primary bg-white" style={{ width: 80, height: 80, fontSize: '2rem' }} aria-hidden>
+              <span className="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold shadow text-primary bg-edura-card border border-edura" style={{ width: 80, height: 80, fontSize: '2rem' }} aria-hidden>
                 {getInitials(user.name)}
               </span>
             )}
