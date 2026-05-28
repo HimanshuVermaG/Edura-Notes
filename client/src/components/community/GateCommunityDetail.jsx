@@ -71,9 +71,9 @@ export default function GateCommunityDetail({
         <div className="d-flex align-items-center gap-3">
           <button
             onClick={onBack}
-            className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
+            className="btn btn-outline-secondary text-edura btn-sm d-flex align-items-center gap-2"
           >
-            <ArrowLeft size={16} /> All Spaces
+            <ArrowLeft size={16} className="text-edura" /> All Spaces
           </button>
         </div>
 
@@ -115,7 +115,7 @@ export default function GateCommunityDetail({
                 className="d-flex align-items-center justify-content-center rounded-4 border shadow-sm position-relative" 
                 style={{ width: '100px', height: '100px', background: 'var(--edura-bg)', marginTop: '-50px', zIndex: 10, borderColor: 'var(--edura-border)' }}
               >
-                <CommunityIcon name={space.icon} size={48} style={{ color: getColor(space.color) }} />
+                <CommunityIcon name={space.icon} size={48} style={{ color: 'var(--edura-text)' }} />
               </div>
 
               <div className="mt-3">
