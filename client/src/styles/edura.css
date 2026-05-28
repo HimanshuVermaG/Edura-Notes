@@ -138,6 +138,45 @@ h3 {
   border-bottom-color: var(--edura-border);
 }
 
+[data-theme="dark"] .card {
+  background-color: var(--edura-card-bg);
+  border-color: var(--edura-border);
+}
+
+[data-theme="dark"] .text-muted {
+  color: var(--edura-text-muted) !important;
+}
+
+[data-theme="dark"] .text-dark {
+  color: var(--edura-text) !important;
+}
+
+[data-theme="dark"] .border,
+[data-theme="dark"] .border-top,
+[data-theme="dark"] .border-bottom,
+[data-theme="dark"] .border-start,
+[data-theme="dark"] .border-end {
+  border-color: var(--edura-border) !important;
+}
+
+[data-theme="dark"] .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+[data-theme="dark"] .list-group-item {
+  background-color: var(--edura-card-bg);
+  color: var(--edura-text);
+  border-color: var(--edura-border);
+}
+
+[data-theme="dark"] .bg-light {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-theme="dark"] .bg-white {
+  background-color: var(--edura-card-bg) !important;
+}
+
 /* =============================================
    ANIMATION KEYFRAMES
    ============================================= */
