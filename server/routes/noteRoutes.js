@@ -135,7 +135,21 @@ router.get('/:id/file', async (req, res) => {
     
     if (!note.fileName) return res.status(404).json({ message: 'No file for this note' });
     if (note.fileUrl) {
-      return res.redirect(302, note.fileUrl);
+      try {
+        const fetchRes = await fetch(note.fileUrl);
+        if (!fetchRes.ok) throw new Error('Failed to fetch from cloud storage');
+        const contentType = fetchRes.headers.get('content-type') || note.mimeType || 'application/pdf';
+        const contentLength = fetchRes.headers.get('content-length');
+        const dispName = note.originalName || note.fileName || 'file';
+        
+        res.setHeader('Content-Type', contentType);
+        if (contentLength) res.setHeader('Content-Length', contentLength);
+        res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+        
+        return Readable.fromWeb(fetchRes.body).pipe(res);
+      } catch (err) {
+        return res.status(500).json({ message: err.message });
+      }
     }
     const filePath = getUploadPath(note.fileName);
     if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'File not found' });
