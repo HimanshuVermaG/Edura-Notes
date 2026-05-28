@@ -157,8 +157,8 @@ export default function GateHomepageGrid({
             placeholder="Search by community name, tag, or desc..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="form-control border-0 py-2 bg-transparent shadow-none"
-            style={{ color: 'var(--edura-text)', fontFamily: 'var(--edura-font)' }}
+            className="form-control border-0 py-2 bg-transparent shadow-none community-search-input"
+            style={{ fontFamily: 'var(--edura-font)' }}
           />
           {searchQuery && (
             <button

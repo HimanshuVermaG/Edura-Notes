@@ -250,7 +250,7 @@ export default function Layout({ children }) {
 }
 
 function EditProfileModal({ isOpen, onClose, user }) {
-  const { login } = useAuth();
+  const { setToken } = useAuth();
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [socials, setSocials] = useState({ github: '', linkedin: '', twitter: '', website: '' });
@@ -280,7 +280,7 @@ function EditProfileModal({ isOpen, onClose, user }) {
         body: JSON.stringify({ name, bio, socialLinks: socials }),
         headers: { 'Content-Type': 'application/json' }
       });
-      login(localStorage.getItem('token'), res.user);
+      setToken(localStorage.getItem('notes_token') || localStorage.getItem('token'), res.user);
       onClose();
     } catch (err) {
       alert(err.message || 'Failed to update profile');

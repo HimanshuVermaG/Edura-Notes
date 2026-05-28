@@ -17,9 +17,24 @@ export default function Community() {
   const [topContributors, setTopContributors] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // High-level navigation & filter states
-  const [selectedSubject, setSelectedSubject] = useState(null); // If null, we are on Homepage Grid
-  const [selectedNote, setSelectedNote] = useState(null); // If set, opens SecureNoteModal
+  // Compute navigation states directly from URL to fix back button behavior
+  const spaceId = searchParams.get('space');
+  const noteId = searchParams.get('note');
+
+  const selectedSubject = React.useMemo(() => {
+    if (!spaceId) return null;
+    return spaces.find(s => s.id === spaceId) || null;
+  }, [spaces, spaceId]);
+
+  const selectedNote = React.useMemo(() => {
+    if (!selectedSubject || !noteId) return null;
+    let foundNote = null;
+    selectedSubject.topics?.forEach(t => {
+      const n = (t.notes || []).find(x => (x._id || x.id) === noteId);
+      if (n) foundNote = n;
+    });
+    return foundNote;
+  }, [selectedSubject, noteId]);
   
   // High-level UI states
   const [searchQuery, setSearchQuery] = useState("");
@@ -76,51 +91,7 @@ export default function Community() {
     fetchSpaces();
   }, []);
 
-  // Restore state from URL on initial load
-  useEffect(() => {
-    if (!loading && spaces.length > 0) {
-      const spaceId = searchParams.get('space');
-      const noteId = searchParams.get('note');
-      
-      if (spaceId && !selectedSubject) {
-        const space = spaces.find(s => s.id === spaceId);
-        if (space) {
-          setSelectedSubject(space);
-          if (noteId && !selectedNote) {
-             let foundNote = null;
-             space.topics?.forEach(t => {
-               const n = (t.notes || []).find(x => (x._id || x.id) === noteId);
-               if (n) foundNote = n;
-             });
-             if (foundNote) setSelectedNote(foundNote);
-          }
-        }
-      }
-    }
-  }, [loading, spaces, searchParams, selectedSubject, selectedNote]);
-
-  // Sync state to URL when changed by user
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams);
-    let changed = false;
-
-    if (selectedSubject) {
-      if (params.get('space') !== selectedSubject.id) { params.set('space', selectedSubject.id); changed = true; }
-    } else {
-      if (params.has('space')) { params.delete('space'); changed = true; }
-    }
-    
-    if (selectedNote) {
-      const nId = selectedNote._id || selectedNote.id;
-      if (params.get('note') !== nId) { params.set('note', nId); changed = true; }
-    } else {
-      if (params.has('note')) { params.delete('note'); changed = true; }
-    }
-    
-    if (changed) {
-      setSearchParams(params, { replace: true });
-    }
-  }, [selectedSubject, selectedNote, setSearchParams, searchParams]);
+  // Remove legacy manual URL syncing since we derive state directly from URL
 
   const toggleBookmark = (noteId) => {
     let nextBookmarks;
@@ -151,14 +122,8 @@ export default function Community() {
         }
         return s;
       }));
-      // Update selectedSubject if it's currently open
-      if (selectedSubject?.id === spaceId) {
-        setSelectedSubject(prev => ({
-          ...prev, 
-          membersCount: res.membersCount, 
-          members: res.isJoined ? [...prev.members, user._id] : prev.members.filter(id => id !== user._id)
-        }));
-      }
+      // No need to update selectedSubject manually anymore since it's derived from `spaces` array
+      // which is updated via setSpaces above.
     } catch (err) {
       console.error(err);
       // Revert on error
@@ -166,12 +131,29 @@ export default function Community() {
     }
   };
 
+  const handleSelectSpace = (space) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('space', space.id);
+    setSearchParams(params);
+  };
+
   const handleSelectNote = (note) => {
-    setSelectedNote(note);
+    const params = new URLSearchParams(searchParams);
+    params.set('note', note._id || note.id);
+    setSearchParams(params);
+  };
+
+  const handleCloseNote = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete('note');
+    setSearchParams(params);
   };
 
   const handleBackToGrid = () => {
-    setSelectedSubject(null);
+    const params = new URLSearchParams(searchParams);
+    params.delete('space');
+    params.delete('note');
+    setSearchParams(params);
     setSearchQuery("");
   };
 
@@ -207,7 +189,7 @@ export default function Community() {
                 setSearchQuery={setSearchQuery}
                 selectedCategory={selectedCategory}
                 setSelectedCategory={setSelectedCategory}
-                onSelectSpace={setSelectedSubject}
+                onSelectSpace={handleSelectSpace}
                 joinedSpaces={joinedSpaces}
                 toggleJoinSpace={toggleJoinSpace}
                 notesCountBySpace={notesCountBySpace}
@@ -241,7 +223,7 @@ export default function Community() {
 
       <SecureNoteModal 
         isOpen={!!selectedNote}
-        onClose={() => setSelectedNote(null)}
+        onClose={handleCloseNote}
         note={selectedNote}
         currentUser={user}
       />

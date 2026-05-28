@@ -3985,3 +3985,12 @@ textarea:focus-visible {
   filter: invert(1) hue-rotate(180deg) brightness(0.95);
 }
 
+/* Community Search Input */
+.community-search-input {
+  color: var(--edura-text) !important;
+}
+
+.community-search-input::placeholder {
+  color: var(--edura-text-muted) !important;
+  opacity: 0.8;
+}
