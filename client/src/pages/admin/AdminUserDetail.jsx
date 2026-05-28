@@ -19,8 +19,7 @@ export default function AdminUserDetail() {
   const [storageLimitMB, setStorageLimitMB] = useState('');
   const [savingLimit, setSavingLimit] = useState(false);
   const [limitMessage, setLimitMessage] = useState('');
-  const [savingProfileListed, setSavingProfileListed] = useState(false);
-  const [savingNoteListedId, setSavingNoteListedId] = useState(null);
+
   const [notesPage, setNotesPage] = useState(1);
   const [notesLimit, setNotesLimit] = useState(10);
 
@@ -155,37 +154,6 @@ export default function AdminUserDetail() {
     }
   };
 
-  const handleProfileListedChange = async (checked) => {
-    setSavingProfileListed(true);
-    setError('');
-    try {
-      await api(`/admin/users/${userId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ profileListedOnExplore: checked }),
-      });
-      await refetchWithParams();
-    } catch (err) {
-      setError(err.message || 'Failed to update profile listing');
-    } finally {
-      setSavingProfileListed(false);
-    }
-  };
-
-  const handleNoteListedChange = async (noteId, listedOnExplore) => {
-    setSavingNoteListedId(noteId);
-    setError('');
-    try {
-      await api(`/admin/notes/${noteId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ listedOnExplore }),
-      });
-      await refetchWithParams();
-    } catch (err) {
-      setError(err.message || 'Failed to update note listing');
-    } finally {
-      setSavingNoteListedId(null);
-    }
-  };
 
   const handleFilesPerPageChange = (e) => {
     const newLimit = Number(e.target.value);
@@ -209,7 +177,7 @@ export default function AdminUserDetail() {
     return (
       <div className="admin-page p-4">
         <div className="alert alert-danger">{error}</div>
-        <Link to="/admin/users" className="btn btn-outline-primary">Back to users</Link>
+        <Link to="/admin/users" className="btn btn-edura px-4">Back to users</Link>
       </div>
     );
   }
@@ -246,26 +214,6 @@ export default function AdminUserDetail() {
         </div>
       </div>
 
-      <div className="admin-card card mb-4">
-        <div className="card-body">
-          <h3 className="h6 mb-3">Explore</h3>
-          <div className="form-check">
-            <input
-              id="admin-profile-listed-explore"
-              type="checkbox"
-              className="form-check-input"
-              checked={!!user?.profileListedOnExplore}
-              disabled={savingProfileListed}
-              onChange={(e) => handleProfileListedChange(e.target.checked)}
-              aria-label="List profile on Explore"
-            />
-            <label className="form-check-label" htmlFor="admin-profile-listed-explore">
-              List profile on Explore
-            </label>
-          </div>
-          {savingProfileListed && <span className="small text-muted ms-2">Saving...</span>}
-        </div>
-      </div>
 
       <div className="admin-card card mb-4">
         <div className="card-body">
@@ -287,7 +235,7 @@ export default function AdminUserDetail() {
             />
             <button
               type="button"
-              className="btn btn-sm btn-primary"
+              className="btn btn-sm btn-edura"
               onClick={handleSaveStorageLimit}
               disabled={savingLimit}
             >
@@ -361,7 +309,7 @@ export default function AdminUserDetail() {
                 <th>Type</th>
                 <th>Size</th>
                 <th>Public</th>
-                <th>On Explore</th>
+
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
@@ -383,16 +331,7 @@ export default function AdminUserDetail() {
                   <td>{note.mimeType || '—'}</td>
                   <td>{note.size != null ? `${(note.size / 1024).toFixed(1)} KB` : '—'}</td>
                   <td>{note.isPublic ? 'Yes' : 'No'}</td>
-                  <td>
-                    <input
-                      type="checkbox"
-                      className="form-check-input"
-                      checked={!!note.listedOnExplore}
-                      disabled={savingNoteListedId === note._id}
-                      onChange={(e) => handleNoteListedChange(note._id, e.target.checked)}
-                      aria-label={`List ${note.title} on Explore`}
-                    />
-                  </td>
+
                   <td>{note.createdAt ? new Date(note.createdAt).toLocaleDateString() : '—'}</td>
                   <td>
                     <Link

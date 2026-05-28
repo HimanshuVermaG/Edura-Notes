@@ -87,6 +87,19 @@ router.get('/storage', async (req, res) => {
   }
 });
 
+router.get('/bookmarks', async (req, res) => {
+  try {
+    const ids = (req.query.ids || '').split(',').filter(Boolean);
+    if (!ids.length) return res.json([]);
+    const notes = await Note.find({ _id: { $in: ids } })
+      .populate('userId', 'name')
+      .lean();
+    res.json(notes);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to fetch bookmarks' });
+  }
+});
+
 function getMimeType(note) {
   if (note.mimeType) return note.mimeType;
   const ext = (note.fileName || '').toLowerCase().replace(/.*\./, '');
@@ -183,7 +196,7 @@ router.post('/', uploadPdf.single('file'), async (req, res) => {
       fileUrl = result.secure_url;
       originalName = req.file.originalname || '';
       mimeType = req.file.mimetype || 'application/pdf';
-      size = req.file.size ?? null;
+      size = result.bytes || req.file.size || null;
     } else {
       const fileIdMatch = driveLink.match(/[-\w]{25,}/);
       if (!fileIdMatch) return res.status(400).json({ message: 'Invalid Google Drive link format' });
@@ -194,6 +207,10 @@ router.post('/', uploadPdf.single('file'), async (req, res) => {
     const description = (req.body.description || '').trim();
     const folderId = req.body.folderId || null;
     const isPublic = req.body.isPublic === 'true' || req.body.isPublic === true;
+    
+    const communitySpaceId = req.body.communitySpaceId || null;
+    const communityTopic = req.body.communityTopic ? req.body.communityTopic.trim() : null;
+    const status = communitySpaceId ? 'pending' : 'approved';
     
     const note = await Note.create({
       title,
@@ -207,10 +224,62 @@ router.post('/', uploadPdf.single('file'), async (req, res) => {
       userId: req.user._id,
       folderId: folderId || null,
       isPublic,
+      communitySpaceId,
+      communityTopic,
+      status
     });
     res.status(201).json(note);
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to create note' });
+  }
+});
+
+// PUT /api/notes/:id/contribute - Contribute an existing note to a community space
+router.put('/:id/contribute', async (req, res) => {
+  try {
+    const { communitySpaceId, communityTopic, title, description } = req.body;
+    if (!communitySpaceId || !communityTopic) {
+      return res.status(400).json({ message: 'communitySpaceId and communityTopic are required' });
+    }
+
+    const note = await Note.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!note) return res.status(404).json({ message: 'Note not found' });
+
+    // Mark as pending and link to community space
+    note.communitySpaceId = communitySpaceId;
+    note.communityTopic = communityTopic.trim();
+    if (title !== undefined) note.title = title.trim();
+    if (description !== undefined) note.description = description.trim();
+    note.status = 'pending';
+    note.isPublic = true;
+
+    await note.save();
+    res.json(note);
+  } catch (err) {
+    console.error('[noteRoutes] PUT /:id/contribute error:', err);
+    res.status(500).json({ message: err.message || 'Failed to contribute note' });
+  }
+});
+
+// PUT /api/notes/:id/uncontribute - Remove an existing note from a community space
+router.put('/:id/uncontribute', async (req, res) => {
+  try {
+    const note = await Note.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!note) return res.status(404).json({ message: 'Note not found' });
+
+    // Unlink from community space
+    note.communitySpaceId = undefined;
+    note.communityTopic = undefined;
+    
+    // Status can optionally be reverted to 'approved' so it just sits in the user's manage page normally
+    // but the default flow sets new personal notes to 'approved' anyway.
+    note.status = 'approved'; 
+
+    await note.save();
+    res.json(note);
+  } catch (err) {
+    console.error('[noteRoutes] PUT /:id/uncontribute error:', err);
+    res.status(500).json({ message: err.message || 'Failed to remove note from community' });
   }
 });
 
@@ -265,7 +334,7 @@ router.put('/:id', uploadPdf.single('file'), async (req, res) => {
       note.driveLink = null;
       note.originalName = req.file.originalname || '';
       note.mimeType = req.file.mimetype || note.mimeType || 'application/pdf';
-      note.size = req.file.size ?? note.size ?? null;
+      note.size = result.bytes || req.file.size || note.size || null;
     } else if (driveLink) {
       const fileIdMatch = driveLink.match(/[-\w]{25,}/);
       if (!fileIdMatch) return res.status(400).json({ message: 'Invalid Google Drive link format' });

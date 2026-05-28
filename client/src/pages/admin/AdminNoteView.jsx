@@ -15,7 +15,6 @@ export default function AdminNoteView() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
-  const [savingListed, setSavingListed] = useState(false);
 
   const backUrl = note?.userId?._id ? `/admin/users/${note.userId._id}` : '/admin/users';
   const handleBack = useCallback(() => navigate(backUrl), [navigate, backUrl]);
@@ -46,21 +45,6 @@ export default function AdminNoteView() {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [handleBack]);
 
-  const handleListedOnExploreChange = async (checked) => {
-    setSavingListed(true);
-    setError('');
-    try {
-      const updated = await api(`/admin/notes/${noteId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ listedOnExplore: checked }),
-      });
-      setNote(updated);
-    } catch (err) {
-      setError(err.message || 'Failed to update listing');
-    } finally {
-      setSavingListed(false);
-    }
-  };
 
   const preventContextMenu = useCallback((e) => e.preventDefault(), []);
   const preventDrag = useCallback((e) => e.preventDefault(), []);
@@ -79,7 +63,7 @@ export default function AdminNoteView() {
     return (
       <div className="fullscreen-pdf-loading d-flex flex-column align-items-center justify-content-center gap-3">
         <p className="text-danger mb-0">{error || 'Note not found'}</p>
-        <Link to="/admin/users" className="btn btn-primary">
+        <Link to="/admin/users" className="btn btn-edura px-4">
           Back to Users
         </Link>
       </div>
@@ -100,21 +84,7 @@ export default function AdminNoteView() {
           )}
         </span>
         <div className="d-flex align-items-center gap-3">
-          <div className="d-flex align-items-center gap-2">
-            <input
-              id="admin-note-listed-explore"
-              type="checkbox"
-              className="form-check-input"
-              checked={!!note.listedOnExplore}
-              disabled={savingListed}
-              onChange={(e) => handleListedOnExploreChange(e.target.checked)}
-              aria-label="List on Explore"
-            />
-            <label className="form-check-label text-nowrap small text-white mb-0" htmlFor="admin-note-listed-explore">
-              List on Explore
-            </label>
-            {savingListed && <span className="small opacity-75">Saving...</span>}
-          </div>
+
           <div className="fullscreen-pdf-zoom" role="group" aria-label="Zoom">
             <button
               type="button"

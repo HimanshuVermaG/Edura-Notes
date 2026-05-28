@@ -4,6 +4,8 @@ import { Readable } from 'stream';
 import User from '../models/User.js';
 import Note from '../models/Note.js';
 import Folder from '../models/Folder.js';
+import CommunitySpace from '../models/CommunitySpace.js';
+import CommunityCategory from '../models/CommunityCategory.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { adminMiddleware } from '../middleware/adminMiddleware.js';
 import { getUploadPath } from '../middleware/uploadMiddleware.js';
@@ -277,6 +279,136 @@ router.delete('/notes', async (req, res) => {
     res.json({ message: 'Notes deleted', deleted, count: deleted.length });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to delete notes' });
+  }
+});
+
+// --- Community Spaces Management ---
+
+router.get('/community-spaces', async (req, res) => {
+  try {
+    const spaces = await CommunitySpace.find().sort({ createdAt: -1 }).lean();
+    res.json(spaces);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch community spaces' });
+  }
+});
+
+router.post('/community-spaces', async (req, res) => {
+  try {
+    const space = await CommunitySpace.create({
+      ...req.body,
+      adminId: req.user._id
+    });
+    res.status(201).json(space);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to create community space' });
+  }
+});
+
+router.put('/community-spaces/:id', async (req, res) => {
+  try {
+    const space = await CommunitySpace.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!space) return res.status(404).json({ message: 'Space not found' });
+    res.json(space);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to update space' });
+  }
+});
+
+router.delete('/community-spaces/:id', async (req, res) => {
+  try {
+    await CommunitySpace.findByIdAndDelete(req.params.id);
+    // Optionally update notes to remove communitySpaceId
+    await Note.updateMany({ communitySpaceId: req.params.id }, { $set: { status: 'approved', communitySpaceId: null, communityTopic: null } });
+    res.json({ message: 'Deleted community space' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to delete space' });
+  }
+});
+
+router.get('/community-spaces/:id/notes', async (req, res) => {
+  try {
+    const notes = await Note.find({ communitySpaceId: req.params.id, status: 'approved' })
+      .populate('userId', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(notes);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch notes for community' });
+  }
+});
+
+// --- Pending Community Requests ---
+
+router.get('/community-requests', async (req, res) => {
+  try {
+    const pendingNotes = await Note.find({ status: 'pending' })
+      .populate('userId', 'name email')
+      .populate('communitySpaceId', 'name code')
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(pendingNotes);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch pending requests' });
+  }
+});
+
+router.put('/community-requests/:id', async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+    const note = await Note.findByIdAndUpdate(req.params.id, { status }, { new: true })
+      .populate('userId', 'name')
+      .populate('communitySpaceId', 'name');
+    if (!note) return res.status(404).json({ message: 'Note not found' });
+    res.json(note);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update request status' });
+  }
+});
+
+// === COMMUNITY CATEGORY ROUTES === //
+
+router.get('/community-categories', async (req, res) => {
+  try {
+    const categories = await CommunityCategory.find().sort({ name: 1 }).lean();
+    res.json(categories);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to load categories' });
+  }
+});
+
+router.post('/community-categories', async (req, res) => {
+  try {
+    const name = req.body.name?.trim();
+    if (!name) return res.status(400).json({ message: 'Category name required' });
+    let category = await CommunityCategory.findOne({ name });
+    if (!category) {
+      category = await CommunityCategory.create({ name });
+    }
+    res.status(201).json(category);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to create category' });
+  }
+});
+
+router.delete('/community-categories/name/:name', async (req, res) => {
+  try {
+    const categoryName = req.params.name;
+    if (categoryName === 'General') return res.status(400).json({ message: 'Cannot delete General category' });
+
+    // Reassign all spaces using this category to 'General'
+    await CommunitySpace.updateMany(
+      { category: categoryName },
+      { $set: { category: 'General' } }
+    );
+
+    await CommunityCategory.findOneAndDelete({ name: categoryName });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to delete category' });
   }
 });
 

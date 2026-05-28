@@ -89,7 +89,7 @@ export default function AdminUsers() {
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearch())}
             aria-label="Search users"
           />
-          <button type="button" className="btn btn-primary" onClick={handleSearch}>
+          <button type="button" className="btn btn-edura" onClick={handleSearch}>
             Search
           </button>
         </div>
@@ -135,7 +135,7 @@ export default function AdminUsers() {
                   <td>{formatStorage(u.usedBytes, u.storageLimitBytes)}</td>
                   <td>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
                   <td>
-                    <Link to={`/admin/users/${u._id}`} className="btn btn-sm btn-outline-primary">
+                    <Link to={`/admin/users/${u._id}`} className="btn btn-sm btn-edura px-3">
                       View files
                     </Link>
                   </td>

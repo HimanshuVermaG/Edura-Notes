@@ -74,7 +74,7 @@ export default function Layout({ children }) {
     <div className="d-flex flex-column min-vh-100">
       <header className={`edura-header glass${scrolled ? ' scrolled' : ''}`}>
         <nav className="navbar navbar-expand-lg navbar-light container">
-          <Link className="navbar-brand d-flex align-items-center gap-2" to={isAuthenticated ? '/' : '/explore'}>
+          <Link className="navbar-brand d-flex align-items-center gap-2" to={isAuthenticated ? '/' : '/community'}>
             <span className="navbar-brand-icon" aria-hidden>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
@@ -98,18 +98,13 @@ export default function Layout({ children }) {
               {isAuthenticated ? (
                 <>
                   <li className="nav-item">
-                    <NavLink className="nav-link" to="/home" end>
-                      Home
-                    </NavLink>
-                  </li>
-                  <li className="nav-item">
                     <NavLink className="nav-link" to="/manage">
-                      Manage
+                      My Files
                     </NavLink>
                   </li>
                   <li className="nav-item">
-                    <NavLink className="nav-link" to="/explore">
-                      Explore
+                    <NavLink className="nav-link" to="/community">
+                      Community
                     </NavLink>
                   </li>
                   {user?._id && (
@@ -147,8 +142,8 @@ export default function Layout({ children }) {
               ) : (
                 <>
                   <li className="nav-item">
-                    <Link className="nav-link" to="/explore">
-                      Explore
+                    <Link className="nav-link" to="/community">
+                      Community
                     </Link>
                   </li>
                   <li className="nav-item d-flex align-items-center gap-1">
@@ -163,7 +158,7 @@ export default function Layout({ children }) {
                     </button>
                   </li>
                   <li className="nav-item">
-                    <Link className="btn btn-outline-primary btn-sm" to="/signin">
+                    <Link className="btn btn-edura btn-sm" to="/signin">
                       Sign In
                     </Link>
                   </li>
@@ -191,18 +186,17 @@ export default function Layout({ children }) {
             <div className="col-md-2">
               <h6>Quick Links</h6>
               <ul className="list-unstyled small">
-                <li><Link to="/explore">Explore</Link></li>
+                <li><Link to="/community">Community</Link></li>
                 <li><Link to="/signin">Sign In</Link></li>
-                <li><Link to="/home">Home</Link></li>
-                <li><Link to="/manage">Manage</Link></li>
+                <li><Link to="/manage">My Files</Link></li>
               </ul>
             </div>
             <div className="col-md-2">
               <h6>Resources</h6>
               <ul className="list-unstyled small">
-                <li><span className="text-muted">Privacy Policy</span></li>
-                <li><span className="text-muted">Terms of Service</span></li>
-                <li><span className="text-muted">Help Center</span></li>
+                <li><span className="text-white-50">Privacy Policy</span></li>
+                <li><span className="text-white-50">Terms of Service</span></li>
+                <li><span className="text-white-50">Help Center</span></li>
               </ul>
             </div>
             <div className="col-md-4">

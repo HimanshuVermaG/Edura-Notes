@@ -101,22 +101,21 @@ router.get('/explore/users', async (req, res) => {
 router.get('/profile/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
+    console.log(`[publicRoutes] GET /profile/${userId} called`);
     const user = await User.findById(userId).select('_id name profileListedOnExplore picture').lean();
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    const hasVisibleNotes = await Note.exists({ userId, $or: [ { isPublic: true }, { listedOnExplore: true } ] });
-    const profileViewable = user.profileListedOnExplore === true || hasVisibleNotes;
-    if (!profileViewable) {
-      return res.status(404).json({ message: 'Profile not found or private' });
+    if (!user) {
+      console.log(`[publicRoutes] User not found for id: ${userId}`);
+      return res.status(404).json({ message: 'User not found' });
     }
 
     const folders = await Folder.find({ userId }).sort({ order: 1, name: 1 }).lean();
     const notes = await Note.find({
       userId,
-      $or: [ { isPublic: true }, { listedOnExplore: true } ],
+      $or: [ { isPublic: true }, { listedOnExplore: true }, { communitySpaceId: { $ne: null }, status: 'approved' } ],
     })
       .populate('userId', 'name')
       .populate('folderId', 'name')
+      .populate('communitySpaceId', 'name')
       .sort({ updatedAt: -1 })
       .lean();
 
@@ -130,7 +129,7 @@ router.get('/notes/:id', async (req, res) => {
   try {
     const note = await Note.findOne({
       _id: req.params.id,
-      $or: [ { isPublic: true }, { listedOnExplore: true } ],
+      $or: [ { isPublic: true }, { listedOnExplore: true }, { communitySpaceId: { $ne: null }, status: 'approved' } ],
     })
       .populate('userId', 'name')
       .populate('folderId', 'name')
@@ -146,7 +145,7 @@ router.get('/notes/:id/file', async (req, res) => {
   try {
     const note = await Note.findOne({
       _id: req.params.id,
-      $or: [ { isPublic: true }, { listedOnExplore: true } ],
+      $or: [ { isPublic: true }, { listedOnExplore: true }, { communitySpaceId: { $ne: null }, status: 'approved' } ],
     });
     if (!note) return res.status(404).json({ message: 'Note not found or private' });
     

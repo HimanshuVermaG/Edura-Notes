@@ -175,7 +175,7 @@ export default function AdminLogin() {
 
           <p className="text-muted small text-center mt-3 mb-0">Only accounts with admin access can sign in here.</p>
           <div className="text-center mt-2">
-            <Link to="/explore" className="admin-login-back-link small d-inline-flex align-items-center gap-1">
+            <Link to="/community" className="admin-login-back-link small d-inline-flex align-items-center gap-1">
               <ArrowLeftIcon /> Back to main site
             </Link>
           </div>

@@ -51,7 +51,7 @@ export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActio
               <span className="text-muted small text-truncate" style={{ maxWidth: 200 }}>{label}</span>
             )}
             {folderName != null && (
-              <span className="badge bg-light text-dark small" style={{ borderRadius: '9999px' }}>{folderName}</span>
+              <span className="badge small border" style={{ borderRadius: '9999px', background: 'var(--edura-bg)', color: 'var(--edura-text)' }}>{folderName}</span>
             )}
             {description && (
               <span className="text-muted small text-truncate" style={{ maxWidth: 240 }} title={description}>{description}</span>
@@ -107,7 +107,7 @@ export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActio
               </p>
             )}
             {folderName != null && (
-              <span className="badge bg-light text-dark small mb-2" style={{ borderRadius: '9999px' }}>{folderName}</span>
+              <span className="badge small mb-2 border" style={{ borderRadius: '9999px', background: 'var(--edura-bg)', color: 'var(--edura-text)' }}>{folderName}</span>
             )}
             <div className="d-flex gap-2 flex-wrap mt-auto">
               <Link to={`/notes/${note._id}/view`} state={viewLinkState} className="btn btn-sm btn-outline-primary">View</Link>

@@ -14,6 +14,9 @@ const noteSchema = new mongoose.Schema(
     folderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Folder', default: null },
     isPublic: { type: Boolean, default: false },
     listedOnExplore: { type: Boolean, default: false },
+    communitySpaceId: { type: mongoose.Schema.Types.ObjectId, ref: 'CommunitySpace', default: null },
+    communityTopic: { type: String, default: null, trim: true },
+    status: { type: String, enum: ['approved', 'pending', 'rejected'], default: 'approved' }
   },
   { timestamps: true }
 );

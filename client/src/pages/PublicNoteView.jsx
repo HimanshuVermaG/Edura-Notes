@@ -64,7 +64,7 @@ export default function PublicNoteView() {
     return (
       <div className="fullscreen-pdf-loading d-flex flex-column align-items-center justify-content-center gap-3">
         <p className="text-danger mb-0">{error || 'Note not found or private'}</p>
-        <Link to="/" className="btn btn-primary">
+        <Link to="/" className="btn btn-edura px-4">
           Home
         </Link>
       </div>

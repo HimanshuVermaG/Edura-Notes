@@ -2,9 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import { useAuth } from './context/AuthContext';
-import Explore from './pages/Explore';
+import Community from './pages/Community';
 import AdminLogin from './pages/AdminLogin';
-import Homepage from './pages/Homepage';
 import Manage from './pages/Manage';
 import EditNote from './pages/EditNote';
 import FullScreenPdfView from './pages/FullScreenPdfView';
@@ -18,7 +17,7 @@ import SignIn from './pages/SignIn';
 
 function DashboardRedirect() {
   const { isAuthenticated } = useAuth();
-  return <Navigate to={isAuthenticated ? '/home' : '/explore'} replace />;
+  return <Navigate to={isAuthenticated ? '/manage' : '/community'} replace />;
 }
 
 export default function App() {
@@ -36,15 +35,9 @@ export default function App() {
       </Route>
       <Route path="/profile/:userId" element={<PublicProfile />} />
       <Route path="/view/note/:id" element={<PublicNoteView />} />
-      <Route path="/explore" element={<Explore />} />
-      <Route
-        path="/home"
-        element={
-          <ProtectedRoute>
-            <Homepage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/community" element={<Community />} />
+      <Route path="/explore" element={<Navigate to="/community" replace />} />
+      <Route path="/home" element={<Navigate to="/manage" replace />} />
       <Route
         path="/manage"
         element={
@@ -71,7 +64,7 @@ export default function App() {
         }
       />
 
-      <Route path="/" element={<Navigate to="/explore" replace />} />
+      <Route path="/" element={<Navigate to="/community" replace />} />
       <Route path="/dashboard" element={<DashboardRedirect />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

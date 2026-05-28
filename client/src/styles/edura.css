@@ -3962,4 +3962,5 @@ textarea:focus-visible {
   -webkit-backdrop-filter: blur(4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: opacity 0.3s ease;
-}
+}.hover-text-primary { transition: color var(--edura-transition); }
+.hover-text-primary:hover { color: var(--edura-primary) !important; }

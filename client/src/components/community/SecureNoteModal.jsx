@@ -1,71 +1,41 @@
-import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '../api/client';
-import SecureNoteViewerLazy from '../components/SecureNoteViewerLazy';
+import React, { useState, useEffect, useCallback } from 'react';
+import SecureNoteViewerLazy from '../SecureNoteViewerLazy';
 
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3;
 const ZOOM_STEP = 0.25;
 
-export default function FullScreenPdfView() {
-  const { id } = useParams();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const from = location.state?.from || '/manage';
-  const [note, setNote] = useState(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
+export default function SecureNoteModal({ isOpen, onClose, note }) {
   const [zoom, setZoom] = useState(1);
-
-  const handleClose = useCallback(() => {
-    navigate(from);
-  }, [navigate, from]);
-
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') handleClose();
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [handleClose]);
 
   const zoomIn = useCallback(() => {
     setZoom((z) => Math.min(z + ZOOM_STEP, ZOOM_MAX));
   }, []);
+  
   const zoomOut = useCallback(() => {
     setZoom((z) => Math.max(z - ZOOM_STEP, ZOOM_MIN));
   }, []);
 
   useEffect(() => {
-    api(`/notes/${id}`)
-      .then(setNote)
-      .catch(() => setError('Note not found'))
-      .finally(() => setLoading(false));
-  }, [id]);
+    if (!isOpen) {
+      setZoom(1);
+    }
+  }, [isOpen]);
 
-  if (loading) {
-    return (
-      <div className="fullscreen-pdf-loading">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
 
-  if (error || !note) {
-    return (
-      <div className="fullscreen-pdf-loading d-flex flex-column align-items-center justify-content-center gap-3">
-        <p className="text-danger mb-0">{error || 'Note not found'}</p>
-        <Link to="/manage" className="btn btn-edura px-4">
-          Back to My Files
-        </Link>
-      </div>
-    );
-  }
+  const preventContextMenu = useCallback((e) => e.preventDefault(), []);
+  const preventDrag = useCallback((e) => e.preventDefault(), []);
 
-  const preventContextMenu = (e) => e.preventDefault();
-  const preventDrag = (e) => e.preventDefault();
+  if (!isOpen || !note) return null;
 
   return (
     <div
@@ -101,17 +71,17 @@ export default function FullScreenPdfView() {
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </button>
           </div>
-          <button type="button" className="btn btn-sm btn-outline-light" onClick={handleClose} aria-label="Close">
+          <button type="button" className="btn btn-sm btn-outline-light" onClick={onClose} aria-label="Close">
             Close
           </button>
         </div>
       </div>
       <div className="fullscreen-pdf-content">
-        <SecureNoteViewerLazy
-          noteId={note._id}
+        <SecureNoteViewerLazy 
+          publicNoteId={note._id || note.id}
           fullScreen={true}
           mimeType={note.mimeType}
-          fileName={note.fileName}
+          fileName={note.fileName || note.originalName}
           zoom={zoom}
         />
       </div>

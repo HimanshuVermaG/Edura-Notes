@@ -291,7 +291,7 @@ export default function SignIn() {
             )}
 
             <p className="text-center mt-4 mb-0">
-              <Link to="/explore" className="edura-auth-explore-link">
+              <Link to="/community" className="edura-auth-explore-link">
                 Browse public notes without signing in <ArrowRightIcon />
               </Link>
             </p>

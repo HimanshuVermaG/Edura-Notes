@@ -87,9 +87,9 @@ export default function PublicProfile() {
   if (error || !user) {
     return (
       <Layout>
-        <div className="edura-card p-4">
-          <p className="text-danger mb-2">{error || 'User not found'}</p>
-          <Link to="/explore" className="btn btn-outline-primary">Back to Explore</Link>
+        <div className="edura-card p-5 text-center">
+          <p className="text-danger mb-4 fs-5">{error || 'User not found'}</p>
+          <Link to="/community" className="btn btn-edura px-4">Back to Community</Link>
         </div>
       </Layout>
     );
@@ -101,14 +101,28 @@ export default function PublicProfile() {
       {note.userId?.name && (
         <p className="card-text small mb-2 text-muted">Uploaded by {note.userId.name}</p>
       )}
+      {note.communitySpaceId && (
+        <div className="mb-2 d-flex flex-wrap gap-1">
+          <span className="badge bg-primary bg-opacity-10 text-primary border border-primary small rounded-pill">
+            Community: {typeof note.communitySpaceId === 'object' ? note.communitySpaceId.name : note.communitySpaceId}
+          </span>
+          {note.communityTopic && (
+            <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary small rounded-pill">
+              {note.communityTopic}
+            </span>
+          )}
+        </div>
+      )}
       {note.description?.trim() && (
-        <p className="card-text small mb-2 text-muted" title={note.description}>
+        <p className="card-text small mb-2 text-muted flex-grow-1" title={note.description}>
           {note.description.length > 80 ? note.description.slice(0, 80) + '…' : note.description}
         </p>
       )}
-      <Link to={`/view/note/${note._id}`} className="btn btn-sm btn-outline-primary">
-        View
-      </Link>
+      <div className="mt-auto pt-3">
+        <Link to={`/view/note/${note._id}`} className="btn btn-sm btn-edura w-100 text-center text-decoration-none">
+          View File
+        </Link>
+      </div>
     </>
   );
 
@@ -116,10 +130,15 @@ export default function PublicProfile() {
     if (isList) {
       return (
         <div key={note._id} className="edura-card p-2 px-3 d-flex align-items-center gap-3 flex-wrap">
-          <div className="flex-grow-1 min-w-0">
+          <div className="flex-grow-1 min-w-0 d-flex align-items-center gap-2 flex-wrap">
             <h6 className="card-title mb-0 text-truncate">{note.title}</h6>
+            {note.communitySpaceId && (
+              <span className="badge bg-primary bg-opacity-10 text-primary border border-primary small rounded-pill">
+                {typeof note.communitySpaceId === 'object' ? note.communitySpaceId.name : note.communitySpaceId}
+              </span>
+            )}
             {note.userId?.name && (
-              <span className="text-muted small">Uploaded by {note.userId.name}</span>
+              <span className="text-muted small ms-2">Uploaded by {note.userId.name}</span>
             )}
             {note.description?.trim() && (
               <span className="text-muted small text-truncate ms-2" style={{ maxWidth: 240 }} title={note.description}>
@@ -127,7 +146,7 @@ export default function PublicProfile() {
               </span>
             )}
           </div>
-          <Link to={`/view/note/${note._id}`} className="btn btn-sm btn-outline-primary flex-shrink-0">
+          <Link to={`/view/note/${note._id}`} className="btn btn-sm btn-edura flex-shrink-0 text-decoration-none px-3">
             View
           </Link>
         </div>
@@ -173,24 +192,28 @@ export default function PublicProfile() {
 
   return (
     <Layout>
-      <div className="edura-card p-4 mb-4 d-flex align-items-center gap-3">
-        {user.picture ? (
-          <img src={user.picture} alt="" className="rounded-circle" width={56} height={56} style={{ objectFit: 'cover' }} />
-        ) : (
-          <span className="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold text-white" style={{ width: 56, height: 56, background: 'var(--edura-primary)', fontSize: '1.25rem' }} aria-hidden>
-            {getInitials(user.name)}
-          </span>
-        )}
-        <div>
-          <h1 className="edura-section-title mb-1">{user.name}&apos;s profile</h1>
-          <p className="edura-section-subtitle mb-0">Public notes and files</p>
+      <div className="edura-card p-0 mb-5 overflow-hidden position-relative border-0 shadow-sm">
+        <div className="p-4 p-md-5 text-white" style={{ background: 'var(--edura-gradient)' }}>
+          <div className="d-flex flex-column flex-md-row align-items-md-center gap-4 position-relative z-1">
+            {user.picture ? (
+              <img src={user.picture} alt="" className="rounded-circle shadow" width={80} height={80} style={{ objectFit: 'cover', border: '4px solid rgba(255,255,255,0.2)' }} />
+            ) : (
+              <span className="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold shadow text-primary bg-white" style={{ width: 80, height: 80, fontSize: '2rem' }} aria-hidden>
+                {getInitials(user.name)}
+              </span>
+            )}
+            <div>
+              <h1 className="fw-bold mb-1 text-white" style={{ fontSize: '2.5rem', fontFamily: 'var(--edura-font-display)' }}>{user.name}</h1>
+              <p className="mb-0 text-white-50 fs-5">Public notes and files</p>
+            </div>
+          </div>
         </div>
       </div>
 
       {notes.length === 0 ? (
         <div className="edura-card p-5 text-center text-muted">
           <p className="mb-2">No public notes yet.</p>
-          <Link to="/explore" className="btn btn-sm btn-outline-primary">Browse Explore</Link>
+          <Link to="/community" className="btn btn-edura px-4 mt-2">Browse Community</Link>
         </div>
       ) : (
         <>
