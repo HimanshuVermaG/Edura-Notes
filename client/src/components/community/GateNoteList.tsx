@@ -77,7 +77,7 @@ export default function GateNoteList({
             {section.notes.map((note: any) => (
               <div key={note.id || note._id} className={viewMode === 'grid' ? "col-12 col-md-6 col-lg-4" : "col-12"}>
                 <div 
-                  className={`card shadow-sm border-0 h-100 p-4 cursor-pointer position-relative ${viewMode === 'list' ? 'd-flex flex-row align-items-center gap-4' : 'd-flex flex-column'}`}
+                  className={`card shadow-sm border-0 h-100 p-4 cursor-pointer position-relative ${viewMode === 'list' ? 'd-flex flex-column flex-md-row align-items-md-center gap-4' : 'd-flex flex-column'}`}
                   style={{ background: 'var(--edura-card-bg)' }}
                   onClick={() => handleSelectNote(note)}
                 >
@@ -105,7 +105,7 @@ export default function GateNoteList({
                     </p>
                   </div>
                   
-                  <div className={`${viewMode === 'list' ? 'd-flex align-items-center gap-4 ms-auto flex-shrink-0' : 'mt-auto pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-2'}`}>
+                  <div className={`${viewMode === 'list' ? 'd-flex flex-wrap align-items-center justify-content-between gap-3 ms-md-auto flex-shrink-0 mt-3 mt-md-0 border-top border-md-0 pt-3 pt-md-0 w-100 w-md-auto' : 'mt-auto pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-2'}`}>
                     {(note as any).userId ? (
                       <div 
                         className="d-flex align-items-center gap-2 cursor-pointer transition-all"

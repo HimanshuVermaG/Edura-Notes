@@ -117,7 +117,7 @@ export default function Layout({ children }) {
                       </Link>
                     </li>
                   )}
-                  <li className="nav-item d-flex align-items-center gap-2">
+                  <li className="nav-item d-flex align-items-center gap-2 py-2 py-lg-0 mt-2 mt-lg-0 border-top border-lg-0 pt-3 pt-lg-0" style={{ borderColor: 'var(--edura-border)' }}>
                     {user?.picture ? (
                       <img src={user.picture} alt="" className="nav-user-avatar rounded-circle" width={32} height={32} />
                     ) : (
@@ -128,7 +128,7 @@ export default function Layout({ children }) {
                       <Settings size={16} />
                     </button>
                   </li>
-                  <li className="nav-item d-flex align-items-center gap-2">
+                  <li className="nav-item d-flex align-items-center gap-2 py-2 py-lg-0">
                     <button
                       type="button"
                       className="edura-dark-toggle"
@@ -139,8 +139,8 @@ export default function Layout({ children }) {
                       {dark ? <SunIcon /> : <MoonIcon />}
                     </button>
                   </li>
-                  <li className="nav-item">
-                    <button type="button" className="btn btn-edura btn-sm" onClick={handleSignOut}>
+                  <li className="nav-item py-2 py-lg-0">
+                    <button type="button" className="btn btn-edura btn-sm w-100" onClick={handleSignOut}>
                       Sign Out
                     </button>
                   </li>
@@ -152,7 +152,7 @@ export default function Layout({ children }) {
                       Community
                     </Link>
                   </li>
-                  <li className="nav-item d-flex align-items-center gap-1">
+                  <li className="nav-item d-flex align-items-center gap-1 py-2 py-lg-0 border-top border-lg-0 pt-3 pt-lg-0 mt-2 mt-lg-0" style={{ borderColor: 'var(--edura-border)' }}>
                     <button
                       type="button"
                       className="edura-dark-toggle"
@@ -163,13 +163,13 @@ export default function Layout({ children }) {
                       {dark ? <SunIcon /> : <MoonIcon />}
                     </button>
                   </li>
-                  <li className="nav-item">
-                    <Link className="btn btn-edura btn-sm" to="/signin">
+                  <li className="nav-item py-2 py-lg-0">
+                    <Link className="btn btn-edura btn-sm w-100" to="/signin">
                       Sign In
                     </Link>
                   </li>
-                  <li className="nav-item ms-2">
-                    <Link className="btn btn-edura btn-sm" to="/signin" state={{ mode: 'signup' }}>
+                  <li className="nav-item py-2 py-lg-0 ms-lg-2">
+                    <Link className="btn btn-edura btn-sm w-100" to="/signin" state={{ mode: 'signup' }}>
                       Sign Up
                     </Link>
                   </li>
