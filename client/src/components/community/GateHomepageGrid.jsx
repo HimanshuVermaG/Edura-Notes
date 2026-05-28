@@ -77,26 +77,31 @@ export default function GateHomepageGrid({
           onClick={() => onSelectSpace(space)}
           style={{ borderColor: 'var(--edura-border)' }}
         >
-          <div className="p-4 d-flex align-items-end justify-content-between position-relative border-bottom" style={{ height: '80px', background: getColor(space.color) }}>
-            <div className="position-absolute bottom-0 start-0 m-3 d-flex align-items-center justify-content-center rounded shadow-sm" style={{ width: '48px', height: '48px', background: 'var(--edura-card-bg)' }}>
-              <CommunityIcon name={space.icon} size={24} style={{ color: getColor(space.color) }} />
-            </div>
-            <span className="badge border position-absolute bottom-0 end-0 m-3 fw-normal" style={{ background: 'var(--edura-card-bg)', color: 'var(--edura-text)' }}>
+          <div className="d-flex align-items-end justify-content-end position-relative" style={{ height: '80px', background: getColor(space.color) }}>
+            <span className="badge border m-3 fw-normal" style={{ background: 'var(--edura-card-bg)', color: 'var(--edura-text)' }}>
               {space.category || 'General'}
             </span>
           </div>
 
-          <div className="card-body p-4 pt-4 d-flex flex-column flex-grow-1">
-            <div className="d-flex justify-content-between align-items-start mb-2">
-              <h3 className="h6 fw-bold mb-0" style={{ color: 'var(--edura-text)' }}>{space.name}</h3>
+          <div className="card-body p-4 pt-0 d-flex flex-column flex-grow-1 position-relative">
+            {/* The overlapping icon */}
+            <div 
+              className="position-absolute top-0 start-0 ms-4 translate-middle-y d-flex align-items-center justify-content-center rounded-3 shadow-sm border border-edura" 
+              style={{ width: '56px', height: '56px', background: 'var(--edura-bg)', zIndex: 10 }}
+            >
+              <CommunityIcon name={space.icon} size={28} style={{ color: getColor(space.color) }} />
+            </div>
+
+            <div className="d-flex flex-wrap justify-content-between align-items-start mb-2 gap-2 mt-4 pt-2">
+              <h3 className="h6 fw-bold mb-0 text-break" style={{ color: 'var(--edura-text)', paddingRight: '0.5rem' }}>{space.name}</h3>
               {isJoined && (
-                <span className="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center gap-1">
+                <span className="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center gap-1 flex-shrink-0">
                   <Check size={10} strokeWidth={3} /> Member
                 </span>
               )}
             </div>
             
-            <p className="small mb-4 flex-grow-1" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', color: 'var(--edura-text-muted)' }}>
+            <p className="small mb-4 flex-grow-1 mt-2" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', color: 'var(--edura-text-muted)' }}>
               {space.description || 'No description available for this community.'}
             </p>
 
