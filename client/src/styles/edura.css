@@ -2,33 +2,33 @@
 
 /* Edura-inspired theme – colors, typography, cards, forms */
 :root {
-  --edura-primary: #2563eb;
-  --edura-primary-dark: #1d4ed8;
-  --edura-text: #1f2937;
-  --edura-text-muted: #94a3b8;
-  --edura-bg: #f8fafc;
+  --edura-primary: #1e40af; /* Deep Navy Blue */
+  --edura-primary-dark: #1e3a8a;
+  --edura-text: #0f172a; /* Slate 900 */
+  --edura-text-muted: #64748b; /* Slate 500 */
+  --edura-bg: #f8fafc; /* Slate 50 */
   --edura-card-bg: #ffffff;
-  --edura-border: #e5e7eb;
-  --edura-shadow: 0 4px 14px -2px rgba(37, 99, 235, 0.08);
-  --edura-shadow-hover: 0 12px 32px -4px rgba(37, 99, 235, 0.12);
-  --edura-radius: 10px;
+  --edura-border: #e2e8f0; /* Slate 200 */
+  --edura-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.05);
+  --edura-shadow-hover: 0 6px 16px -4px rgba(15, 23, 42, 0.08);
+  --edura-radius: 8px;
   --edura-radius-sm: 6px;
-  --edura-radius-lg: 20px;
+  --edura-radius-lg: 12px;
   --edura-font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --edura-font-display: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
-  --edura-transition: 0.18s ease;
-  --edura-gradient: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  --edura-font-display: 'Inter', -apple-system, sans-serif;
+  --edura-transition: 0.15s ease;
+  --edura-gradient: linear-gradient(135deg, #1e40af, #1e3a8a);
 }
 
 /* Dark theme (toggle via data-theme="dark" on html) */
 [data-theme="dark"] {
-  --edura-bg: #141c30;
-  --edura-card-bg: #1f2937;
+  --edura-bg: #0f172a;
+  --edura-card-bg: #1e293b;
   --edura-text: #f8fafc;
-  --edura-text-muted: #9ca3af;
-  --edura-border: #374151;
-  --edura-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.25);
-  --edura-shadow-hover: 0 12px 32px -4px rgba(0, 0, 0, 0.35);
+  --edura-text-muted: #94a3b8;
+  --edura-border: #334155;
+  --edura-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.3);
+  --edura-shadow-hover: 0 6px 16px -4px rgba(0, 0, 0, 0.4);
 }
 
 body {
@@ -43,19 +43,21 @@ body {
 /* Type scale */
 h1 {
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 700;
   font-family: var(--edura-font-display);
+  letter-spacing: -0.02em;
 }
 
 h2 {
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 600;
   font-family: var(--edura-font-display);
+  letter-spacing: -0.01em;
 }
 
 h3 {
   font-family: var(--edura-font-display);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* Glass utility */
@@ -107,14 +109,13 @@ h3 {
 }
 
 @keyframes eduraFloat {
-
   0%,
   100% {
     transform: translateY(0);
   }
 
   50% {
-    transform: translateY(-8px);
+    transform: translateY(-2px);
   }
 }
 
@@ -3163,7 +3164,7 @@ textarea:focus-visible {
 }
 
 .edura-header.scrolled {
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.07);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   border-bottom-color: var(--edura-border);
 }
 

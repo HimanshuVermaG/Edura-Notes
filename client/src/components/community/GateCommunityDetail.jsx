@@ -3,18 +3,18 @@ import { ArrowLeft, Users, Check, AlertCircle, PlusCircle, BookOpen, Sparkles, G
 import CommunityIcon from './CommunityIcon';
 import GateNoteList from './GateNoteList';
 
-// Map the admin color value (Tailwind-style) to actual CSS gradients
+// Map the admin color value (Tailwind-style) to solid academic colors
 const COLOR_MAP = {
-  'from-indigo-600 to-purple-600': 'linear-gradient(135deg, #4f46e5, #9333ea)',
-  'from-amber-500 to-orange-600': 'linear-gradient(135deg, #f59e0b, #ea580c)',
-  'from-violet-500 to-indigo-600': 'linear-gradient(135deg, #8b5cf6, #4f46e5)',
-  'from-emerald-500 to-teal-600': 'linear-gradient(135deg, #10b981, #0d9488)',
-  'from-slate-700 to-slate-900': 'linear-gradient(135deg, #334155, #0f172a)',
+  'from-indigo-600 to-purple-600': '#1e40af', // Navy Blue
+  'from-amber-500 to-orange-600': '#b45309', // Amber Dark
+  'from-violet-500 to-indigo-600': '#4338ca', // Indigo
+  'from-emerald-500 to-teal-600': '#0f766e', // Teal
+  'from-slate-700 to-slate-900': '#334155', // Slate
 };
-const DEFAULT_GRADIENT = 'linear-gradient(135deg, #4f46e5, #9333ea)';
+const DEFAULT_COLOR = '#1e40af';
 
-function getGradient(color) {
-  return COLOR_MAP[color] || DEFAULT_GRADIENT;
+function getColor(color) {
+  return COLOR_MAP[color] || DEFAULT_COLOR;
 }
 
 export default function GateCommunityDetail({ 
@@ -103,10 +103,10 @@ export default function GateCommunityDetail({
 
       {/* Header Banner - Plain */}
       <div className="card shadow-sm border mb-5 overflow-hidden" style={{ background: 'var(--edura-card-bg)', borderColor: 'var(--edura-border)' }}>
-        <div className="card-body p-4 p-md-5 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-4" style={{ background: getGradient(space.color) }}>
+        <div className="card-body p-4 p-md-5 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-4" style={{ background: getColor(space.color) }}>
           <div className="d-flex align-items-center gap-4">
-            <div className="d-flex align-items-center justify-content-center rounded-4 shadow-sm" style={{ width: '80px', height: '80px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)' }}>
-              <CommunityIcon name={space.icon} size={36} className="text-primary" />
+            <div className="d-flex align-items-center justify-content-center rounded border shadow-sm" style={{ width: '80px', height: '80px', background: 'var(--edura-bg)' }}>
+              <CommunityIcon name={space.icon} size={36} style={{ color: getColor(space.color) }} />
             </div>
             <div>
               <h2 className="display-6 fw-bold mb-2" style={{ color: '#fff' }}>
@@ -125,7 +125,7 @@ export default function GateCommunityDetail({
 
           <button
             onClick={() => toggleJoinSpace(space.id)}
-            className={`btn fw-bold px-4 rounded-pill shadow-sm ${
+            className={`btn fw-semibold px-4 rounded shadow-sm ${
               isJoined 
                 ? 'btn-light text-dark'
                 : 'btn-light text-dark'

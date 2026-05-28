@@ -75,7 +75,7 @@ export default function Layout({ children }) {
 
   return (
     <div className="d-flex flex-column min-vh-100">
-      <header className={`edura-header glass${scrolled ? ' scrolled' : ''}`}>
+      <header className={`edura-header${scrolled ? ' scrolled' : ''}`}>
         <nav className="navbar navbar-expand-lg navbar-light container">
           <Link className="navbar-brand d-flex align-items-center gap-2" to={isAuthenticated ? '/' : '/community'}>
             <span className="navbar-brand-icon" aria-hidden>

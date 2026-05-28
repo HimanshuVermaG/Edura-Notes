@@ -5,18 +5,18 @@ import CommunityIcon from './CommunityIcon';
 
 // Hardcoded default categories are removed; categories are now dynamically derived from spaces
 
-// Map the admin color value (Tailwind-style) to actual CSS gradients
+// Map the admin color value (Tailwind-style) to solid academic colors
 const COLOR_MAP = {
-  'from-indigo-600 to-purple-600': 'linear-gradient(135deg, #4f46e5, #9333ea)',
-  'from-amber-500 to-orange-600': 'linear-gradient(135deg, #f59e0b, #ea580c)',
-  'from-violet-500 to-indigo-600': 'linear-gradient(135deg, #8b5cf6, #4f46e5)',
-  'from-emerald-500 to-teal-600': 'linear-gradient(135deg, #10b981, #0d9488)',
-  'from-slate-700 to-slate-900': 'linear-gradient(135deg, #334155, #0f172a)',
+  'from-indigo-600 to-purple-600': '#1e40af', // Navy Blue
+  'from-amber-500 to-orange-600': '#b45309', // Amber Dark
+  'from-violet-500 to-indigo-600': '#4338ca', // Indigo
+  'from-emerald-500 to-teal-600': '#0f766e', // Teal
+  'from-slate-700 to-slate-900': '#334155', // Slate
 };
-const DEFAULT_GRADIENT = 'linear-gradient(135deg, #4f46e5, #9333ea)';
+const DEFAULT_COLOR = '#1e40af';
 
-function getGradient(color) {
-  return COLOR_MAP[color] || DEFAULT_GRADIENT;
+function getColor(color) {
+  return COLOR_MAP[color] || DEFAULT_COLOR;
 }
 
 export default function GateHomepageGrid({ 
@@ -77,17 +77,17 @@ export default function GateHomepageGrid({
           onClick={() => onSelectSpace(space)}
           style={{ borderColor: 'var(--edura-border)' }}
         >
-          <div className="p-4 d-flex align-items-end justify-content-between position-relative border-bottom" style={{ height: '100px', background: getGradient(space.color) }}>
-            <div className="position-absolute bottom-0 start-0 m-3 d-flex align-items-center justify-content-center rounded-3 shadow-sm" style={{ width: '56px', height: '56px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)' }}>
-              <CommunityIcon name={space.icon} size={24} className="text-primary" />
+          <div className="p-4 d-flex align-items-end justify-content-between position-relative border-bottom" style={{ height: '80px', background: getColor(space.color) }}>
+            <div className="position-absolute bottom-0 start-0 m-3 d-flex align-items-center justify-content-center rounded shadow-sm" style={{ width: '48px', height: '48px', background: 'var(--edura-card-bg)' }}>
+              <CommunityIcon name={space.icon} size={24} style={{ color: getColor(space.color) }} />
             </div>
-            <span className="badge border position-absolute bottom-0 end-0 m-3" style={{ background: 'rgba(255,255,255,0.85)', color: '#1f2937' }}>
+            <span className="badge border position-absolute bottom-0 end-0 m-3 fw-normal" style={{ background: 'var(--edura-card-bg)', color: 'var(--edura-text)' }}>
               {space.category || 'General'}
             </span>
           </div>
 
-          <div className="card-body p-4 d-flex flex-column flex-grow-1">
-            <div className="d-flex justify-content-between align-items-start mb-2 pb-2">
+          <div className="card-body p-4 pt-4 d-flex flex-column flex-grow-1">
+            <div className="d-flex justify-content-between align-items-start mb-2">
               <h3 className="h6 fw-bold mb-0" style={{ color: 'var(--edura-text)' }}>{space.name}</h3>
               {isJoined && (
                 <span className="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center gap-1">
@@ -117,10 +117,10 @@ export default function GateHomepageGrid({
                   e.stopPropagation();
                   toggleJoinSpace(space.id);
                 }}
-                className={`btn btn-sm fw-bold px-3 rounded-pill ${
+                className={`btn btn-sm fw-semibold px-3 rounded ${
                   isJoined 
                     ? 'btn-outline-secondary' 
-                    : 'btn-primary'
+                    : 'btn-outline-primary'
                 }`}
               >
                 {isJoined ? 'Leave' : 'Join'}
@@ -135,9 +135,8 @@ export default function GateHomepageGrid({
   return (
     <div className="container py-4" style={{ color: 'var(--edura-text)' }}>
       
-      {/* Hero Banner */}
       <div className="mb-5 text-center text-md-start">
-        <h1 className="display-5 fw-bold mb-3" style={{ color: 'var(--edura-text)' }}>
+        <h1 className="display-5 mb-3 text-dark-emphasis" style={{ color: 'var(--edura-text)', fontWeight: 700 }}>
           Explore Communities
         </h1>
         <p className="mb-0 mx-auto mx-md-0" style={{ maxWidth: '600px', color: 'var(--edura-text-muted)' }}>
@@ -178,7 +177,7 @@ export default function GateHomepageGrid({
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`btn btn-sm fw-bold px-3 py-1 rounded-pill ${
+              className={`btn btn-sm fw-medium px-3 py-1 rounded ${
                 selectedCategory === category
                   ? 'btn-primary shadow-sm text-white'
                   : 'btn-outline-secondary border-0'

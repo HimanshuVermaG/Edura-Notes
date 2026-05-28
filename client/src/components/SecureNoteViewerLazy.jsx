@@ -2,9 +2,9 @@ import { lazy, Suspense } from 'react';
 
 const SecureNoteViewer = lazy(() => import('./SecureNoteViewer'));
 
-function ViewerFallback() {
+function ViewerFallback({ fullScreen }) {
   return (
-    <div className="secure-note-viewer p-4 text-center" style={{ minHeight: 200 }}>
+    <div className={`secure-note-viewer p-4 text-center d-flex align-items-center justify-content-center ${fullScreen ? 'secure-note-viewer-fullscreen' : ''}`} style={fullScreen ? { flex: 1, minHeight: 0 } : { minHeight: 480 }}>
       <div className="spinner-border text-primary" role="status">
         <span className="visually-hidden">Loading viewer...</span>
       </div>
@@ -24,7 +24,7 @@ export default function SecureNoteViewerLazy({
   invertColors
 }) {
   return (
-    <Suspense fallback={<ViewerFallback />}>
+    <Suspense fallback={<ViewerFallback fullScreen={fullScreen} />}>
       <SecureNoteViewer 
         noteId={noteId}
         publicNoteId={publicNoteId}

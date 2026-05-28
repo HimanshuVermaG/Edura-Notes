@@ -179,9 +179,11 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
     e.preventDefault();
   }, []);
 
+  const fullScreen = !!fullScreenProp;
+
   if (loading) {
     return (
-      <div className="secure-note-viewer p-4 text-center d-flex flex-column align-items-center justify-content-center" style={{ minHeight: 480 }}>
+      <div className={`secure-note-viewer p-4 text-center d-flex flex-column align-items-center justify-content-center ${fullScreen ? 'secure-note-viewer-fullscreen' : ''}`} style={fullScreen ? { flex: 1, minHeight: 0 } : { minHeight: 480 }}>
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
@@ -196,7 +198,7 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
 
   if (error) {
     return (
-      <div className="secure-note-viewer p-4 text-danger">
+      <div className={`secure-note-viewer p-4 text-danger d-flex align-items-center justify-content-center ${fullScreen ? 'secure-note-viewer-fullscreen' : ''}`} style={fullScreen ? { flex: 1, minHeight: 0 } : { minHeight: 480 }}>
         {error}
       </div>
     );
@@ -204,13 +206,11 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
 
   if (!url) {
     return (
-      <div className="secure-note-viewer p-4 text-muted">
+      <div className={`secure-note-viewer p-4 text-muted d-flex align-items-center justify-content-center ${fullScreen ? 'secure-note-viewer-fullscreen' : ''}`} style={fullScreen ? { flex: 1, minHeight: 0 } : { minHeight: 480 }}>
         No file to display.
       </div>
     );
   }
-
-  const fullScreen = !!fullScreenProp;
 
   if (isImage) {
     return (
