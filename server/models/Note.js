@@ -16,7 +16,12 @@ const noteSchema = new mongoose.Schema(
     listedOnExplore: { type: Boolean, default: false },
     communitySpaceId: { type: mongoose.Schema.Types.ObjectId, ref: 'CommunitySpace', default: null },
     communityTopic: { type: String, default: null, trim: true },
-    status: { type: String, enum: ['approved', 'pending', 'rejected'], default: 'approved' }
+    status: { type: String, enum: ['approved', 'pending', 'rejected'], default: 'approved' },
+    deletedAt: { type: Date, default: null },
+    votes: [{
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      value: { type: Number, enum: [1, -1], required: true }
+    }]
   },
   { timestamps: true }
 );

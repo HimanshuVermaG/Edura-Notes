@@ -30,7 +30,13 @@ export default function GateCommunityDetail({
   refreshSpaces
 }) {
 
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem('edura_community_view_mode') || 'grid';
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('edura_community_view_mode', viewMode);
+  }, [viewMode]);
 
   // Process topics into sections, prepending a Bookmarks section if there are any
   const sections = useMemo(() => {

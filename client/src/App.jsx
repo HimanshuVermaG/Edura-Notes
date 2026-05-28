@@ -3,6 +3,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import { useAuth } from './context/AuthContext';
 import Community from './pages/Community';
+import Dashboard from './pages/Dashboard';
 import AdminLogin from './pages/AdminLogin';
 import Manage from './pages/Manage';
 import EditNote from './pages/EditNote';
@@ -17,7 +18,7 @@ import SignIn from './pages/SignIn';
 
 function DashboardRedirect() {
   const { isAuthenticated } = useAuth();
-  return <Navigate to={isAuthenticated ? '/manage' : '/community'} replace />;
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/community'} replace />;
 }
 
 export default function App() {
@@ -37,7 +38,15 @@ export default function App() {
       <Route path="/view/note/:id" element={<PublicNoteView />} />
       <Route path="/community" element={<Community />} />
       <Route path="/explore" element={<Navigate to="/community" replace />} />
-      <Route path="/home" element={<Navigate to="/manage" replace />} />
+      <Route path="/home" element={<Navigate to="/dashboard" replace />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/manage"
         element={
@@ -64,8 +73,7 @@ export default function App() {
         }
       />
 
-      <Route path="/" element={<Navigate to="/community" replace />} />
-      <Route path="/dashboard" element={<DashboardRedirect />} />
+      <Route path="/" element={<DashboardRedirect />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Search } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 
@@ -11,6 +12,7 @@ import Layout from "../components/Layout";
 
 export default function Community() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [spaces, setSpaces] = useState([]);
   const [topContributors, setTopContributors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +75,52 @@ export default function Community() {
   useEffect(() => {
     fetchSpaces();
   }, []);
+
+  // Restore state from URL on initial load
+  useEffect(() => {
+    if (!loading && spaces.length > 0) {
+      const spaceId = searchParams.get('space');
+      const noteId = searchParams.get('note');
+      
+      if (spaceId && !selectedSubject) {
+        const space = spaces.find(s => s.id === spaceId);
+        if (space) {
+          setSelectedSubject(space);
+          if (noteId && !selectedNote) {
+             let foundNote = null;
+             space.topics?.forEach(t => {
+               const n = (t.notes || []).find(x => (x._id || x.id) === noteId);
+               if (n) foundNote = n;
+             });
+             if (foundNote) setSelectedNote(foundNote);
+          }
+        }
+      }
+    }
+  }, [loading, spaces, searchParams, selectedSubject, selectedNote]);
+
+  // Sync state to URL when changed by user
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+    let changed = false;
+
+    if (selectedSubject) {
+      if (params.get('space') !== selectedSubject.id) { params.set('space', selectedSubject.id); changed = true; }
+    } else {
+      if (params.has('space')) { params.delete('space'); changed = true; }
+    }
+    
+    if (selectedNote) {
+      const nId = selectedNote._id || selectedNote.id;
+      if (params.get('note') !== nId) { params.set('note', nId); changed = true; }
+    } else {
+      if (params.has('note')) { params.delete('note'); changed = true; }
+    }
+    
+    if (changed) {
+      setSearchParams(params, { replace: true });
+    }
+  }, [selectedSubject, selectedNote, setSearchParams, searchParams]);
 
   const toggleBookmark = (noteId) => {
     let nextBookmarks;
@@ -195,6 +243,7 @@ export default function Community() {
         isOpen={!!selectedNote}
         onClose={() => setSelectedNote(null)}
         note={selectedNote}
+        currentUser={user}
       />
     </Layout>
   );

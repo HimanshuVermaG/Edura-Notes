@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(NOTES_LIST_MAX_LIMIT, Math.max(1, parseInt(req.query.limit, 10) || 10));
 
-    const filter = { userId: req.user._id };
+    const filter = { userId: req.user._id, deletedAt: null };
     // Multi-folder filter: folderIds=null,id1,id2 (comma-separated; "null" = uncategorized)
     const folderIdsRaw = req.query.folderIds;
     if (folderIdsRaw != null && String(folderIdsRaw).trim() !== '') {
@@ -367,24 +367,155 @@ router.put('/:id', uploadPdf.single('file'), async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const note = await Note.findOne({ _id: req.params.id, userId: req.user._id });
+    const note = await Note.findOne({ _id: req.params.id, userId: req.user._id, deletedAt: null });
     if (!note) return res.status(404).json({ message: 'Note not found' });
+    // Soft-delete: move to trash
+    note.deletedAt = new Date();
+    await note.save();
+    res.json({ message: 'Note moved to trash' });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to delete note' });
+  }
+});
+
+// GET /api/notes/trash - List trashed notes (and auto-purge >30 days old)
+router.get('/trash/list', async (req, res) => {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // Auto-purge old trash
+    const oldNotes = await Note.find({ userId: req.user._id, deletedAt: { $lt: thirtyDaysAgo } });
+    for (const note of oldNotes) {
+      if (note.fileUrl) {
+        try { await destroyCloudinaryAsset(note.fileName, getResourceType(note.mimeType)); } catch {}
+      } else if (note.fileName) {
+        const filePath = getUploadPath(note.fileName);
+        if (fs.existsSync(filePath)) { try { fs.unlinkSync(filePath); } catch {} }
+      }
+    }
+    if (oldNotes.length > 0) {
+      await Note.deleteMany({ _id: { $in: oldNotes.map(n => n._id) } });
+    }
+
+    const notes = await Note.find({ userId: req.user._id, deletedAt: { $ne: null } })
+      .sort({ deletedAt: -1 })
+      .lean();
+    res.json(notes);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to list trash' });
+  }
+});
+
+// PUT /api/notes/trash/restore/:id - Restore a trashed note
+router.put('/trash/restore/:id', async (req, res) => {
+  try {
+    const note = await Note.findOne({ _id: req.params.id, userId: req.user._id, deletedAt: { $ne: null } });
+    if (!note) return res.status(404).json({ message: 'Note not found in trash' });
+    note.deletedAt = null;
+    await note.save();
+    res.json({ message: 'Note restored' });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to restore note' });
+  }
+});
+
+// DELETE /api/notes/trash/purge/:id - Permanently delete a trashed note
+router.delete('/trash/purge/:id', async (req, res) => {
+  try {
+    const note = await Note.findOne({ _id: req.params.id, userId: req.user._id, deletedAt: { $ne: null } });
+    if (!note) return res.status(404).json({ message: 'Note not found in trash' });
     if (note.driveLink) {
       // No external file to delete
     } else if (note.fileUrl) {
-      try {
-        await destroyCloudinaryAsset(note.fileName, getResourceType(note.mimeType));
-      } catch {}
-    } else {
+      try { await destroyCloudinaryAsset(note.fileName, getResourceType(note.mimeType)); } catch {}
+    } else if (note.fileName) {
       const filePath = getUploadPath(note.fileName);
-      if (fs.existsSync(filePath)) {
-        try { fs.unlinkSync(filePath); } catch {}
-      }
+      if (fs.existsSync(filePath)) { try { fs.unlinkSync(filePath); } catch {} }
     }
     await Note.deleteOne({ _id: note._id });
-    res.json({ message: 'Note deleted' });
+    res.json({ message: 'Note permanently deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message || 'Failed to delete note' });
+    res.status(500).json({ message: err.message || 'Failed to purge note' });
+  }
+});
+
+// POST /api/notes/trash/empty - Empty entire trash
+router.post('/trash/empty', async (req, res) => {
+  try {
+    const notes = await Note.find({ userId: req.user._id, deletedAt: { $ne: null } });
+    for (const note of notes) {
+      if (note.driveLink) {
+        // No external file
+      } else if (note.fileUrl) {
+        try { await destroyCloudinaryAsset(note.fileName, getResourceType(note.mimeType)); } catch {}
+      } else if (note.fileName) {
+        const filePath = getUploadPath(note.fileName);
+        if (fs.existsSync(filePath)) { try { fs.unlinkSync(filePath); } catch {} }
+      }
+    }
+    await Note.deleteMany({ userId: req.user._id, deletedAt: { $ne: null } });
+    res.json({ message: `${notes.length} note(s) permanently deleted` });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to empty trash' });
+  }
+});
+// POST /api/notes/bulk-delete - Bulk delete notes
+router.post('/bulk-delete', async (req, res) => {
+  try {
+    const { noteIds } = req.body;
+    if (!Array.isArray(noteIds) || noteIds.length === 0) {
+      return res.status(400).json({ message: 'noteIds array is required' });
+    }
+    const notes = await Note.find({ _id: { $in: noteIds }, userId: req.user._id });
+    for (const note of notes) {
+      if (note.driveLink) {
+        // No external file to delete
+      } else if (note.fileUrl) {
+        try { await destroyCloudinaryAsset(note.fileName, getResourceType(note.mimeType)); } catch {}
+      } else if (note.fileName) {
+        const filePath = getUploadPath(note.fileName);
+        if (fs.existsSync(filePath)) { try { fs.unlinkSync(filePath); } catch {} }
+      }
+    }
+    await Note.deleteMany({ _id: { $in: notes.map(n => n._id) } });
+    res.json({ message: `${notes.length} note(s) deleted` });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to bulk delete' });
+  }
+});
+
+// PUT /api/notes/bulk-move - Bulk move notes to a folder
+router.put('/bulk-move', async (req, res) => {
+  try {
+    const { noteIds, folderId } = req.body;
+    if (!Array.isArray(noteIds) || noteIds.length === 0) {
+      return res.status(400).json({ message: 'noteIds array is required' });
+    }
+    const result = await Note.updateMany(
+      { _id: { $in: noteIds }, userId: req.user._id },
+      { $set: { folderId: folderId || null } }
+    );
+    res.json({ message: `${result.modifiedCount} note(s) moved` });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to bulk move' });
+  }
+});
+
+// PUT /api/notes/bulk-visibility - Bulk change visibility
+router.put('/bulk-visibility', async (req, res) => {
+  try {
+    const { noteIds, isPublic } = req.body;
+    if (!Array.isArray(noteIds) || noteIds.length === 0) {
+      return res.status(400).json({ message: 'noteIds array is required' });
+    }
+    const result = await Note.updateMany(
+      { _id: { $in: noteIds }, userId: req.user._id },
+      { $set: { isPublic: !!isPublic } }
+    );
+    res.json({ message: `${result.modifiedCount} note(s) updated` });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to bulk update visibility' });
   }
 });
 

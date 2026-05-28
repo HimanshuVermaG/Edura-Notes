@@ -1,6 +1,7 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { apiGetBlob, apiGetBlobWithProgress } from '../api/client';
+import { api, apiGetBlob, apiGetBlobWithProgress } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
@@ -15,7 +16,7 @@ function inferMimeType(fileName) {
   return mime[ext] || 'application/pdf';
 }
 
-function LazyPage({ pageNumber, width, onActive }) {
+function LazyPage({ pageNumber, width, zoom = 1, onActive }) {
   const [isRendered, setIsRendered] = useState(false);
   const ref = useRef(null);
 
@@ -55,7 +56,11 @@ function LazyPage({ pageNumber, width, onActive }) {
   const estimatedHeight = width * 1.414;
 
   return (
-    <div ref={ref} className="lazy-page-wrapper" style={{ minHeight: isRendered ? 'auto' : estimatedHeight, width, marginBottom: 16 }}>
+    <div 
+      ref={ref} 
+      className="lazy-page-wrapper position-relative" 
+      style={{ minHeight: isRendered ? 'auto' : estimatedHeight, width, marginBottom: 16 }}
+    >
       {isRendered ? (
         <Page
           pageNumber={pageNumber}
@@ -73,7 +78,7 @@ function LazyPage({ pageNumber, width, onActive }) {
   );
 }
 
-export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pdfBlobUrl, fullScreen: fullScreenProp = false, mimeType: mimeTypeProp, fileName, zoom: zoomProp = 1 }) {
+export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pdfBlobUrl, fullScreen: fullScreenProp = false, mimeType: mimeTypeProp, fileName, zoom: zoomProp = 1, invertColors = false }) {
   const mimeType = mimeTypeProp || (fileName ? inferMimeType(fileName) : 'application/pdf');
   const isImage = mimeType && mimeType.startsWith('image/');
   const containerRef = useRef(null);
@@ -87,6 +92,8 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [error, setError] = useState(null);
   const createdUrlRef = useRef(null);
+  
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (pdfBlobUrl) {
@@ -209,7 +216,7 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
     return (
       <div
         ref={containerRef}
-        className={`secure-note-viewer secure-note-watermark no-drag ${fullScreen ? 'secure-note-viewer-fullscreen' : ''}`}
+        className={`secure-note-viewer secure-note-watermark no-drag ${fullScreen ? 'secure-note-viewer-fullscreen' : ''} ${invertColors ? 'dark-mode-pdf' : ''}`}
         onContextMenu={preventContextMenu}
         onDragStart={preventDrag}
         style={fullScreen ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' } : { minHeight: 480 }}
@@ -248,7 +255,7 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
   return (
     <div
       ref={containerRef}
-      className={`secure-note-viewer secure-note-watermark no-drag ${fullScreen ? 'secure-note-viewer-fullscreen' : ''}`}
+      className={`secure-note-viewer secure-note-watermark no-drag ${fullScreen ? 'secure-note-viewer-fullscreen' : ''} ${invertColors ? 'dark-mode-pdf' : ''}`}
       onContextMenu={preventContextMenu}
       onDragStart={preventDrag}
       style={fullScreen ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' } : { minHeight: 480, position: 'relative' }}
@@ -272,6 +279,7 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
                 key={`page-${i + 1}`}
                 pageNumber={i + 1}
                 width={pageWidth * zoom}
+                zoom={zoom}
                 onActive={handlePageActive}
               />
             ))}

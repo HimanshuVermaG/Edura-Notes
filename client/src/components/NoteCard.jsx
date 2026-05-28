@@ -13,7 +13,7 @@ function getStripClass(note) {
   return 'note-card-strip-other';
 }
 
-export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActions = true, folderName, showFileName = true }) {
+export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActions = true, folderName, showFileName = true, bulkMode = false, isSelected = false, onToggleSelect }) {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const { addToast } = useToast();
@@ -43,8 +43,12 @@ export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActio
       <>
         <div
           className="edura-card p-2 px-3 d-flex align-items-center gap-3 flex-wrap note-card-list-row"
-          style={{ cursor: showActions ? 'default' : 'default' }}
+          style={{ cursor: bulkMode ? 'pointer' : 'default', borderLeft: isSelected ? '3px solid var(--edura-primary)' : undefined }}
+          onClick={bulkMode ? () => onToggleSelect?.(note._id) : undefined}
         >
+          {bulkMode && (
+            <input type="checkbox" className="form-check-input flex-shrink-0" checked={isSelected} onChange={() => onToggleSelect?.(note._id)} onClick={e => e.stopPropagation()} style={{ width: '18px', height: '18px' }} />
+          )}
           <div className="flex-grow-1 min-w-0 d-flex align-items-center gap-2 flex-wrap">
             <h6 className="card-title mb-0 text-truncate" style={{ minWidth: 120 }}>{note.title}</h6>
             {showFileName && (
@@ -91,11 +95,14 @@ export default function NoteCard({ note, onDeleted, viewMode = 'grid', showActio
   }
 
   return (
-    <div className="edura-card d-flex flex-column" style={{ cursor: 'default', overflow: 'hidden', padding: 0 }}>
+    <div className="edura-card d-flex flex-column" style={{ cursor: bulkMode ? 'pointer' : 'default', overflow: 'hidden', padding: 0, border: isSelected ? '2px solid var(--edura-primary)' : undefined }} onClick={bulkMode ? () => onToggleSelect?.(note._id) : undefined}>
       {/* Color strip */}
       <div className={`note-card-top-strip ${getStripClass(note)}`} />
       <div className="p-3 flex-grow-1 d-flex flex-column">
         <div className="d-flex justify-content-between align-items-start gap-2">
+          {bulkMode && (
+            <input type="checkbox" className="form-check-input flex-shrink-0 mt-1" checked={isSelected} onChange={() => onToggleSelect?.(note._id)} onClick={e => e.stopPropagation()} style={{ width: '18px', height: '18px' }} />
+          )}
           <div className="flex-grow-1 min-w-0">
             <h6 className="card-title mb-1 text-truncate">{note.title}</h6>
             {showFileName && (

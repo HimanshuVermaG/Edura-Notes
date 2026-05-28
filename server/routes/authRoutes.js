@@ -130,5 +130,30 @@ router.get('/me', authMiddleware, (req, res) => {
   delete u.password;
   res.json({ user: { ...u, role: u.role || 'user', picture: u.picture || '' } });
 });
+router.put('/profile', authMiddleware, async (req, res) => {
+  try {
+    const { name, bio, socialLinks } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    if (name) user.name = name;
+    if (bio !== undefined) user.bio = bio;
+    if (socialLinks) {
+      if (socialLinks.github !== undefined) user.socialLinks.github = socialLinks.github;
+      if (socialLinks.linkedin !== undefined) user.socialLinks.linkedin = socialLinks.linkedin;
+      if (socialLinks.twitter !== undefined) user.socialLinks.twitter = socialLinks.twitter;
+      if (socialLinks.website !== undefined) user.socialLinks.website = socialLinks.website;
+    }
+    
+    await user.save();
+    
+    const u = user.toObject();
+    delete u.password;
+    res.json({ user: { ...u, role: u.role || 'user', picture: u.picture || '' } });
+  } catch (err) {
+    console.error('[authRoutes] /profile error:', err);
+    res.status(500).json({ message: 'Failed to update profile' });
+  }
+});
 
 export default router;

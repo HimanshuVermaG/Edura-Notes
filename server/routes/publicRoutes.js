@@ -102,7 +102,7 @@ router.get('/profile/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     console.log(`[publicRoutes] GET /profile/${userId} called`);
-    const user = await User.findById(userId).select('_id name profileListedOnExplore picture').lean();
+    const user = await User.findById(userId).select('_id name profileListedOnExplore picture bio socialLinks').lean();
     if (!user) {
       console.log(`[publicRoutes] User not found for id: ${userId}`);
       return res.status(404).json({ message: 'User not found' });
@@ -119,7 +119,13 @@ router.get('/profile/:userId', async (req, res) => {
       .sort({ updatedAt: -1 })
       .lean();
 
-    res.json({ user: { _id: user._id, name: user.name, picture: user.picture || '' }, folders, notes });
+    const badges = [];
+    if (notes.length >= 1) badges.push({ id: 'contributor', name: 'Contributor', color: '#10b981', icon: 'Star' });
+    if (notes.length >= 5) badges.push({ id: 'bronze', name: 'Bronze Scholar', color: '#f59e0b', icon: 'Award' });
+    if (notes.length >= 15) badges.push({ id: 'silver', name: 'Silver Sage', color: '#94a3b8', icon: 'Medal' });
+    if (notes.length >= 50) badges.push({ id: 'gold', name: 'Gold Master', color: '#fbbf24', icon: 'Trophy' });
+
+    res.json({ user: { _id: user._id, name: user.name, picture: user.picture || '', bio: user.bio, socialLinks: user.socialLinks, badges }, folders, notes });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to load profile' });
   }

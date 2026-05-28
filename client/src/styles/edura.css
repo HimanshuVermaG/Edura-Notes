@@ -3980,3 +3980,8 @@ textarea:focus-visible {
   transform: translateY(-1px);
 }
 
+
+.dark-mode-pdf .react-pdf__Page__canvas, .dark-mode-pdf .secure-note-viewer-image {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95);
+}
+

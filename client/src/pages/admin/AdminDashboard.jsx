@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import { Edit2, Trash2, CheckCircle, XCircle, FileText, X } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'requests'
@@ -13,6 +14,7 @@ export default function AdminDashboard() {
   const [spaces, setSpaces] = useState([]);
   const [requests, setRequests] = useState([]);
   const [dbCategories, setDbCategories] = useState([]);
+  const [selectedRequestIds, setSelectedRequestIds] = useState(new Set());
   
   // New/Edit Space Form State
   const initialSpaceState = { 
@@ -60,6 +62,7 @@ export default function AdminDashboard() {
       } else if (activeTab === 'requests') {
         const data = await api('/admin/community-requests');
         setRequests(data);
+        setSelectedRequestIds(new Set());
       }
     } catch (err) {
       setError(err.message || 'Failed to load data');
@@ -182,6 +185,38 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleBulkReview = async (status) => {
+    if (selectedRequestIds.size === 0) return;
+    if (!window.confirm(`Are you sure you want to ${status} ${selectedRequestIds.size} request(s)?`)) return;
+    try {
+      await api('/admin/community-requests/bulk-review', {
+        method: 'PUT',
+        body: JSON.stringify({ noteIds: Array.from(selectedRequestIds), status }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      fetchData();
+    } catch (err) {
+      alert(err.message || `Failed to ${status} requests`);
+    }
+  };
+
+  const toggleSelectRequest = (id) => {
+    setSelectedRequestIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllRequests = () => {
+    if (selectedRequestIds.size === requests.length) {
+      setSelectedRequestIds(new Set());
+    } else {
+      setSelectedRequestIds(new Set(requests.map(r => r._id)));
+    }
+  };
+
   // Manage Files functions
   const handleManageFiles = async (spaceId) => {
     if (managingFilesSpaceId === spaceId) {
@@ -216,11 +251,28 @@ export default function AdminDashboard() {
     }
   };
 
-  const { totalUsers, totalNotes, totalUsedBytes } = stats;
+  const { totalUsers, totalNotes, totalUsedBytes, dailyUsers, dailyNotes } = stats;
   const BYTES_PER_MB = 1024 * 1024;
   const totalStorageLabel = totalUsedBytes >= BYTES_PER_MB * 1024
     ? `${(totalUsedBytes / (BYTES_PER_MB * 1024)).toFixed(1)} GB`
     : `${(totalUsedBytes / BYTES_PER_MB).toFixed(1)} MB`;
+
+  // Fill in missing dates for charts so days with 0 activity show up
+  const fillMissingDates = (data) => {
+    const filled = [];
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const existing = (data || []).find(item => item._id === dateStr);
+      filled.push({ _id: dateStr, count: existing ? existing.count : 0 });
+    }
+    return filled;
+  };
+
+  const chartDailyUsers = fillMissingDates(dailyUsers);
+  const chartDailyNotes = fillMissingDates(dailyNotes);
 
   return (
     <div className="admin-page">
@@ -289,6 +341,49 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </div>
+
+                {/* Charts Section */}
+                {(dailyUsers?.length > 0 || dailyNotes?.length > 0) && (
+                  <div className="row g-4 mb-4">
+                    <div className="col-md-6">
+                      <div className="card shadow-sm border h-100" style={{ background: 'var(--edura-card-bg)', color: 'var(--edura-text)', borderColor: 'var(--edura-border)' }}>
+                        <div className="card-body pb-0">
+                          <h6 className="text-muted text-uppercase fw-bold mb-3" style={{ fontSize: '0.8rem' }}>New Users (Last 30 Days)</h6>
+                        </div>
+                        <div style={{ height: '250px', padding: '0 10px 10px 0' }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartDailyUsers} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--edura-border)" />
+                              <XAxis dataKey="_id" tick={{ fontSize: 10, fill: 'var(--edura-text-muted)' }} tickLine={false} axisLine={{ stroke: 'var(--edura-border)' }} />
+                              <YAxis tick={{ fontSize: 10, fill: 'var(--edura-text-muted)' }} tickLine={false} axisLine={false} />
+                              <Tooltip contentStyle={{ background: 'var(--edura-card-bg)', border: '1px solid var(--edura-border)', color: 'var(--edura-text)', fontSize: '0.8rem', borderRadius: '8px' }} />
+                              <Line type="monotone" dataKey="count" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 3, fill: '#8b5cf6', strokeWidth: 0 }} activeDot={{ r: 5 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <div className="card shadow-sm border h-100" style={{ background: 'var(--edura-card-bg)', color: 'var(--edura-text)', borderColor: 'var(--edura-border)' }}>
+                        <div className="card-body pb-0">
+                          <h6 className="text-muted text-uppercase fw-bold mb-3" style={{ fontSize: '0.8rem' }}>Notes Uploaded (Last 30 Days)</h6>
+                        </div>
+                        <div style={{ height: '250px', padding: '0 10px 10px 0' }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartDailyNotes} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--edura-border)" />
+                              <XAxis dataKey="_id" tick={{ fontSize: 10, fill: 'var(--edura-text-muted)' }} tickLine={false} axisLine={{ stroke: 'var(--edura-border)' }} />
+                              <YAxis tick={{ fontSize: 10, fill: 'var(--edura-text-muted)' }} tickLine={false} axisLine={false} />
+                              <Tooltip contentStyle={{ background: 'var(--edura-card-bg)', border: '1px solid var(--edura-border)', color: 'var(--edura-text)', fontSize: '0.8rem', borderRadius: '8px' }} />
+                              <Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={3} dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }} activeDot={{ r: 5 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="mb-5 border-bottom pb-4">
                   <Link to="/admin/users" className="btn btn-edura fw-bold shadow-sm">
                     Manage All Users
@@ -470,13 +565,51 @@ export default function AdminDashboard() {
 
             {activeTab === 'requests' && (
               <div>
-                <h3 className="h5 fw-bold mb-4" style={{ color: 'var(--edura-text)' }}>Pending Note Contributions</h3>
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                  <h3 className="h5 fw-bold mb-0" style={{ color: 'var(--edura-text)' }}>Pending Note Contributions</h3>
+                  {requests.length > 0 && (
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="small text-muted me-2">{selectedRequestIds.size} selected</span>
+                      <button 
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={toggleSelectAllRequests}
+                      >
+                        {selectedRequestIds.size === requests.length ? 'Deselect All' : 'Select All'}
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-success d-flex align-items-center gap-1"
+                        onClick={() => handleBulkReview('approved')}
+                        disabled={selectedRequestIds.size === 0}
+                      >
+                        <CheckCircle size={14} /> Approve Selected
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-danger d-flex align-items-center gap-1"
+                        onClick={() => handleBulkReview('rejected')}
+                        disabled={selectedRequestIds.size === 0}
+                      >
+                        <XCircle size={14} /> Reject Selected
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
                 {requests.length === 0 ? <p className="text-muted">No pending contributions at the moment.</p> : (
                   <div className="d-flex flex-column gap-3">
                     {requests.map(note => (
-                      <div key={note._id} className="card shadow-sm border" style={{ background: 'var(--edura-card-bg)', color: 'var(--edura-text)', borderColor: 'var(--edura-border)' }}>
+                      <div key={note._id} className={`card shadow-sm border ${selectedRequestIds.has(note._id) ? 'border-primary' : ''}`} style={{ background: 'var(--edura-card-bg)', color: 'var(--edura-text)', borderColor: 'var(--edura-border)' }}>
                         <div className="card-body d-flex flex-column flex-md-row justify-content-between gap-4">
-                          <div>
+                          <div className="d-flex gap-3">
+                            <div className="pt-1">
+                              <input 
+                                type="checkbox" 
+                                className="form-check-input" 
+                                style={{ width: '1.25rem', height: '1.25rem', cursor: 'pointer' }}
+                                checked={selectedRequestIds.has(note._id)}
+                                onChange={() => toggleSelectRequest(note._id)}
+                              />
+                            </div>
+                            <div>
                             <div className="d-flex align-items-center gap-2 mb-2">
                               <span className="badge bg-warning text-dark border">PENDING</span>
                               <span className="small text-muted">Submitted by <span className="fw-bold" style={{ color: 'var(--edura-text)' }}>{note.userId?.name || 'Unknown User'}</span></span>
@@ -489,6 +622,7 @@ export default function AdminDashboard() {
                               <span className="badge border" style={{ background: 'var(--edura-bg)', color: 'var(--edura-text)' }}>Topic: {note.communityTopic}</span>
                             </div>
                           </div>
+                        </div>
                           <div className="d-flex flex-md-column gap-2 min-w-120">
                             <a 
                               href={`/admin/view/note/${note._id}`}

@@ -9,6 +9,7 @@ import folderRoutes from './routes/folderRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
 import communityRoutes from './routes/communityRoutes.js';
+import annotationRoutes from './routes/annotationRoutes.js';
 const app = express();
 const PORT = process.env.PORT || 5001;
 
@@ -46,6 +47,7 @@ app.use('/api/folders', folderRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/community-spaces', communityRoutes);
+app.use('/api/annotations', annotationRoutes);
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 const isVercel = process.env.VERCEL === '1';

@@ -12,10 +12,30 @@ function ViewerFallback() {
   );
 }
 
-export default function SecureNoteViewerLazy(props) {
+export default function SecureNoteViewerLazy({
+  noteId,
+  publicNoteId,
+  adminNoteId,
+  pdfBlobUrl,
+  fullScreen,
+  mimeType,
+  fileName,
+  zoom,
+  invertColors
+}) {
   return (
     <Suspense fallback={<ViewerFallback />}>
-      <SecureNoteViewer {...props} />
+      <SecureNoteViewer 
+        noteId={noteId}
+        publicNoteId={publicNoteId}
+        adminNoteId={adminNoteId}
+        pdfBlobUrl={pdfBlobUrl}
+        fullScreen={fullScreen}
+        mimeType={mimeType}
+        fileName={fileName}
+        zoom={zoom}
+        invertColors={invertColors}
+      />
     </Suspense>
   );
 }

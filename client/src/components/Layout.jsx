@@ -1,4 +1,6 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Globe, Settings, Link as LinkIcon } from 'lucide-react';
+import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { getInitials } from '../utils/avatar';
 import { useEffect, useState } from 'react';
@@ -63,6 +65,7 @@ export default function Layout({ children }) {
   const { isAuthenticated, user, signOut } = useAuth();
   const navigate = useNavigate();
   const [dark, setDark] = useDarkMode();
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const { show: showScrollTop, scrolled } = useScrollTop();
 
   const handleSignOut = () => {
@@ -98,7 +101,7 @@ export default function Layout({ children }) {
               {isAuthenticated ? (
                 <>
                   <li className="nav-item">
-                    <NavLink className="nav-link" to="/manage">
+                    <NavLink className="nav-link" to="/dashboard">
                       My Files
                     </NavLink>
                   </li>
@@ -120,7 +123,10 @@ export default function Layout({ children }) {
                     ) : (
                       <span className="nav-user-initials rounded-circle" aria-hidden>{getInitials(user?.name)}</span>
                     )}
-                    <span className="nav-link text-muted small mb-0 py-0">{user?.name}</span>
+                    <span className="nav-link text-muted small mb-0 py-0 pe-1">{user?.name}</span>
+                    <button type="button" className="btn btn-sm btn-link text-muted p-0 ms-1 me-2" onClick={() => setProfileModalOpen(true)} title="Edit Profile">
+                      <Settings size={16} />
+                    </button>
                   </li>
                   <li className="nav-item d-flex align-items-center gap-2">
                     <button
@@ -236,6 +242,111 @@ export default function Layout({ children }) {
       >
         <ArrowUpIcon />
       </button>
+
+      {/* Profile Modal */}
+      <EditProfileModal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} user={user} />
     </div>
+  );
+}
+
+function EditProfileModal({ isOpen, onClose, user }) {
+  const { login } = useAuth();
+  const [name, setName] = useState('');
+  const [bio, setBio] = useState('');
+  const [socials, setSocials] = useState({ github: '', linkedin: '', twitter: '', website: '' });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      setName(user.name || '');
+      setBio(user.bio || '');
+      setSocials({
+        github: user.socialLinks?.github || '',
+        linkedin: user.socialLinks?.linkedin || '',
+        twitter: user.socialLinks?.twitter || '',
+        website: user.socialLinks?.website || ''
+      });
+    }
+  }, [isOpen, user]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await api('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify({ name, bio, socialLinks: socials }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      login(localStorage.getItem('token'), res.user);
+      onClose();
+    } catch (err) {
+      alert(err.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content edura-card border-0">
+            <div className="modal-header border-0 pb-0">
+              <h5 className="modal-title fw-bold">Edit Profile</h5>
+              <button type="button" className="btn-close" onClick={onClose} aria-label="Close" />
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleSubmit} id="profile-form">
+                <div className="mb-3">
+                  <label className="form-label small fw-bold">Name</label>
+                  <input type="text" className="form-control" value={name} onChange={e => setName(e.target.value)} required />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-bold">Bio</label>
+                  <textarea className="form-control" rows={3} value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell us about yourself..."></textarea>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-bold">GitHub URL</label>
+                  <div className="input-group">
+                    <span className="input-group-text"><LinkIcon size={16} /></span>
+                    <input type="url" className="form-control" value={socials.github} onChange={e => setSocials(s => ({ ...s, github: e.target.value }))} placeholder="https://github.com/..." />
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-bold">LinkedIn URL</label>
+                  <div className="input-group">
+                    <span className="input-group-text"><LinkIcon size={16} /></span>
+                    <input type="url" className="form-control" value={socials.linkedin} onChange={e => setSocials(s => ({ ...s, linkedin: e.target.value }))} placeholder="https://linkedin.com/in/..." />
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-bold">Twitter URL</label>
+                  <div className="input-group">
+                    <span className="input-group-text"><LinkIcon size={16} /></span>
+                    <input type="url" className="form-control" value={socials.twitter} onChange={e => setSocials(s => ({ ...s, twitter: e.target.value }))} placeholder="https://twitter.com/..." />
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-bold">Personal Website</label>
+                  <div className="input-group">
+                    <span className="input-group-text"><Globe size={16} /></span>
+                    <input type="url" className="form-control" value={socials.website} onChange={e => setSocials(s => ({ ...s, website: e.target.value }))} placeholder="https://..." />
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div className="modal-footer border-0 pt-0">
+              <button type="button" className="btn btn-light" onClick={onClose}>Cancel</button>
+              <button type="submit" form="profile-form" className="btn btn-edura" disabled={loading}>
+                {loading ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

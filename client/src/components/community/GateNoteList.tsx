@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookMarked, ChevronRight, Trash2, Loader2 } from 'lucide-react';
+import { BookMarked, ChevronRight, Trash2, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 
@@ -24,6 +24,28 @@ export default function GateNoteList({
 }: GateNoteListProps) {
   const navigate = useNavigate();
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [votesMap, setVotesMap] = useState<Record<string, { score: number; userVote: number }>>({}); 
+
+  const getScore = (note: any) => {
+    if (votesMap[note._id || note.id]) return votesMap[note._id || note.id].score;
+    return (note.votes || []).reduce((s: number, v: any) => s + v.value, 0);
+  };
+
+  const getUserVote = (note: any) => {
+    if (votesMap[note._id || note.id]) return votesMap[note._id || note.id].userVote;
+    if (!currentUser || !note.votes) return 0;
+    const v = note.votes.find((v: any) => (v.userId?._id || v.userId) === currentUser._id);
+    return v ? v.value : 0;
+  };
+
+  const handleVote = async (e: React.MouseEvent, noteId: string, value: number) => {
+    e.stopPropagation();
+    if (!currentUser) return;
+    try {
+      const res = await api('/community-spaces/vote', { method: 'POST', body: JSON.stringify({ noteId, value }), headers: { 'Content-Type': 'application/json' } });
+      setVotesMap(prev => ({ ...prev, [noteId]: { score: (res as any).score, userVote: (res as any).userVote } }));
+    } catch (err) { console.error('Vote failed:', err); }
+  };
 
   const handleRemove = async (e: React.MouseEvent, noteId: string) => {
     e.stopPropagation();
@@ -55,7 +77,7 @@ export default function GateNoteList({
             {section.notes.map((note: any) => (
               <div key={note.id || note._id} className={viewMode === 'grid' ? "col-12 col-md-6 col-lg-4" : "col-12"}>
                 <div 
-                  className="card shadow-sm border-0 h-100 p-4 cursor-pointer position-relative d-flex flex-column"
+                  className={`card shadow-sm border-0 h-100 p-4 cursor-pointer position-relative ${viewMode === 'list' ? 'd-flex flex-row align-items-center gap-4' : 'd-flex flex-column'}`}
                   style={{ background: 'var(--edura-card-bg)' }}
                   onClick={() => handleSelectNote(note)}
                 >
@@ -74,14 +96,16 @@ export default function GateNoteList({
                     <BookMarked size={16} />
                   </button>
 
-                  <h4 className="fw-bold mb-2 h6 pe-4 transition-colors" style={{ color: 'var(--edura-text)' }}>
-                    {note.title}
-                  </h4>
-                  <p className="small mb-4 line-clamp-2 flex-grow-1" style={{ color: 'var(--edura-text-muted)' }}>
-                    {note.description || "No description provided."}
-                  </p>
+                  <div className={viewMode === 'list' ? 'flex-grow-1 min-w-0 pr-5' : 'flex-grow-1 min-w-0'}>
+                    <h4 className="fw-bold mb-2 h6 pe-4 transition-colors text-truncate" style={{ color: 'var(--edura-text)' }}>
+                      {note.title}
+                    </h4>
+                    <p className={`small mb-4 text-truncate ${viewMode === 'list' ? 'mb-0' : 'line-clamp-2'}`} style={{ color: 'var(--edura-text-muted)' }}>
+                      {note.description || "No description provided."}
+                    </p>
+                  </div>
                   
-                  <div className="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                  <div className={`${viewMode === 'list' ? 'd-flex align-items-center gap-4 ms-auto flex-shrink-0' : 'mt-auto pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-2'}`}>
                     {(note as any).userId ? (
                       <div 
                         className="d-flex align-items-center gap-2 cursor-pointer transition-all"
@@ -126,9 +150,32 @@ export default function GateNoteList({
                         </button>
                       )}
                       
-                      <span className="btn btn-sm btn-edura d-flex align-items-center px-3">
-                        View File <ChevronRight size={14} className="ms-1" />
-                      </span>
+                      <div className="d-flex align-items-center gap-1 me-2">
+                        <button
+                          className={`btn btn-sm p-1 border-0 ${getUserVote(note) === 1 ? 'text-success' : 'text-muted'}`}
+                          onClick={(e) => handleVote(e, note._id || note.id, getUserVote(note) === 1 ? 0 : 1)}
+                          title="Upvote"
+                        >
+                          <ThumbsUp size={14} />
+                        </button>
+                        <span className="small fw-bold" style={{ minWidth: '20px', textAlign: 'center', color: getScore(note) > 0 ? 'var(--edura-primary)' : getScore(note) < 0 ? '#dc3545' : 'var(--edura-text-muted)' }}>
+                          {getScore(note)}
+                        </span>
+                        <button
+                          className={`btn btn-sm p-1 border-0 ${getUserVote(note) === -1 ? 'text-danger' : 'text-muted'}`}
+                          onClick={(e) => handleVote(e, note._id || note.id, getUserVote(note) === -1 ? 0 : -1)}
+                          title="Downvote"
+                        >
+                          <ThumbsDown size={14} />
+                        </button>
+                      </div>
+
+                      <button 
+                        className="btn btn-sm btn-edura d-flex align-items-center px-3 flex-shrink-0 text-nowrap"
+                        onClick={(e) => { e.stopPropagation(); handleSelectNote(note); }}
+                      >
+                        View <ChevronRight size={14} className="ms-1" />
+                      </button>
                     </div>
                   </div>
                 </div>

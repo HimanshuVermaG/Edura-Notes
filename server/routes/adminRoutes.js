@@ -29,13 +29,26 @@ router.use(adminMiddleware);
 // GET /api/admin/stats - dashboard totals (total users, notes, storage)
 router.get('/stats', async (req, res) => {
   try {
-    const [totalUsers, totalNotesResult] = await Promise.all([
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const [totalUsers, totalNotesResult, dailyUsers, dailyNotes] = await Promise.all([
       User.countDocuments(),
       Note.aggregate([{ $group: { _id: null, count: { $sum: 1 }, usedBytes: { $sum: { $ifNull: ['$size', 0] } } } }]),
+      User.aggregate([
+        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+        { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+      ]),
+      Note.aggregate([
+        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+        { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+      ])
     ]);
     const totalNotes = totalNotesResult[0]?.count ?? 0;
     const totalUsedBytes = totalNotesResult[0]?.usedBytes ?? 0;
-    res.json({ totalUsers, totalNotes, totalUsedBytes });
+    res.json({ totalUsers, totalNotes, totalUsedBytes, dailyUsers, dailyNotes });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to load stats' });
   }
@@ -366,6 +379,25 @@ router.put('/community-requests/:id', async (req, res) => {
     res.json(note);
   } catch (err) {
     res.status(500).json({ message: 'Failed to update request status' });
+  }
+});
+
+router.put('/community-requests/bulk-review', async (req, res) => {
+  try {
+    const { noteIds, status } = req.body;
+    if (!Array.isArray(noteIds) || noteIds.length === 0) {
+      return res.status(400).json({ message: 'No notes selected' });
+    }
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+    await Note.updateMany(
+      { _id: { $in: noteIds } },
+      { $set: { status } }
+    );
+    res.json({ message: `Successfully ${status} ${noteIds.length} requests` });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to bulk update requests' });
   }
 });
 

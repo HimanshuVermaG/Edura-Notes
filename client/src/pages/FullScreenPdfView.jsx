@@ -1,5 +1,6 @@
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
+import { Moon, Sun } from 'lucide-react';
 import { api } from '../api/client';
 import SecureNoteViewerLazy from '../components/SecureNoteViewerLazy';
 
@@ -16,6 +17,7 @@ export default function FullScreenPdfView() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
+  const [invertColors, setInvertColors] = useState(false);
 
   const handleClose = useCallback(() => {
     navigate(from);
@@ -100,6 +102,15 @@ export default function FullScreenPdfView() {
             >
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </button>
+            <button
+              type="button"
+              className="fullscreen-pdf-zoom-btn ms-2"
+              onClick={() => setInvertColors(v => !v)}
+              title="Toggle Dark Mode"
+              aria-label="Toggle Dark Mode"
+            >
+              {invertColors ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
           </div>
           <button type="button" className="btn btn-sm btn-outline-light" onClick={handleClose} aria-label="Close">
             Close
@@ -111,8 +122,9 @@ export default function FullScreenPdfView() {
           noteId={note._id}
           fullScreen={true}
           mimeType={note.mimeType}
-          fileName={note.fileName}
+          fileName={note.fileName || note.originalName}
           zoom={zoom}
+          invertColors={invertColors}
         />
       </div>
     </div>

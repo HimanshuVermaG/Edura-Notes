@@ -25,7 +25,8 @@ export default function Manage() {
   const [selectedFolderIds, setSelectedFolderIds] = useState(() => new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewModeState] = useState(() => localStorage.getItem('nh-viewMode') || 'grid');
+  const setViewMode = (mode) => { setViewModeState(mode); localStorage.setItem('nh-viewMode', mode); };
   const [sortBy, setSortBy] = useState('name');
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadDescription, setUploadDescription] = useState('');
@@ -40,6 +41,16 @@ export default function Manage() {
   const [usedBytes, setUsedBytes] = useState(null);
   const [limitBytes, setLimitBytes] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Bulk operations state
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedNoteIds, setSelectedNoteIds] = useState(new Set());
+  const [bulkMoveFolderId, setBulkMoveFolderId] = useState('');
+
+  // Trash state
+  const [showTrash, setShowTrash] = useState(false);
+  const [trashNotes, setTrashNotes] = useState([]);
+  const [loadingTrash, setLoadingTrash] = useState(false);
 
   const BYTES_PER_MB = 1024 * 1024;
   const atStorageLimit = usedBytes != null && limitBytes != null && usedBytes >= limitBytes;
@@ -107,6 +118,46 @@ export default function Manage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const loadTrash = useCallback(async () => {
+    setLoadingTrash(true);
+    try {
+      const res = await api('/notes/trash/list');
+      setTrashNotes(Array.isArray(res) ? res : []);
+    } catch { setTrashNotes([]); }
+    finally { setLoadingTrash(false); }
+  }, []);
+
+  useEffect(() => { if (showTrash) loadTrash(); }, [showTrash, loadTrash]);
+
+  const handleRestore = async (noteId) => {
+    try {
+      await api(`/notes/trash/restore/${noteId}`, { method: 'PUT' });
+      addToast('Note restored', 'success');
+      loadTrash();
+      loadData();
+    } catch (err) { addToast(err.message || 'Failed to restore', 'error'); }
+  };
+
+  const handlePurge = async (noteId) => {
+    if (!window.confirm('Permanently delete this file? This cannot be undone.')) return;
+    try {
+      await api(`/notes/trash/purge/${noteId}`, { method: 'DELETE' });
+      addToast('Note permanently deleted', 'success');
+      loadTrash();
+      loadData();
+    } catch (err) { addToast(err.message || 'Failed to purge', 'error'); }
+  };
+
+  const handleEmptyTrash = async () => {
+    if (!window.confirm('Permanently delete ALL trashed files? This cannot be undone.')) return;
+    try {
+      await api('/notes/trash/empty', { method: 'POST' });
+      addToast('Trash emptied', 'success');
+      setTrashNotes([]);
+      loadData();
+    } catch (err) { addToast(err.message || 'Failed to empty trash', 'error'); }
+  };
 
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
@@ -206,14 +257,56 @@ export default function Manage() {
   const allNotesShown = selectedFolderIds.size === 0;
   const isList = viewMode === 'list';
 
+  const toggleBulkSelect = (noteId) => {
+    setSelectedNoteIds(prev => {
+      const next = new Set(prev);
+      if (next.has(noteId)) next.delete(noteId); else next.add(noteId);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedNoteIds.size === 0) return;
+    if (!window.confirm(`Delete ${selectedNoteIds.size} file(s)? This cannot be undone.`)) return;
+    try {
+      await api('/notes/bulk-delete', { method: 'POST', body: JSON.stringify({ noteIds: [...selectedNoteIds] }), headers: { 'Content-Type': 'application/json' } });
+      addToast(`${selectedNoteIds.size} file(s) deleted`, 'success');
+      setSelectedNoteIds(new Set());
+      loadData();
+    } catch (err) { addToast(err.message || 'Bulk delete failed', 'error'); }
+  };
+
+  const handleBulkMove = async () => {
+    if (selectedNoteIds.size === 0) return;
+    try {
+      await api('/notes/bulk-move', { method: 'PUT', body: JSON.stringify({ noteIds: [...selectedNoteIds], folderId: bulkMoveFolderId || null }), headers: { 'Content-Type': 'application/json' } });
+      addToast(`${selectedNoteIds.size} file(s) moved`, 'success');
+      setSelectedNoteIds(new Set());
+      loadData();
+    } catch (err) { addToast(err.message || 'Bulk move failed', 'error'); }
+  };
+
+  const handleBulkVisibility = async (isPublic) => {
+    if (selectedNoteIds.size === 0) return;
+    try {
+      await api('/notes/bulk-visibility', { method: 'PUT', body: JSON.stringify({ noteIds: [...selectedNoteIds], isPublic }), headers: { 'Content-Type': 'application/json' } });
+      addToast(`${selectedNoteIds.size} file(s) set to ${isPublic ? 'Public' : 'Private'}`, 'success');
+      setSelectedNoteIds(new Set());
+      loadData();
+    } catch (err) { addToast(err.message || 'Bulk visibility failed', 'error'); }
+  };
+
   const renderNote = (note, folderName) => (
     <NoteCard
       key={note._id}
       note={note}
       onDeleted={loadData}
       viewMode={viewMode}
-      showActions={true}
+      showActions={!bulkMode}
       folderName={folderName}
+      bulkMode={bulkMode}
+      isSelected={selectedNoteIds.has(note._id)}
+      onToggleSelect={toggleBulkSelect}
     />
   );
 
@@ -528,6 +621,13 @@ export default function Manage() {
               </div>
               <SortBySelect sortBy={sortBy} onSortByChange={setSortBy} />
               <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+              <button
+                type="button"
+                className={`btn btn-sm ${bulkMode ? 'btn-edura' : 'btn-outline-secondary'}`}
+                onClick={() => { setBulkMode(m => !m); setSelectedNoteIds(new Set()); }}
+              >
+                {bulkMode ? '✕ Cancel' : '☐ Select'}
+              </button>
             </div>
           </div>
 
@@ -672,8 +772,69 @@ export default function Manage() {
               )}
             </>
           )}
+
+          {/* Trash Section */}
+          <div className="mt-5 pt-4 border-top">
+            <button
+              className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2"
+              onClick={() => setShowTrash(t => !t)}
+            >
+              🗑️ Trash {showTrash ? '▲' : '▼'}
+            </button>
+            {showTrash && (
+              <div className="mt-3">
+                {loadingTrash ? (
+                  <div className="text-center py-3"><div className="spinner-border spinner-border-sm text-muted"></div></div>
+                ) : trashNotes.length === 0 ? (
+                  <p className="text-muted small">Trash is empty.</p>
+                ) : (
+                  <>
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <span className="small text-muted">{trashNotes.length} item(s) in trash</span>
+                      <button className="btn btn-sm btn-outline-danger" onClick={handleEmptyTrash}>Empty Trash</button>
+                    </div>
+                    <div className="d-flex flex-column gap-2">
+                      {trashNotes.map(note => (
+                        <div key={note._id} className="edura-card p-2 px-3 d-flex align-items-center gap-3" style={{ opacity: 0.7 }}>
+                          <div className="flex-grow-1 min-w-0">
+                            <h6 className="mb-0 small text-truncate" style={{ color: 'var(--edura-text)' }}>{note.title}</h6>
+                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>Deleted {new Date(note.deletedAt).toLocaleDateString()}</span>
+                          </div>
+                          <button className="btn btn-sm btn-outline-success px-3" onClick={() => handleRestore(note._id)}>Restore</button>
+                          <button className="btn btn-sm btn-outline-danger px-3" onClick={() => handlePurge(note._id)}>Delete</button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </main>
       </div>
+
+      {/* Floating Bulk Action Bar */}
+      {bulkMode && selectedNoteIds.size > 0 && (
+        <div className="position-fixed bottom-0 start-50 translate-middle-x mb-4 px-4 py-3 rounded-pill shadow-lg d-flex align-items-center gap-3 flex-wrap" style={{ background: 'var(--edura-card-bg)', border: '1px solid var(--edura-border)', zIndex: 1050, minWidth: '320px', backdropFilter: 'blur(12px)' }}>
+          <span className="fw-bold small" style={{ color: 'var(--edura-text)' }}>{selectedNoteIds.size} selected</span>
+          <div className="vr" style={{ height: '24px' }} />
+          <button className="btn btn-sm btn-outline-danger rounded-pill px-3" onClick={handleBulkDelete}>🗑 Delete</button>
+          <div className="d-flex align-items-center gap-1">
+            <FolderTreeSelect
+              id="bulk-move-folder"
+              labelId="bulk-move-label"
+              folders={folders}
+              value={bulkMoveFolderId}
+              onChange={setBulkMoveFolderId}
+              className="form-select-sm"
+            />
+            <button className="btn btn-sm btn-outline-primary rounded-pill px-3" onClick={handleBulkMove}>📁 Move</button>
+          </div>
+          <div className="vr" style={{ height: '24px' }} />
+          <button className="btn btn-sm btn-outline-secondary rounded-pill px-3" onClick={() => handleBulkVisibility(true)}>🌐 Public</button>
+          <button className="btn btn-sm btn-outline-secondary rounded-pill px-3" onClick={() => handleBulkVisibility(false)}>🔒 Private</button>
+        </div>
+      )}
     </Layout>
   );
 }
