@@ -368,7 +368,7 @@ export default function Manage() {
                     </label>
                     {uploadFile && (
                       <p className="upload-file-dropzone-selected small mb-0">
-                        Selected: {uploadFile.name}
+                        Selected: <strong>{uploadFile.name}</strong>
                       </p>
                     )}
                   </div>

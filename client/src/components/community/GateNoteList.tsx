@@ -126,8 +126,8 @@ export default function GateNoteList({
                         </button>
                       )}
                       
-                      <span className="text-primary d-flex align-items-center small font-monospace fw-bold">
-                        View <ChevronRight size={14} className="ms-1" />
+                      <span className="btn btn-sm btn-edura d-flex align-items-center px-3">
+                        View File <ChevronRight size={14} className="ms-1" />
                       </span>
                     </div>
                   </div>

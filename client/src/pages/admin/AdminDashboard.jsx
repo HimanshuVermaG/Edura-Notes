@@ -300,7 +300,7 @@ export default function AdminDashboard() {
                   <div className="col-lg-7 order-2 order-lg-1">
                     <h3 className="h4 fw-bold mb-4" style={{ color: 'var(--edura-text)' }}>Community Spaces</h3>
                     {spaces.length === 0 ? <p className="text-muted">No community spaces created yet.</p> : (
-                      <div className="d-flex flex-column gap-3">
+                      <div className="d-flex flex-column gap-3" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingRight: '10px' }}>
                         {spaces.map(s => (
                           <div key={s._id} className="card shadow-sm border" style={{ background: 'var(--edura-card-bg)', color: 'var(--edura-text)', borderColor: 'var(--edura-border)' }}>
                             <div className="card-body d-flex justify-content-between align-items-start">

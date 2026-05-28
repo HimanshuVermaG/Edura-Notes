@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Compass, Check, Users, MessageSquare, Sparkles } from 'lucide-react';
+import { Search, Compass, Check, Users, FileText, Sparkles } from 'lucide-react';
 import CommunityIcon from './CommunityIcon';
 
 // Hardcoded default categories are removed; categories are now dynamically derived from spaces
@@ -107,8 +107,8 @@ export default function GateHomepageGrid({
                   {space.membersCount + (isJoined ? 1 : 0)}
                 </span>
                 <span className="d-flex align-items-center gap-1">
-                  <MessageSquare size={14} className="text-secondary" />
-                  {notesCount} notes
+                  <FileText size={14} className="text-secondary" />
+                  {notesCount} {notesCount === 1 ? 'file' : 'files'}
                 </span>
               </div>
               

@@ -3964,3 +3964,19 @@ textarea:focus-visible {
   transition: opacity 0.3s ease;
 }.hover-text-primary { transition: color var(--edura-transition); }
 .hover-text-primary:hover { color: var(--edura-primary) !important; }
+
+.btn-edura {
+  background: var(--edura-gradient);
+  color: #fff !important;
+  border: none;
+  padding: 0.4rem 1.2rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: all var(--edura-transition);
+}
+.btn-edura:hover {
+  background: var(--edura-primary-dark);
+  box-shadow: var(--edura-shadow-hover);
+  transform: translateY(-1px);
+}
+

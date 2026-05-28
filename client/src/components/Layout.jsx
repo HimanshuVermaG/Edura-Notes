@@ -80,7 +80,7 @@ export default function Layout({ children }) {
                 <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
               </svg>
             </span>
-            Edura Notes
+            Notes Handling
           </Link>
           <button
             className="navbar-toggler"
@@ -180,15 +180,21 @@ export default function Layout({ children }) {
         <div className="container">
           <div className="row g-4">
             <div className="col-md-4">
-              <h6>Edura Notes</h6>
-              <p className="small mb-0">Securely store, organize, and share your academic and professional documents with Edura Notes.</p>
+              <h6>Notes Handling</h6>
+              <p className="small mb-0">Securely store, organize, and share your academic and professional documents with Notes Handling.</p>
             </div>
             <div className="col-md-2">
               <h6>Quick Links</h6>
               <ul className="list-unstyled small">
                 <li><Link to="/community">Community</Link></li>
-                <li><Link to="/signin">Sign In</Link></li>
-                <li><Link to="/manage">My Files</Link></li>
+                {isAuthenticated ? (
+                  <>
+                    <li><Link to="/manage">My Files</Link></li>
+                    {user?._id && <li><Link to={`/profile/${user._id}`}>Public profile</Link></li>}
+                  </>
+                ) : (
+                  <li><Link to="/signin">Sign In</Link></li>
+                )}
               </ul>
             </div>
             <div className="col-md-2">
@@ -216,7 +222,7 @@ export default function Layout({ children }) {
           </div>
           <div className="copyright small mt-3">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{color: '#fff', opacity: 0.7}}><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" /></svg>
-            © {new Date().getFullYear()} Edura Notes. All rights reserved.
+            © {new Date().getFullYear()} Notes Handling. All rights reserved.
           </div>
         </div>
       </footer>

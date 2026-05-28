@@ -156,7 +156,7 @@ export default function SignIn() {
               {mode === 'signin' ? 'Welcome back 👋' : 'Create account ✨'}
             </h2>
             <p className="text-muted mb-4" style={{ fontSize: '0.9rem' }}>
-              {mode === 'signin' ? 'Sign in to access your notes.' : 'Join Edura Notes for free.'}
+              {mode === 'signin' ? 'Sign in to access your notes.' : 'Join Notes Handling for free.'}
             </p>
 
             {error && (
@@ -306,7 +306,7 @@ export default function SignIn() {
               <svg width="56" height="56" viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" style={{ marginBottom: '1rem' }}>
                 <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
               </svg>
-              <h2>Edura Notes</h2>
+              <h2>Notes Handling</h2>
               <p>Securely store, organize, and share your academic &amp; professional documents.</p>
               <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.875rem', color: 'rgba(255,255,255,0.8)' }}>
                 <span>✓ Secure cloud storage</span>
