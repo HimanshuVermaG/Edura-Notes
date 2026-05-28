@@ -179,12 +179,7 @@ export async function apiGetBlobWithProgress(url, onProgress) {
   const contentLength = res.headers.get('content-length');
   const total = parseInt(contentLength, 10);
   
-  if (!contentLength || isNaN(total)) {
-    // No content-length — can't show percentage; stream without progress
-    const blob = await res.blob();
-    await cacheSet(url, blob);
-    return blob;
-  }
+
 
   const reader = res.body.getReader();
   let loaded = 0;
@@ -196,7 +191,11 @@ export async function apiGetBlobWithProgress(url, onProgress) {
     chunks.push(value);
     loaded += value.byteLength;
     if (onProgress) {
-      onProgress(Math.round((loaded / total) * 100));
+      if (!contentLength || isNaN(total)) {
+        onProgress(-loaded); // Send negative value to indicate raw bytes instead of percentage
+      } else {
+        onProgress(Math.round((loaded / total) * 100));
+      }
     }
   }
 

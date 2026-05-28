@@ -169,6 +169,7 @@ router.get('/notes/:id/file', async (req, res) => {
         res.setHeader('Content-Type', contentType);
         if (contentLength) res.setHeader('Content-Length', contentLength);
         res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Content-Disposition');
         
         return Readable.fromWeb(fetchResponse.body).pipe(res);
       } catch (err) {
@@ -188,6 +189,7 @@ router.get('/notes/:id/file', async (req, res) => {
         res.setHeader('Content-Type', contentType);
         if (contentLength) res.setHeader('Content-Length', contentLength);
         res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Content-Disposition');
         
         return Readable.fromWeb(fetchRes.body).pipe(res);
       } catch (err) {
@@ -202,6 +204,7 @@ router.get('/notes/:id/file', async (req, res) => {
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Length', stat.size);
     res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Content-Disposition');
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);
   } catch (err) {

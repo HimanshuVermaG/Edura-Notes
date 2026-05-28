@@ -183,14 +183,16 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
 
   if (loading) {
     return (
-      <div className={`secure-note-viewer p-4 text-center d-flex flex-column align-items-center justify-content-center ${fullScreen ? 'secure-note-viewer-fullscreen' : ''}`} style={fullScreen ? { flex: 1, minHeight: 0 } : { minHeight: 480 }}>
+      <div className={`secure-note-viewer p-4 text-center d-flex flex-column align-items-center justify-content-center ${fullScreen ? 'secure-note-viewer-fullscreen' : ''}`} style={fullScreen ? { flex: 1, minHeight: 0, background: '#323639' } : { minHeight: 480, background: '#323639' }}>
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
         <div className="mt-3 text-white fw-medium">
-          {downloadProgress > 0 && downloadProgress < 100 
-            ? `Downloading... ${downloadProgress}%` 
-            : 'Loading...'}
+          {downloadProgress < 0 
+            ? `Downloading... ${(Math.abs(downloadProgress) / 1024 / 1024).toFixed(1)} MB`
+            : downloadProgress > 0 && downloadProgress < 100 
+              ? `Downloading... ${Math.round(downloadProgress)}%` 
+              : 'Loading...'}
         </div>
       </div>
     );

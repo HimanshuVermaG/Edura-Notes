@@ -85,17 +85,15 @@ export default function Layout({ children }) {
             </span>
             Notes Handling
           </Link>
-          <div className="d-flex align-items-center gap-2 ms-auto d-lg-none me-2">
-            <button
-              type="button"
-              className="edura-dark-toggle"
-              onClick={() => setDark(d => !d)}
-              title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-              aria-label="Toggle dark mode"
-            >
-              {dark ? <SunIcon /> : <MoonIcon />}
-            </button>
-          </div>
+          <button
+            type="button"
+            className="edura-dark-toggle ms-auto me-3 d-lg-none"
+            onClick={() => setDark(d => !d)}
+            title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label="Toggle dark mode"
+          >
+            {dark ? <SunIcon /> : <MoonIcon />}
+          </button>
           <button
             className="navbar-toggler"
             type="button"
