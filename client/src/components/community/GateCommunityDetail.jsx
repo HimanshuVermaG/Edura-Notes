@@ -101,42 +101,54 @@ export default function GateCommunityDetail({
         </div>
       </div>
 
-      {/* Header Banner - Plain */}
+      {/* Header Banner - Profile Style */}
       <div className="card shadow-sm border mb-5 overflow-hidden" style={{ background: 'var(--edura-card-bg)', borderColor: 'var(--edura-border)' }}>
-        <div className="card-body p-4 p-md-5 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-4" style={{ background: getColor(space.color) }}>
-          <div className="d-flex align-items-center gap-4">
-            <div className="d-flex align-items-center justify-content-center rounded border shadow-sm" style={{ width: '80px', height: '80px', background: 'var(--edura-bg)' }}>
-              <CommunityIcon name={space.icon} size={36} style={{ color: getColor(space.color) }} />
-            </div>
-            <div>
-              <h2 className="display-6 fw-bold mb-2" style={{ color: '#fff' }}>
-                {space.name}
-              </h2>
-              <div className="d-flex align-items-center gap-3 small" style={{ color: 'rgba(255,255,255,0.8)' }}>
-                <span>{space.category || 'General'} Space</span>
-                <span>•</span>
-                <span className="d-flex align-items-center gap-1">
-                  <Users size={14} />
-                  {space.membersCount + (isJoined ? 1 : 0)} members
-                </span>
+        {/* Top Colored Banner */}
+        <div style={{ height: '140px', background: getColor(space.color) }}></div>
+
+        {/* Card Body with Overlapping Content */}
+        <div className="card-body p-4 p-md-5 pt-0 position-relative">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-4">
+            <div className="d-flex flex-column">
+              {/* Overlapping Icon */}
+              <div 
+                className="d-flex align-items-center justify-content-center rounded-4 border shadow-sm position-relative" 
+                style={{ width: '100px', height: '100px', background: 'var(--edura-bg)', marginTop: '-50px', zIndex: 10, borderColor: 'var(--edura-border)' }}
+              >
+                <CommunityIcon name={space.icon} size={48} style={{ color: getColor(space.color) }} />
+              </div>
+
+              <div className="mt-3">
+                <h2 className="display-6 fw-bold mb-2 text-break" style={{ color: 'var(--edura-text)' }}>
+                  {space.name}
+                </h2>
+                <div className="d-flex flex-wrap align-items-center gap-3 small" style={{ color: 'var(--edura-text-muted)' }}>
+                  <span className="badge border" style={{ background: 'var(--edura-bg)', color: 'var(--edura-text)' }}>
+                    {space.category || 'General'} Space
+                  </span>
+                  <span className="d-flex align-items-center gap-1">
+                    <Users size={16} className="text-secondary" />
+                    {space.membersCount + (isJoined ? 1 : 0)} members
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <button
-            onClick={() => toggleJoinSpace(space.id)}
-            className={`btn fw-semibold px-4 rounded shadow-sm ${
-              isJoined 
-                ? 'btn-outline-secondary bg-edura-card text-edura border-edura'
-                : 'btn-primary'
-            }`}
-          >
-            {isJoined ? (
-              <span className="d-flex align-items-center gap-2">
-                <Check size={16} strokeWidth={3} /> Joined
-              </span>
-            ) : '+ Join Space'}
-          </button>
+            <button
+              onClick={() => toggleJoinSpace(space.id)}
+              className={`btn fw-semibold px-4 py-2 rounded shadow-sm flex-shrink-0 ${
+                isJoined 
+                  ? 'btn-outline-secondary bg-edura-card text-edura border-edura'
+                  : 'btn-primary'
+              }`}
+            >
+              {isJoined ? (
+                <span className="d-flex align-items-center justify-content-center gap-2">
+                  <Check size={16} strokeWidth={3} /> Joined
+                </span>
+              ) : '+ Join Space'}
+            </button>
+          </div>
         </div>
 
         {/* Description & Tags */}
