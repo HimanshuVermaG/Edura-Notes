@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
@@ -8,6 +7,7 @@ import GateHomepageGrid from "../components/community/GateHomepageGrid";
 import GateCommunityDetail from "../components/community/GateCommunityDetail";
 import ContributeModal from "../components/community/ContributeModal";
 import SecureNoteModal from "../components/community/SecureNoteModal";
+import GateHomepageSkeleton from "../components/community/GateHomepageSkeleton";
 import Layout from "../components/Layout";
 
 export default function Community() {
@@ -39,7 +39,6 @@ export default function Community() {
   // High-level UI states
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [contributeModalOpen, setContributeModalOpen] = useState(false);
   
   // Local storage states for joining/bookmarking
@@ -167,10 +166,6 @@ export default function Community() {
     notesCountBySpace[s.id] = count;
   });
 
-  if (loading) {
-    return <div className="p-5 text-center text-muted h-100 d-flex align-items-center justify-content-center">Loading community spaces...</div>;
-  }
-
   return (
     <Layout>
       <div className="d-flex flex-column min-vh-100" style={{ background: 'var(--edura-bg)' }}>
@@ -180,7 +175,9 @@ export default function Community() {
           
           <main className="flex-grow-1 min-w-0 position-relative w-100 overflow-x-hidden">
             
-            {!selectedSubject ? (
+            {loading ? (
+              <GateHomepageSkeleton />
+            ) : !selectedSubject ? (
               // 1. HOMEPAGE VIEW
               <GateHomepageGrid 
                 spaces={spaces}

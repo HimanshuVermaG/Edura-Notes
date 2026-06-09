@@ -380,22 +380,6 @@ router.get('/community-requests', async (req, res) => {
   }
 });
 
-router.put('/community-requests/:id', async (req, res) => {
-  try {
-    const { status } = req.body;
-    if (!['approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
-    }
-    const note = await Note.findByIdAndUpdate(req.params.id, { status }, { new: true })
-      .populate('userId', 'name')
-      .populate('communitySpaceId', 'name');
-    if (!note) return res.status(404).json({ message: 'Note not found' });
-    res.json(note);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to update request status' });
-  }
-});
-
 router.put('/community-requests/bulk-review', async (req, res) => {
   try {
     const { noteIds, status } = req.body;
@@ -412,6 +396,22 @@ router.put('/community-requests/bulk-review', async (req, res) => {
     res.json({ message: `Successfully ${status} ${noteIds.length} requests` });
   } catch (err) {
     res.status(500).json({ message: 'Failed to bulk update requests' });
+  }
+});
+
+router.put('/community-requests/:id', async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+    const note = await Note.findByIdAndUpdate(req.params.id, { status }, { new: true })
+      .populate('userId', 'name')
+      .populate('communitySpaceId', 'name');
+    if (!note) return res.status(404).json({ message: 'Note not found' });
+    res.json(note);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update request status' });
   }
 });
 

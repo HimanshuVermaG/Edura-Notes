@@ -126,7 +126,10 @@ export default function Layout({ children }) {
                       </Link>
                     </li>
                   )}
-                  <li className="nav-item d-flex align-items-center gap-2 py-2 py-lg-0 mt-2 mt-lg-0 border-top border-lg-0 pt-3 pt-lg-0" style={{ borderColor: 'var(--edura-border)' }}>
+                  <li className="d-lg-none">
+                    <hr className="my-2" style={{ borderColor: 'var(--edura-border)' }} />
+                  </li>
+                  <li className="nav-item d-flex align-items-center gap-2 py-2 py-lg-0 mt-2 mt-lg-0 pt-lg-0">
                     {user?.picture ? (
                       <img src={user.picture} alt="" className="nav-user-avatar rounded-circle" width={32} height={32} />
                     ) : (
@@ -161,7 +164,7 @@ export default function Layout({ children }) {
                       Community
                     </Link>
                   </li>
-                  <li className="nav-item d-none d-lg-flex align-items-center gap-1 py-2 py-lg-0 border-top border-lg-0 pt-3 pt-lg-0 mt-2 mt-lg-0" style={{ borderColor: 'var(--edura-border)' }}>
+                  <li className="nav-item d-none d-lg-flex align-items-center gap-1 py-2 py-lg-0 pt-lg-0 mt-lg-0">
                     <button
                       type="button"
                       className="edura-dark-toggle"

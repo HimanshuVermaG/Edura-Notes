@@ -48,11 +48,6 @@ export default function Dashboard() {
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  const handleNoteMoved = () => {
-    loadData();
-  };
-
   const notesByFolder = (folderId) => {
     if (folderId === null) return notes.filter((n) => !n.folderId);
     return notes.filter((n) => n.folderId === folderId);

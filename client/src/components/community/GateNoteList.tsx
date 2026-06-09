@@ -105,7 +105,9 @@ export default function GateNoteList({
                     </p>
                   </div>
                   
-                  <div className={`${viewMode === 'list' ? 'd-flex flex-wrap align-items-center justify-content-between gap-3 ms-md-auto flex-shrink-0 mt-3 mt-md-0 border-top border-md-0 pt-3 pt-md-0 w-100 w-md-auto' : 'mt-auto pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-2'}`}>
+                  {viewMode === 'list' && <hr className="d-md-none w-100" style={{ margin: '1rem 0', borderColor: 'var(--edura-border)' }} />}
+                  
+                  <div className={`${viewMode === 'list' ? 'd-flex flex-wrap align-items-center justify-content-between gap-3 ms-md-auto flex-shrink-0 w-100 w-md-auto' : 'mt-auto pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-2'}`}>
                     {(note as any).userId ? (
                       <div 
                         className="d-flex align-items-center gap-2 cursor-pointer transition-all"
