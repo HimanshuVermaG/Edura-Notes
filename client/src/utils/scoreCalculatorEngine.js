@@ -7,7 +7,70 @@ function textOf(el) {
   return el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 }
 
-export function parseResponseSheet(html) {
+// MHT/MHTML support — browsers' "Webpage, Single File" save option (often the
+// default in Chrome/Edge's Save dialog) produces a MIME multipart archive
+// instead of plain HTML. We transparently unwrap that into the underlying
+// HTML before handing it to DOMParser.
+
+function looksLikeMht(text) {
+  const head = text.slice(0, 2000);
+  return /boundary\s*=/i.test(head) && /^\s*(MIME-Version:|Content-Type:\s*multipart\/related|From:)/im.test(head);
+}
+
+function bytesToUtf8String(binaryStr) {
+  try {
+    return decodeURIComponent(escape(binaryStr));
+  } catch {
+    return binaryStr;
+  }
+}
+
+function decodeQuotedPrintable(str) {
+  const withoutSoftBreaks = str.replace(/=\r?\n/g, '');
+  const bytes = withoutSoftBreaks.replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+  return bytesToUtf8String(bytes);
+}
+
+function decodeBase64(str) {
+  try {
+    return bytesToUtf8String(atob(str.replace(/\s+/g, '')));
+  } catch {
+    return '';
+  }
+}
+
+function extractHtmlFromMht(text) {
+  const boundaryMatch = text.match(/boundary\s*=\s*"?([^"\r\n;]+)"?/i);
+  if (!boundaryMatch) return text;
+  const boundary = boundaryMatch[1].trim();
+  const escaped = boundary.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp('--' + escaped + '(?:--)?\\r?\\n'));
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed || !/^content-/im.test(trimmed)) continue;
+    const headerEnd = trimmed.search(/\r?\n\r?\n/);
+    if (headerEnd === -1) continue;
+    const headers = trimmed.slice(0, headerEnd);
+    if (!/Content-Type:\s*text\/html/i.test(headers)) continue;
+
+    const body = trimmed.slice(headerEnd).replace(/^\r?\n\r?\n/, '');
+    const encodingMatch = headers.match(/Content-Transfer-Encoding:\s*([^\r\n;]+)/i);
+    const encoding = encodingMatch ? encodingMatch[1].trim().toLowerCase() : '7bit';
+
+    if (encoding === 'quoted-printable') return decodeQuotedPrintable(body);
+    if (encoding === 'base64') return decodeBase64(body);
+    return body; // 7bit / 8bit / binary — already plain text
+  }
+  return text; // no text/html part found; fall back to raw input
+}
+
+function preprocessSourceHtml(rawText) {
+  return looksLikeMht(rawText) ? extractHtmlFromMht(rawText) : rawText;
+}
+
+export function parseResponseSheet(rawHtml) {
+  const html = preprocessSourceHtml(rawHtml);
   const doc = new DOMParser().parseFromString(html, 'text/html');
 
   let examTitle = '';
@@ -72,7 +135,8 @@ export function parseResponseSheet(html) {
   return { examTitle, candidate, questions };
 }
 
-export function parseAnswerKey(html) {
+export function parseAnswerKey(rawHtml) {
+  const html = preprocessSourceHtml(rawHtml);
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const tables = doc.querySelectorAll('table');
   const map = {};

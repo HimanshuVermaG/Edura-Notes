@@ -13,9 +13,10 @@ The project is a full-stack web application with the following stack:
 | **Frontend** | **React 18**, **Vite 5**, **React Router 6**, **Bootstrap 5**, **react-pdf** (PDF.js) |
 | **Backend** | **Node.js**, **Express** |
 | **Database** | **MongoDB** (with **Mongoose** ODM) |
-| **Authentication** | **Google OAuth 2.0** (google-auth-library), **JWT** (jsonwebtoken) |
-| **File storage** | **Cloudinary** (new uploads), local `server/uploads/` (legacy) |
-| **File upload** | **Multer** (multipart/form-data, 10 MB limit) |
+| **Authentication** | **Google OAuth 2.0** (google-auth-library) or email/password (bcrypt), **JWT** (jsonwebtoken) |
+| **File storage** | **Cloudinary** (uploads), **Google Drive link** (proxy-streamed server-side), local `server/uploads/` (legacy) |
+| **File upload** | **Multer** (multipart/form-data, 10 MB limit; does not apply to Drive-link notes) |
+| **Charts (admin)** | **recharts** |
 
 **Languages:** JavaScript (ES modules) across the codebase; JSX for React components.
 
@@ -38,13 +39,19 @@ The project is a full-stack web application with the following stack:
    - **Images (JPEG, PNG, GIF, WebP):**  
      Rendered with a native `<img>` element whose `src` is the blob URL. The image is wrapped in the secure viewer container, with zoom applied via CSS `transform: scale()` and `draggable={false}`.
    - **PDFs:**  
-     Rendered with the **react-pdf** library: `<Document file={url}>` and one `<Page>` per page. The PDF.js worker is loaded from the app origin (`/pdf.worker.min.mjs`), so no external CDN is used. Pages are rendered as canvases with optional annotation layer; the text layer is disabled for the secure viewer.
+     Rendered with the **react-pdf** library: `<Document file={url}>` and one `<Page>` per page. The PDF.js worker is loaded from the app origin (`/pdf.worker.min.mjs`), so no external CDN is used. Pages are rendered as canvases with optional annotation layer; the text layer is disabled for the secure viewer. Pages render **lazily** — each page mounts a placeholder until an `IntersectionObserver` reports it's near the viewport, and a second observer tracks which page is "active" for a page-number indicator.
+
+**File source is transparent to the client:** the same `GET .../:id/file` endpoints serve Cloudinary-hosted files, locally-stored legacy files, *and* Google Drive–linked notes (proxy-streamed server-side by `server/lib/driveHelper.js`, which bypasses Drive's virus-scan interstitial page) — the viewer never has to know or care which source it's getting.
 
 ### Components
 
-- **SecureNoteViewer** – Main viewer: decides image vs PDF from `mimeType` (or inferred from `fileName`), fetches the blob, creates the blob URL, and renders either the image or the react-pdf `Document`/`Page`.
-- **SecureNoteViewerLazy** – Lazy-loaded wrapper used on full-screen and admin note view pages.
-- **FullScreenPdfView** / **AdminNoteView** – Full-screen layout (toolbar, zoom) that embeds the secure viewer.
+- **SecureNoteViewer** – Main viewer: decides image vs PDF from `mimeType` (or inferred from `fileName`), fetches the blob (with download-progress reporting via `apiGetBlobWithProgress`), creates the blob URL, and renders either the image or the react-pdf `Document`/`Page`. Accepts an `invertColors` prop for a dark-mode color inversion of PDF pages/images.
+- **SecureNoteViewerLazy** – Lazy-loaded wrapper used on full-screen, admin, and community note view.
+- **FullScreenPdfView** / **AdminNoteView** / **PublicNoteView** / **SecureNoteModal** (Community) – Full-screen or modal layout (toolbar, zoom) that embeds the secure viewer.
+
+### Not yet wired up: sticky-note annotations
+
+A full `Annotation` model and CRUD API exist (`server/models/Annotation.js`, `server/routes/annotationRoutes.js` — `GET/POST/PUT/DELETE /api/annotations`, scoped per-note **and** per-user) for positioning colored sticky-note-style comments at `x`/`y` coordinates on a given PDF page. **No frontend component currently renders or creates them** — `SecureNoteViewer` has no annotation layer beyond PDF.js's own (unrelated) built-in annotation layer. Treat this as a backend-only, unfinished feature rather than a shipped one.
 
 ---
 
@@ -59,7 +66,7 @@ Security is applied in the **SecureNoteViewer** component and in **CSS** so that
 | **No right-click / context menu** | `onContextMenu={preventContextMenu}` (calls `e.preventDefault()`) on the viewer wrapper so the browser context menu cannot be used to save or copy. |
 | **No print** | `@media print` rules hide the viewer content (visibility hidden) and show a short message: “This content is not available for printing.” |
 | **Deterrent watermark** | CSS pseudo-element on `.secure-note-watermark::before` with the text “Do not capture or share this content” (bottom-right, low opacity). |
-| **Access control** | File endpoints enforce ownership or visibility: authenticated route for own notes, public route only for notes with `isPublic` or `listedOnExplore`, admin route for admins only. Files are served as blob via API, so the viewer never exposes a direct external file URL. |
+| **Access control** | File endpoints enforce ownership or visibility: authenticated route for own notes, public route only for notes with `isPublic`, `listedOnExplore`, or an approved Community contribution (`status: 'approved'` with a `communitySpaceId`), admin route for admins only. Files are served as blob via API, so the viewer never exposes a direct external file URL. |
 | **Screenshot** | Cannot be fully prevented by the app; the watermark and no-copy/no-print measures act as deterrents. |
 
 These apply to both **images** and **PDFs** when shown inside the secure viewer.

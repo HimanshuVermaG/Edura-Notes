@@ -21,7 +21,7 @@ export default function ScoreCalculator() {
     try {
       responseData = parseResponseSheet(responseText);
     } catch {
-      setError('Could not parse the Response Sheet file. Please make sure you saved the full Response Sheet page from the NTA portal as HTML.');
+      setError('Could not parse the Response Sheet file. Please make sure you saved the full Response Sheet page from the NTA portal as a webpage (.html or .mht/.mhtml).');
       return;
     }
 
@@ -29,16 +29,16 @@ export default function ScoreCalculator() {
     try {
       keyData = parseAnswerKey(keyText);
     } catch {
-      setError('Could not parse the Answer Key file. Please make sure you saved the full Answer Key page (with the results table) as HTML.');
+      setError('Could not parse the Answer Key file. Please make sure you saved the full Answer Key page (with the results table) as a webpage (.html or .mht/.mhtml).');
       return;
     }
 
     if (!responseData.questions.length) {
-      setError('No questions were found in the Response Sheet file. Please double-check you uploaded the correct saved HTML page.');
+      setError('No questions were found in the Response Sheet file. Please double-check you uploaded the correct saved page.');
       return;
     }
     if (!keyData.found) {
-      setError('No "Question ID" / "Correct Option" table was found in the Answer Key file. Please double-check you uploaded the correct saved HTML page.');
+      setError('No "Question ID" / "Correct Option" table was found in the Answer Key file. Please double-check you uploaded the correct saved page.');
       return;
     }
 
@@ -71,8 +71,8 @@ export default function ScoreCalculator() {
         <div className="mb-4">
           <h1 className="h3 fw-bold mb-1" style={{ color: 'var(--edura-text)' }}>UGC NET Score Calculator</h1>
           <p className="mb-0" style={{ color: 'var(--edura-text-muted)', maxWidth: '640px' }}>
-            Upload your official Response Sheet and Answer Key (saved as HTML from the NTA portal) to get an
-            instant, accurate score — works for any paper or subject.
+            Upload your official Response Sheet and Answer Key (saved as HTML or MHTML from the NTA portal) to
+            get an instant, accurate score — works for any paper or subject.
           </p>
         </div>
 

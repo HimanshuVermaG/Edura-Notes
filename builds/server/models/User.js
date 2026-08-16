@@ -1,0 +1,38 @@
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+
+const DEFAULT_STORAGE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
+
+const userSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, trim: true, lowercase: true },
+    password: { type: String, minLength: 6 },
+    googleId: { type: String, unique: true, sparse: true },
+    picture: { type: String, default: '' },
+    role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    storageLimitBytes: { type: Number, default: DEFAULT_STORAGE_LIMIT_BYTES, min: 0 },
+    bio: { type: String, maxlength: 500, default: '' },
+    socialLinks: {
+      github: { type: String, default: '' },
+      linkedin: { type: String, default: '' },
+      twitter: { type: String, default: '' },
+      website: { type: String, default: '' }
+    },
+    profileListedOnExplore: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
+
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password') || !this.password) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
+
+userSchema.methods.comparePassword = function (candidate) {
+  if (!this.password) return Promise.resolve(false);
+  return bcrypt.compare(candidate, this.password);
+};
+
+export default mongoose.model('User', userSchema);

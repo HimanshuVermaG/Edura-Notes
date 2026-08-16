@@ -21,7 +21,7 @@ function Dropzone({ id, label, hint, fileName, error, dragging, onDrag, onFile }
         ref={inputRef}
         id={id}
         type="file"
-        accept=".html,.htm"
+        accept=".html,.htm,.mht,.mhtml"
         onChange={(e) => e.target.files[0] && onFile(e.target.files[0])}
       />
       <div className="fw-semibold small mb-1" style={{ color: 'var(--edura-text)' }}>{label}</div>
@@ -77,9 +77,9 @@ export default function UploadPanel({ onCalculate, onReset, error }) {
     <div className="edura-card p-4">
       <h2 className="h6 fw-bold mb-1" style={{ color: 'var(--edura-text)' }}>1. Upload your files</h2>
       <p className="small mb-3" style={{ color: 'var(--edura-text-muted)' }}>
-        Open your Response Sheet and Answer Key pages on the NTA/NIC portal, save each as a webpage
-        (Ctrl/Cmd+S → "Webpage, HTML only"), then upload the two .html files below. Everything is processed
-        locally in your browser — nothing is uploaded anywhere.
+        Open your Response Sheet and Answer Key pages on the NTA/NIC portal and save each as a webpage
+        (Ctrl/Cmd+S) — either "Webpage, HTML only" (.html) or "Webpage, Single File" (.mht/.mhtml) work.
+        Everything is processed locally in your browser — nothing is uploaded anywhere.
       </p>
 
       <div className="row g-3">
@@ -87,7 +87,7 @@ export default function UploadPanel({ onCalculate, onReset, error }) {
           <Dropzone
             id="sc-file-response"
             label="📄 Response Sheet"
-            hint="Click or drag your saved Response Sheet .html file here"
+            hint="Click or drag your saved Response Sheet .html or .mht file here"
             fileName={responseName}
             error={responseError}
             dragging={dragResponse}
@@ -99,7 +99,7 @@ export default function UploadPanel({ onCalculate, onReset, error }) {
           <Dropzone
             id="sc-file-key"
             label="🔑 Answer Key"
-            hint="Click or drag your saved (Final/Challenge) Answer Key .html file here"
+            hint="Click or drag your saved (Final/Challenge) Answer Key .html or .mht file here"
             fileName={keyName}
             error={keyError}
             dragging={dragKey}
