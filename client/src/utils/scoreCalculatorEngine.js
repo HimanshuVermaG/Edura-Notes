@@ -52,15 +52,25 @@ function extractHtmlFromMht(text) {
     const headerEnd = trimmed.search(/\r?\n\r?\n/);
     if (headerEnd === -1) continue;
     const headers = trimmed.slice(0, headerEnd);
-    if (!/Content-Type:\s*text\/html/i.test(headers)) continue;
-
     const body = trimmed.slice(headerEnd).replace(/^\r?\n\r?\n/, '');
-    const encodingMatch = headers.match(/Content-Transfer-Encoding:\s*([^\r\n;]+)/i);
-    const encoding = encodingMatch ? encodingMatch[1].trim().toLowerCase() : '7bit';
 
-    if (encoding === 'quoted-printable') return decodeQuotedPrintable(body);
-    if (encoding === 'base64') return decodeBase64(body);
-    return body; // 7bit / 8bit / binary — already plain text
+    if (/Content-Type:\s*text\/html/i.test(headers)) {
+      const encodingMatch = headers.match(/Content-Transfer-Encoding:\s*([^\r\n;]+)/i);
+      const encoding = encodingMatch ? encodingMatch[1].trim().toLowerCase() : '7bit';
+
+      if (encoding === 'quoted-printable') return decodeQuotedPrintable(body);
+      if (encoding === 'base64') return decodeBase64(body);
+      return body; // 7bit / 8bit / binary — already plain text
+    }
+
+    // Nested multipart (e.g. multipart/related wrapping a multipart/alternative,
+    // which some non-Chrome MHT savers produce) — recurse using the sub-part's
+    // own boundary rather than assuming the html part is always top-level.
+    if (/Content-Type:\s*multipart\//i.test(headers) && /boundary\s*=/i.test(headers)) {
+      const rejoined = headers + '\r\n\r\n' + body;
+      const nested = extractHtmlFromMht(rejoined);
+      if (nested !== rejoined) return nested;
+    }
   }
   return text; // no text/html part found; fall back to raw input
 }
@@ -89,6 +99,8 @@ export function parseResponseSheet(rawHtml) {
   }
 
   const questions = [];
+  const duplicateQuestionIds = [];
+  const seenQuestionIds = new Set();
   const sectionContainers = doc.querySelectorAll('.section-cntnr');
   const containers = sectionContainers.length ? Array.from(sectionContainers) : [doc.body];
 
@@ -119,6 +131,15 @@ export function parseResponseSheet(rawHtml) {
       });
       const qid = kv['Question ID'];
       if (!qid) return;
+      // A duplicated Question ID (saved-page glitch, a section rendered
+      // twice, MHT corruption) would otherwise be scored twice with no
+      // indication anything was off — keep only the first occurrence and
+      // report the rest so the UI can warn about it.
+      if (seenQuestionIds.has(qid)) {
+        duplicateQuestionIds.push(qid);
+        return;
+      }
+      seenQuestionIds.add(qid);
       const chosen = kv['Chosen Option'] || kv['Given Answer'] || '';
       questions.push({
         section: sectionName,
@@ -132,7 +153,7 @@ export function parseResponseSheet(rawHtml) {
     });
   });
 
-  return { examTitle, candidate, questions };
+  return { examTitle, candidate, questions, duplicateQuestionIds };
 }
 
 export function parseAnswerKey(rawHtml) {

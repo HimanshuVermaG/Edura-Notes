@@ -111,12 +111,13 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
         ? `/public/notes/${publicNoteId}/file`
         : `/notes/${noteId}/file`;
     let cancelled = false;
+    const abortController = new AbortController();
     setLoading(true);
     setDownloadProgress(0);
     setError(null);
     apiGetBlobWithProgress(fileUrl, (percent) => {
       if (!cancelled) setDownloadProgress(percent);
-    })
+    }, abortController.signal)
       .then((blob) => {
         if (cancelled) return;
         const u = URL.createObjectURL(blob);
@@ -124,13 +125,17 @@ export default function SecureNoteViewer({ noteId, publicNoteId, adminNoteId, pd
         setUrl(u);
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message || 'Failed to load file');
+        if (!cancelled && err.name !== 'AbortError') setError(err.message || 'Failed to load file');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
+      // Stops the in-flight download outright (not just ignoring its result)
+      // so switching notes quickly doesn't keep streaming/buffering a file
+      // nobody's waiting for anymore.
+      abortController.abort();
       if (createdUrlRef.current) {
         URL.revokeObjectURL(createdUrlRef.current);
         createdUrlRef.current = null;

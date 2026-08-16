@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -15,17 +15,23 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
 
+  // Only the most recently *started* request is allowed to commit state, so a
+  // slower, stale response (from a filter that's since changed again) can't
+  // overwrite a newer one that resolved first.
+  const loadDataSeqRef = useRef(0);
+
   const loadData = useCallback(async () => {
+    const seq = ++loadDataSeqRef.current;
     setLoading(true);
     try {
       const searchQ = searchQuery.trim();
       const searchPart = searchQ ? `search=${encodeURIComponent(searchQ)}` : '';
-      
+
       let folderIdsRaw = '';
       if (selectedFolderIds.size > 0) {
         folderIdsRaw = Array.from(selectedFolderIds).join(',');
       }
-      
+
       const notesBase = folderIdsRaw ? `/notes?folderIds=${folderIdsRaw}` : '/notes';
       const notesUrl = searchPart ? (notesBase.includes('?') ? `${notesBase}&${searchPart}` : `${notesBase}?${searchPart}`) : notesBase;
       const foldersUrl = searchQ ? `/folders?search=${encodeURIComponent(searchQ)}` : '/folders';
@@ -33,15 +39,17 @@ export default function Dashboard() {
         api(foldersUrl),
         api(notesUrl),
       ]);
+      if (loadDataSeqRef.current !== seq) return;
       setFolders(foldersRes);
       // Backend returns { notes, total } for list route now
       const notesList = Array.isArray(notesRes) ? notesRes : notesRes?.notes ?? [];
       setNotes(notesList);
     } catch {
+      if (loadDataSeqRef.current !== seq) return;
       setFolders([]);
       setNotes([]);
     } finally {
-      setLoading(false);
+      if (loadDataSeqRef.current === seq) setLoading(false);
     }
   }, [selectedFolderIds, searchQuery]);
 

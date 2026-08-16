@@ -29,7 +29,10 @@ router.get('/', async (req, res) => {
         };
       });
 
-      // Add 'Other' topic if not present
+      // Add 'Other' topic if not present. communityTopic can be null (a note
+      // can have communitySpaceId set without going through /contribute,
+      // which is the only path that requires a topic) — guard every
+      // .toLowerCase() call against that instead of assuming it's a string.
       if (!topicsData.find(t => t.title.toLowerCase() === 'other')) {
         const otherNotes = spaceNotes.filter(n => !(space.topics || []).includes(n.communityTopic));
         topicsData.push({
@@ -40,7 +43,7 @@ router.get('/', async (req, res) => {
       } else {
         // If 'Other' already exists, make sure it catches any unmapped notes too
         const otherTopic = topicsData.find(t => t.title.toLowerCase() === 'other');
-        const unmappedNotes = spaceNotes.filter(n => !(space.topics || []).includes(n.communityTopic) && n.communityTopic.toLowerCase() !== 'other');
+        const unmappedNotes = spaceNotes.filter(n => !(space.topics || []).includes(n.communityTopic) && (n.communityTopic || '').toLowerCase() !== 'other');
         if (unmappedNotes.length > 0) {
           otherTopic.notes.push(...unmappedNotes);
         }
@@ -124,7 +127,9 @@ router.post('/vote', authMiddleware, async (req, res) => {
     if (!noteId) return res.status(400).json({ message: 'noteId is required' });
     
     const note = await Note.findById(noteId);
-    if (!note || !note.communitySpaceId) return res.status(404).json({ message: 'Community note not found' });
+    if (!note || !note.communitySpaceId || note.status !== 'approved') {
+      return res.status(404).json({ message: 'Community note not found' });
+    }
 
     const userId = req.user._id.toString();
     const existingIdx = (note.votes || []).findIndex(v => v.userId.toString() === userId);
@@ -157,6 +162,10 @@ router.post('/vote', authMiddleware, async (req, res) => {
 // GET /api/community-spaces/notes/:noteId/comments - Get comments for a note
 router.get('/notes/:noteId/comments', async (req, res) => {
   try {
+    const note = await Note.findById(req.params.noteId).select('communitySpaceId status').lean();
+    if (!note || !note.communitySpaceId || note.status !== 'approved') {
+      return res.status(404).json({ message: 'Community note not found' });
+    }
     const comments = await Comment.find({ noteId: req.params.noteId })
       .populate('userId', 'name picture')
       .sort({ createdAt: 1 })
@@ -175,7 +184,9 @@ router.post('/notes/:noteId/comments', authMiddleware, async (req, res) => {
     if (!text || !text.trim()) return res.status(400).json({ message: 'Comment text is required' });
 
     const note = await Note.findById(req.params.noteId);
-    if (!note || !note.communitySpaceId) return res.status(404).json({ message: 'Community note not found' });
+    if (!note || !note.communitySpaceId || note.status !== 'approved') {
+      return res.status(404).json({ message: 'Community note not found' });
+    }
 
     const comment = await Comment.create({
       noteId: note._id,

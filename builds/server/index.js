@@ -12,6 +12,16 @@ import communityRoutes from './routes/communityRoutes.js';
 import annotationRoutes from './routes/annotationRoutes.js';
 const app = express();
 const PORT = process.env.PORT || 5001;
+const isVercel = process.env.VERCEL === '1';
+
+// JWT_SECRET is required — the app used to silently fall back to a hardcoded
+// public string, which would let anyone forge a valid token (including an
+// admin one) if this env var was ever left unset in a real deployment.
+const jwtSecretMissing = !process.env.JWT_SECRET;
+if (jwtSecretMissing) {
+  console.error('FATAL: JWT_SECRET environment variable is not set. Refusing to start insecurely.');
+  if (!isVercel) process.exit(1);
+}
 
 // CORS: allow origins listed in CLIENT_ORIGIN (comma-separated) or any origin if unset (dev mode)
 const rawOrigins = (process.env.CLIENT_ORIGIN || '').trim();
@@ -41,16 +51,21 @@ app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/folders', folderRoutes);
-app.use('/api/notes', noteRoutes);
-app.use('/api/public', publicRoutes);
-app.use('/api/community-spaces', communityRoutes);
-app.use('/api/annotations', annotationRoutes);
+if (jwtSecretMissing) {
+  // Only reachable on Vercel (non-Vercel already exited above). Respond with
+  // a clear, consistent error instead of mounting routes that would sign/verify
+  // JWTs with no real secret.
+  app.use((req, res) => res.status(503).json({ message: 'Server misconfigured: JWT_SECRET is not set.' }));
+} else {
+  app.use('/api/auth', authRoutes);
+  app.use('/api/admin', adminRoutes);
+  app.use('/api/folders', folderRoutes);
+  app.use('/api/notes', noteRoutes);
+  app.use('/api/public', publicRoutes);
+  app.use('/api/community-spaces', communityRoutes);
+  app.use('/api/annotations', annotationRoutes);
+}
 app.get('/api/health', (req, res) => res.json({ ok: true }));
-
-const isVercel = process.env.VERCEL === '1';
 
 // Cache the mongoose connection promise so serverless cold starts reuse it
 let mongoosePromise = null;

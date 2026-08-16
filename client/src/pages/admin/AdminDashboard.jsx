@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import { Edit2, Trash2, CheckCircle, XCircle, FileText, X } from 'lucide-react';
@@ -218,22 +218,31 @@ export default function AdminDashboard() {
   };
 
   // Manage Files functions
+  const manageFilesRequestRef = useRef(null);
+
   const handleManageFiles = async (spaceId) => {
     if (managingFilesSpaceId === spaceId) {
+      manageFilesRequestRef.current = null;
       setManagingFilesSpaceId(null);
       setCommunityFiles([]);
       return;
     }
+    manageFilesRequestRef.current = spaceId;
     setManagingFilesSpaceId(spaceId);
     setLoadingFiles(true);
     try {
       const data = await api(`/admin/community-spaces/${spaceId}/notes`);
+      // Ignore a resolved fetch if the admin has since switched to (or closed)
+      // a different space — otherwise a slow response can overwrite the
+      // panel with the wrong community's files.
+      if (manageFilesRequestRef.current !== spaceId) return;
       setCommunityFiles(data);
     } catch (err) {
+      if (manageFilesRequestRef.current !== spaceId) return;
       alert(err.message || 'Failed to load community files');
       setManagingFilesSpaceId(null);
     } finally {
-      setLoadingFiles(false);
+      if (manageFilesRequestRef.current === spaceId) setLoadingFiles(false);
     }
   };
 

@@ -7,12 +7,18 @@ const PILL = {
   dropped: ['sc-warning', 'Dropped'],
 };
 
+// Every field here is ultimately sourced from the uploaded (portal-controlled)
+// HTML, so any of them — not just section/correctAnswer — can contain a
+// comma, quote, or newline. Quote and escape all of them, not a hand-picked
+// subset, or a comma in e.g. questionId silently shifts every later column.
+function csvCell(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
 function exportCsv(rows) {
-  const lines = [['#', 'Section', 'Question ID', 'Your Answer', 'Correct Answer', 'Result', 'Marks'].join(',')];
+  const lines = [['#', 'Section', 'Question ID', 'Your Answer', 'Correct Answer', 'Result', 'Marks'].map(csvCell).join(',')];
   rows.forEach((r) => {
-    lines.push(
-      [r.no, `"${r.section.replace(/"/g, '""')}"`, r.questionId, r.yourAnswer, `"${r.correctAnswer}"`, r.result, r.marks].join(',')
-    );
+    lines.push([r.no, r.section, r.questionId, r.yourAnswer, r.correctAnswer, r.result, r.marks].map(csvCell).join(','));
   });
   const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);

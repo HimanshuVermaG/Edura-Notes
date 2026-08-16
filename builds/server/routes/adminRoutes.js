@@ -6,12 +6,15 @@ import Note from '../models/Note.js';
 import Folder from '../models/Folder.js';
 import CommunitySpace from '../models/CommunitySpace.js';
 import CommunityCategory from '../models/CommunityCategory.js';
+import Comment from '../models/Comment.js';
+import Annotation from '../models/Annotation.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { adminMiddleware } from '../middleware/adminMiddleware.js';
 import { getUploadPath } from '../middleware/uploadMiddleware.js';
 import { getResourceType, destroyCloudinaryAsset } from '../lib/cloudinaryNotes.js';
 import { getUsedStorageBytes } from '../lib/storageHelper.js';
-import { fetchDriveStream } from '../lib/driveHelper.js';
+import { fetchDriveStream, extractDriveFileId } from '../lib/driveHelper.js';
+import { sanitizeFilenameForHeader } from '../lib/http.js';
 
 const DEFAULT_STORAGE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
 
@@ -176,6 +179,20 @@ router.delete('/users/:userId', async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const notes = await Note.find({ userId }).lean();
+    const noteIds = notes.map((n) => n._id);
+
+    // Clean up cross-collection references before removing the notes/user
+    // themselves, so deleting a user doesn't leave orphaned comments/
+    // annotations, stale vote entries on other users' notes, or stale
+    // community-space membership behind.
+    await Comment.deleteMany({ $or: [{ userId }, { noteId: { $in: noteIds } }] });
+    await Annotation.deleteMany({ $or: [{ userId }, { noteId: { $in: noteIds } }] });
+    await Note.updateMany({ 'votes.userId': userId }, { $pull: { votes: { userId } } });
+    await CommunitySpace.updateMany(
+      { members: userId },
+      { $pull: { members: userId }, $inc: { membersCount: -1 } }
+    );
+
     for (const note of notes) {
       if (note.fileUrl && note.fileName) {
         try {
@@ -231,9 +248,8 @@ router.get('/notes/:id/file', async (req, res) => {
     if (!note) return res.status(404).json({ message: 'Note not found' });
     
     if (note.driveLink) {
-      const fileIdMatch = note.driveLink.match(/[-\w]{25,}/);
-      if (!fileIdMatch) return res.status(400).json({ message: 'Invalid Google Drive link' });
-      const fileId = fileIdMatch[0];
+      const fileId = extractDriveFileId(note.driveLink);
+      if (!fileId) return res.status(400).json({ message: 'Invalid Google Drive link' });
       
       try {
         const fetchResponse = await fetchDriveStream(fileId);
@@ -243,7 +259,7 @@ router.get('/notes/:id/file', async (req, res) => {
         
         res.setHeader('Content-Type', contentType);
         if (contentLength) res.setHeader('Content-Length', contentLength);
-        res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+        res.setHeader('Content-Disposition', 'inline; filename="' + sanitizeFilenameForHeader(dispName) + '"');
         
         return Readable.fromWeb(fetchResponse.body).pipe(res);
       } catch (err) {
@@ -262,7 +278,7 @@ router.get('/notes/:id/file', async (req, res) => {
         
         res.setHeader('Content-Type', contentType);
         if (contentLength) res.setHeader('Content-Length', contentLength);
-        res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+        res.setHeader('Content-Disposition', 'inline; filename="' + sanitizeFilenameForHeader(dispName) + '"');
         
         return Readable.fromWeb(fetchRes.body).pipe(res);
       } catch (err) {
@@ -276,7 +292,7 @@ router.get('/notes/:id/file', async (req, res) => {
     const dispName = note.originalName || note.fileName || 'file';
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Length', stat.size);
-    res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+    res.setHeader('Content-Disposition', 'inline; filename="' + sanitizeFilenameForHeader(dispName) + '"');
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);
   } catch (err) {
@@ -320,10 +336,22 @@ router.get('/community-spaces', async (req, res) => {
   }
 });
 
+// Editable fields only — deliberately excludes adminId (set once, at
+// creation), members/membersCount (only ever changed via toggle-join).
+const COMMUNITY_SPACE_EDITABLE_FIELDS = ['name', 'code', 'icon', 'description', 'topics', 'category', 'color', 'tags', 'rules'];
+
+function pickCommunitySpaceFields(body) {
+  const picked = {};
+  for (const field of COMMUNITY_SPACE_EDITABLE_FIELDS) {
+    if (body[field] !== undefined) picked[field] = body[field];
+  }
+  return picked;
+}
+
 router.post('/community-spaces', async (req, res) => {
   try {
     const space = await CommunitySpace.create({
-      ...req.body,
+      ...pickCommunitySpaceFields(req.body),
       adminId: req.user._id
     });
     res.status(201).json(space);
@@ -334,7 +362,7 @@ router.post('/community-spaces', async (req, res) => {
 
 router.put('/community-spaces/:id', async (req, res) => {
   try {
-    const space = await CommunitySpace.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const space = await CommunitySpace.findByIdAndUpdate(req.params.id, pickCommunitySpaceFields(req.body), { new: true });
     if (!space) return res.status(404).json({ message: 'Space not found' });
     res.json(space);
   } catch (err) {
@@ -344,9 +372,22 @@ router.put('/community-spaces/:id', async (req, res) => {
 
 router.delete('/community-spaces/:id', async (req, res) => {
   try {
+    const affectedNotes = await Note.find({ communitySpaceId: req.params.id }).select('_id').lean();
+    const affectedNoteIds = affectedNotes.map((n) => n._id);
+
     await CommunitySpace.findByIdAndDelete(req.params.id);
-    // Optionally update notes to remove communitySpaceId
-    await Note.updateMany({ communitySpaceId: req.params.id }, { $set: { status: 'approved', communitySpaceId: null, communityTopic: null } });
+    // Unlink notes from the deleted space. Also reset isPublic — /contribute
+    // force-sets it to true only for the note's life inside a community
+    // space, so without this the note stays fully public forever after its
+    // space is gone, even though the owner never made that choice themselves.
+    await Note.updateMany(
+      { communitySpaceId: req.params.id },
+      { $set: { status: 'approved', communitySpaceId: null, communityTopic: null, isPublic: false } }
+    );
+    // Their comment threads no longer have a reachable community context.
+    if (affectedNoteIds.length) {
+      await Comment.deleteMany({ noteId: { $in: affectedNoteIds } });
+    }
     res.json({ message: 'Deleted community space' });
   } catch (err) {
     res.status(500).json({ message: 'Failed to delete space' });

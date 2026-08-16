@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { getApiUrl } from '../api/client';
+import { getApiUrl, clearBlobCache } from '../api/client';
 
 const AuthContext = createContext(null);
 const TOKEN_KEY = 'notes_token';
@@ -21,12 +21,25 @@ export function AuthProvider({ children }) {
       localStorage.removeItem(USER_KEY);
       setTokenState(null);
       setUser(null);
+      // A viewed file's blob can otherwise still be served from the local
+      // cache with no auth check, even after the session ends — see
+      // api/client.js's clearBlobCache for the full explanation.
+      clearBlobCache();
     }
   }, []);
 
   const signOut = useCallback(() => {
     setToken(null);
   }, [setToken]);
+
+  // A 401 from any authenticated request means this token is no longer
+  // valid; api()/apiForm()/apiGetBlob broadcast this instead of every page
+  // having to notice and handle it individually.
+  useEffect(() => {
+    const onUnauthorized = () => signOut();
+    window.addEventListener('edura:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('edura:unauthorized', onUnauthorized);
+  }, [signOut]);
 
   useEffect(() => {
     if (!token) {

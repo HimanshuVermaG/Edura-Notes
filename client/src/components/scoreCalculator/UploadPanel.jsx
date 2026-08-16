@@ -43,6 +43,11 @@ export default function UploadPanel({ onCalculate, onReset, error }) {
   const [marksCorrect, setMarksCorrect] = useState(2);
   const [marksWrong, setMarksWrong] = useState(0);
   const [bonusDropped, setBonusDropped] = useState(true);
+  // Bumped on every Reset to force the Dropzones to remount — clearing React
+  // state alone leaves the underlying <input type=file> holding its old
+  // FileList, so re-picking the exact same filename via click wouldn't fire
+  // a change event (the browser dedupes identical selections).
+  const [resetKey, setResetKey] = useState(0);
 
   const readFile = (file, setText, setName, setErr) => {
     const reader = new FileReader();
@@ -70,6 +75,7 @@ export default function UploadPanel({ onCalculate, onReset, error }) {
     setResponseText(null); setKeyText(null);
     setResponseName(''); setKeyName('');
     setResponseError(false); setKeyError(false);
+    setResetKey((k) => k + 1);
     onReset();
   };
 
@@ -85,6 +91,7 @@ export default function UploadPanel({ onCalculate, onReset, error }) {
       <div className="row g-3">
         <div className="col-md-6">
           <Dropzone
+            key={`response-${resetKey}`}
             id="sc-file-response"
             label="📄 Response Sheet"
             hint="Click or drag your saved Response Sheet .html or .mht file here"
@@ -97,6 +104,7 @@ export default function UploadPanel({ onCalculate, onReset, error }) {
         </div>
         <div className="col-md-6">
           <Dropzone
+            key={`key-${resetKey}`}
             id="sc-file-key"
             label="🔑 Answer Key"
             hint="Click or drag your saved (Final/Challenge) Answer Key .html or .mht file here"

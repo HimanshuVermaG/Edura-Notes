@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import FolderTreeSelect from '../components/FolderTreeSelect';
 import ConfirmModal from '../components/ConfirmModal';
 import { api, apiForm, invalidateBlobCache, getApiUrl } from '../api/client';
+import { isValidDriveLink } from '../utils/driveLink';
 
 export default function EditNote() {
   const { id } = useParams();
@@ -62,11 +63,31 @@ export default function EditNote() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 
+  // If the folder this note references gets deleted out from under it while
+  // this page is open, don't keep submitting a folderId that no longer exists.
+  useEffect(() => {
+    if (folders.length === 0 || !folderId) return;
+    if (!folders.some((f) => f._id === folderId)) setFolderId('');
+  }, [folders, folderId]);
+
+  const handleCancelClick = () => {
+    if (isDirty && !window.confirm('Discard unsaved changes?')) return;
+    navigate('/manage');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (!title.trim()) {
       setError('Title is required');
+      return;
+    }
+    if (editMode === 'file' && !file) {
+      setError('Choose a file to upload, or switch to "Keep Current".');
+      return;
+    }
+    if (editMode === 'link' && !isValidDriveLink(driveLink.trim())) {
+      setError('Enter a valid Google Drive link, or switch to "Keep Current".');
       return;
     }
     setSubmitting(true);
@@ -143,7 +164,7 @@ export default function EditNote() {
   return (
     <Layout>
       <nav aria-label="Breadcrumb" className="edura-breadcrumb">
-        <Link to="/manage">Manage</Link>
+        <a href="/manage" onClick={(e) => { e.preventDefault(); handleCancelClick(); }}>Manage</a>
         <span className="text-muted">/</span>
         <span className="breadcrumb-current">Edit note</span>
       </nav>
@@ -258,9 +279,9 @@ export default function EditNote() {
             <button type="submit" className="edura-btn-primary btn btn-primary" disabled={submitting}>
               {submitting ? 'Saving...' : 'Save Changes'}
             </button>
-            <Link to="/manage" className="btn btn-outline-secondary">
+            <button type="button" className="btn btn-outline-secondary" onClick={handleCancelClick}>
               Cancel
-            </Link>
+            </button>
             <button
               type="button"
               className="btn btn-outline-danger"

@@ -5,7 +5,8 @@ import Note from '../models/Note.js';
 import User from '../models/User.js';
 import Folder from '../models/Folder.js';
 import { getUploadPath } from '../middleware/uploadMiddleware.js';
-import { fetchDriveStream } from '../lib/driveHelper.js';
+import { fetchDriveStream, extractDriveFileId } from '../lib/driveHelper.js';
+import { sanitizeFilenameForHeader } from '../lib/http.js';
 
 function getMimeType(note) {
   if (note.mimeType) return note.mimeType;
@@ -156,9 +157,8 @@ router.get('/notes/:id/file', async (req, res) => {
     if (!note) return res.status(404).json({ message: 'Note not found or private' });
     
     if (note.driveLink) {
-      const fileIdMatch = note.driveLink.match(/[-\w]{25,}/);
-      if (!fileIdMatch) return res.status(400).json({ message: 'Invalid Google Drive link' });
-      const fileId = fileIdMatch[0];
+      const fileId = extractDriveFileId(note.driveLink);
+      if (!fileId) return res.status(400).json({ message: 'Invalid Google Drive link' });
       
       try {
         const fetchResponse = await fetchDriveStream(fileId);
@@ -168,7 +168,7 @@ router.get('/notes/:id/file', async (req, res) => {
         
         res.setHeader('Content-Type', contentType);
         if (contentLength) res.setHeader('Content-Length', contentLength);
-        res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+        res.setHeader('Content-Disposition', 'inline; filename="' + sanitizeFilenameForHeader(dispName) + '"');
         res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Content-Disposition');
         
         return Readable.fromWeb(fetchResponse.body).pipe(res);
@@ -188,7 +188,7 @@ router.get('/notes/:id/file', async (req, res) => {
         
         res.setHeader('Content-Type', contentType);
         if (contentLength) res.setHeader('Content-Length', contentLength);
-        res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+        res.setHeader('Content-Disposition', 'inline; filename="' + sanitizeFilenameForHeader(dispName) + '"');
         res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Content-Disposition');
         
         return Readable.fromWeb(fetchRes.body).pipe(res);
@@ -203,7 +203,7 @@ router.get('/notes/:id/file', async (req, res) => {
     const dispName = note.originalName || note.fileName || 'file';
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Length', stat.size);
-    res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+    res.setHeader('Content-Disposition', 'inline; filename="' + sanitizeFilenameForHeader(dispName) + '"');
     res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Content-Disposition');
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);

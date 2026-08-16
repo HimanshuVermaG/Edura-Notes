@@ -1,3 +1,22 @@
+// Extracts a Drive file id only from an actual drive.google.com URL — the
+// previous check (`/[-\w]{25,}/` matched anywhere) accepted any 25+ char
+// token, letting a non-Drive URL be stored and later rendered to other users
+// as a trustworthy "Drive link". Not server-side exploitable (fetchDriveStream
+// always hits the hardcoded drive.google.com endpoint regardless), but there's
+// no reason to accept and store a link that isn't actually one.
+export function extractDriveFileId(link) {
+  if (!link) return null;
+  let url;
+  try {
+    url = new URL(link);
+  } catch {
+    return null;
+  }
+  if (!/(^|\.)drive\.google\.com$/i.test(url.hostname)) return null;
+  const match = link.match(/[-\w]{25,}/);
+  return match ? match[0] : null;
+}
+
 export async function fetchDriveStream(fileId) {
   const initialUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
   let response = await fetch(initialUrl);

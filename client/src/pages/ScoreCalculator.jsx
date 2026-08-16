@@ -12,6 +12,7 @@ export default function ScoreCalculator() {
   const [candidate, setCandidate] = useState(null);
   const [examTitle, setExamTitle] = useState('');
   const [error, setError] = useState('');
+  const [duplicateWarning, setDuplicateWarning] = useState('');
   const resultsRef = useRef(null);
 
   const handleCalculate = ({ responseText, keyText, opts }) => {
@@ -52,6 +53,11 @@ export default function ScoreCalculator() {
     setCandidate(responseData.candidate);
     setExamTitle(responseData.examTitle);
     setResult(computed);
+    setDuplicateWarning(
+      responseData.duplicateQuestionIds.length
+        ? `Found ${responseData.duplicateQuestionIds.length} duplicate Question ID(s) in the Response Sheet (${[...new Set(responseData.duplicateQuestionIds)].join(', ')}). Only the first occurrence of each was scored — please verify against your original response sheet.`
+        : ''
+    );
 
     requestAnimationFrame(() => {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -63,6 +69,7 @@ export default function ScoreCalculator() {
     setCandidate(null);
     setExamTitle('');
     setError('');
+    setDuplicateWarning('');
   };
 
   return (
@@ -81,6 +88,11 @@ export default function ScoreCalculator() {
 
           {result && (
             <div ref={resultsRef} className="d-flex flex-column gap-3">
+              {duplicateWarning && (
+                <div className="sc-pill sc-warning d-block w-100 text-start p-2" style={{ borderRadius: 'var(--edura-radius-sm)' }}>
+                  {duplicateWarning}
+                </div>
+              )}
               <CandidateDetails candidate={candidate} examTitle={examTitle} />
               <ScoreSummary totals={result.totals} />
               <SectionBreakdownTable sections={result.sections} />

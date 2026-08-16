@@ -10,6 +10,7 @@ import ViewModeToggle from '../components/ViewModeToggle';
 import SortBySelect from '../components/SortBySelect';
 import { sortNotes } from '../utils/sortNotes';
 import { getFoldersInTreeOrder } from '../utils/folderTree';
+import { isValidDriveLink } from '../utils/driveLink';
 
 const NOTES_PAGE_SIZES = [10, 20, 50, 100];
 
@@ -75,6 +76,7 @@ export default function Manage() {
     return null;
   };
 
+
   const notesUrl = useMemo(() => {
     const searchQ = searchQuery.trim();
     const searchPart = searchQ ? `search=${encodeURIComponent(searchQ)}` : '';
@@ -91,7 +93,13 @@ export default function Manage() {
     return { notes, folders: foldersUrl };
   }, [selectedFolderIds, searchQuery, notesPage, notesLimit]);
 
+  // Guards against a slower, stale request (e.g. from a filter that's since
+  // changed again) overwriting the results of a newer one that resolved
+  // first — only the most recently *started* call is allowed to commit state.
+  const loadDataSeqRef = useRef(0);
+
   const loadData = useCallback(async () => {
+    const seq = ++loadDataSeqRef.current;
     setLoading(true);
     try {
       const [foldersRes, notesRes, storageRes] = await Promise.all([
@@ -99,6 +107,7 @@ export default function Manage() {
         api(notesUrl.notes),
         api('/notes/storage').catch(() => ({ usedBytes: 0, limitBytes: 50 * 1024 * 1024 })),
       ]);
+      if (loadDataSeqRef.current !== seq) return;
       setFolders(foldersRes);
       const notesList = Array.isArray(notesRes) ? notesRes : notesRes?.notes ?? [];
       const total = Array.isArray(notesRes) ? notesRes.length : notesRes?.total ?? 0;
@@ -107,17 +116,34 @@ export default function Manage() {
       setUsedBytes(storageRes?.usedBytes ?? 0);
       setLimitBytes(storageRes?.limitBytes ?? 50 * 1024 * 1024);
     } catch {
+      if (loadDataSeqRef.current !== seq) return;
       setFolders([]);
       setNotes([]);
       setNotesTotal(0);
     } finally {
-      setLoading(false);
+      if (loadDataSeqRef.current === seq) setLoading(false);
     }
   }, [notesUrl]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Selection is scoped to the currently-visible filtered/paginated note set —
+  // clear it whenever that set's query changes so a bulk action can never
+  // silently act on notes the user can no longer see on screen.
+  useEffect(() => {
+    setSelectedNoteIds(new Set());
+  }, [notesUrl]);
+
+  // If the folder a form currently references gets deleted out from under it
+  // (e.g. via the sidebar), don't keep submitting a folderId that no longer exists.
+  useEffect(() => {
+    if (folders.length === 0) return;
+    const stillExists = (id) => !id || folders.some((f) => f._id === id);
+    if (!stillExists(uploadFolderId)) setUploadFolderId('');
+    if (!stillExists(bulkMoveFolderId)) setBulkMoveFolderId('');
+  }, [folders, uploadFolderId, bulkMoveFolderId]);
 
   const loadTrash = useCallback(async () => {
     setLoadingTrash(true);
@@ -169,8 +195,8 @@ export default function Manage() {
         return;
       }
     } else {
-      if (!uploadDriveLink.trim() || !uploadDriveLink.match(/[-\w]{25,}/)) {
-        setUploadError('Please provide a valid Google Drive link');
+      if (!isValidDriveLink(uploadDriveLink.trim())) {
+        setUploadError('Please provide a valid Google Drive link (e.g. https://drive.google.com/file/d/.../view)');
         return;
       }
     }
@@ -267,10 +293,10 @@ export default function Manage() {
 
   const handleBulkDelete = async () => {
     if (selectedNoteIds.size === 0) return;
-    if (!window.confirm(`Delete ${selectedNoteIds.size} file(s)? This cannot be undone.`)) return;
+    if (!window.confirm(`Move ${selectedNoteIds.size} file(s) to trash?`)) return;
     try {
       await api('/notes/bulk-delete', { method: 'POST', body: JSON.stringify({ noteIds: [...selectedNoteIds] }), headers: { 'Content-Type': 'application/json' } });
-      addToast(`${selectedNoteIds.size} file(s) deleted`, 'success');
+      addToast(`${selectedNoteIds.size} file(s) moved to trash`, 'success');
       setSelectedNoteIds(new Set());
       loadData();
     } catch (err) { addToast(err.message || 'Bulk delete failed', 'error'); }
@@ -428,9 +454,9 @@ export default function Manage() {
               <div className="upload-file-layout">
                 <div className="w-100 mb-3" style={{ gridColumn: '1 / -1' }}>
                   <div className="btn-group" role="group">
-                    <input type="radio" className="btn-check" name="uploadMode" id="modeFile" autoComplete="off" checked={uploadMode === 'file'} onChange={() => setUploadMode('file')} />
+                    <input type="radio" className="btn-check" name="uploadMode" id="modeFile" autoComplete="off" checked={uploadMode === 'file'} onChange={() => { setUploadMode('file'); setUploadError(''); }} />
                     <label className="btn btn-outline-primary btn-sm" htmlFor="modeFile">Upload File</label>
-                    <input type="radio" className="btn-check" name="uploadMode" id="modeLink" autoComplete="off" checked={uploadMode === 'link'} onChange={() => setUploadMode('link')} />
+                    <input type="radio" className="btn-check" name="uploadMode" id="modeLink" autoComplete="off" checked={uploadMode === 'link'} onChange={() => { setUploadMode('link'); setUploadError(''); }} />
                     <label className="btn btn-outline-primary btn-sm" htmlFor="modeLink">Google Drive Link</label>
                   </div>
                 </div>

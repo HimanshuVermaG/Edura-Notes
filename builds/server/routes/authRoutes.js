@@ -5,7 +5,7 @@ import User from '../models/User.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
+const JWT_SECRET = process.env.JWT_SECRET;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 
 function toUserResponse(user) {

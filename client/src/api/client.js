@@ -10,6 +10,17 @@ export function getApiUrl(path) {
   return `${apiBase}/api${p}`;
 }
 
+// A 401 from any authenticated call means the token is missing/expired/invalid.
+// There's no per-request way to "fix" that, so broadcast it once here and let
+// AuthContext (mounted at the app root) sign the user out / redirect, instead
+// of every page's fetch `.catch()` silently swallowing it into a blank state.
+// Only fire for requests that actually sent a token — an anonymous request
+// getting a 401 is expected (e.g. hitting a protected route while a guest)
+// and shouldn't force a sign-out.
+function notifyUnauthorized(hadToken) {
+  if (hadToken) window.dispatchEvent(new CustomEvent('edura:unauthorized'));
+}
+
 export async function api(url, options = {}) {
   const token = getToken();
   const headers = {
@@ -19,7 +30,10 @@ export async function api(url, options = {}) {
   if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(getApiUrl(url), { ...options, headers });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || res.statusText || 'Request failed');
+  if (!res.ok) {
+    if (res.status === 401) notifyUnauthorized(!!token);
+    throw new Error(data.message || res.statusText || 'Request failed');
+  }
   return data;
 }
 
@@ -34,7 +48,10 @@ export async function apiForm(url, formData, options = {}) {
     headers,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || res.statusText || 'Request failed');
+  if (!res.ok) {
+    if (res.status === 401) notifyUnauthorized(!!token);
+    throw new Error(data.message || res.statusText || 'Request failed');
+  }
   return data;
 }
 
@@ -132,6 +149,25 @@ export async function invalidateBlobCache(url) {
   memCache.delete(url);
   await idbDelete(url);
 }
+
+// Clears every cached blob. Must be called on sign-out: cacheGet() is checked
+// before any auth/network call, so without this a file viewed while signed
+// in stays servable (with zero auth check) to anyone using the same browser
+// profile for up to the cache's TTL, even after logout.
+export async function clearBlobCache() {
+  memCache.clear();
+  try {
+    const db = await openDB();
+    await new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).clear();
+      tx.oncomplete = resolve;
+      tx.onerror = resolve;
+    });
+  } catch {
+    // IndexedDB unavailable — memCache.clear() above still covers this tab
+  }
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function apiGetBlob(url) {
@@ -143,6 +179,7 @@ export async function apiGetBlob(url) {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) {
+    if (res.status === 401) notifyUnauthorized(!!token);
     const contentType = res.headers.get('Content-Type') || '';
     const isJson = contentType.includes('application/json');
     const message = isJson
@@ -155,7 +192,7 @@ export async function apiGetBlob(url) {
   return blob;
 }
 
-export async function apiGetBlobWithProgress(url, onProgress) {
+export async function apiGetBlobWithProgress(url, onProgress, signal) {
   const cached = await cacheGet(url);
   if (cached) {
     if (onProgress) onProgress(100);
@@ -165,9 +202,11 @@ export async function apiGetBlobWithProgress(url, onProgress) {
   const token = getToken();
   const res = await fetch(getApiUrl(url), {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
+    signal,
   });
-  
+
   if (!res.ok) {
+    if (res.status === 401) notifyUnauthorized(!!token);
     const contentType = res.headers.get('Content-Type') || '';
     const isJson = contentType.includes('application/json');
     const message = isJson
@@ -178,7 +217,7 @@ export async function apiGetBlobWithProgress(url, onProgress) {
 
   const contentLength = res.headers.get('content-length');
   const total = parseInt(contentLength, 10);
-  
+
 
 
   const reader = res.body.getReader();

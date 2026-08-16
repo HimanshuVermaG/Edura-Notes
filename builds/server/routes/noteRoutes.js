@@ -7,7 +7,14 @@ import { uploadPdf, getUploadPath } from '../middleware/uploadMiddleware.js';
 import cloudinary, { isCloudinaryConfigured } from '../lib/cloudinary.js';
 import { getResourceType, destroyCloudinaryAsset } from '../lib/cloudinaryNotes.js';
 import { getUsedStorageBytes } from '../lib/storageHelper.js';
-import { fetchDriveStream } from '../lib/driveHelper.js';
+import { fetchDriveStream, extractDriveFileId } from '../lib/driveHelper.js';
+import { sanitizeFilenameForHeader } from '../lib/http.js';
+
+const NOTE_VISIBLE_TO_ANY_USER = [
+  { isPublic: true },
+  { listedOnExplore: true },
+  { communitySpaceId: { $ne: null }, status: 'approved' },
+];
 
 const CLOUDINARY_FOLDER = 'notes-app';
 const DEFAULT_STORAGE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
@@ -50,7 +57,13 @@ router.get('/', async (req, res) => {
       }
     } else if (req.query.folderId != null) {
       // Legacy single folder
-      filter.folderId = req.query.folderId === 'null' ? null : req.query.folderId;
+      const raw = req.query.folderId;
+      if (raw === 'null') {
+        filter.folderId = null;
+      } else {
+        const mongoose = (await import('mongoose')).default;
+        if (mongoose.Types.ObjectId.isValid(raw)) filter.folderId = raw;
+      }
     }
     const search = (req.query.search || '').trim();
     if (search) {
@@ -87,11 +100,25 @@ router.get('/storage', async (req, res) => {
   }
 });
 
+const BOOKMARKS_MAX_IDS = 100;
+
 router.get('/bookmarks', async (req, res) => {
   try {
-    const ids = (req.query.ids || '').split(',').filter(Boolean);
+    const mongoose = (await import('mongoose')).default;
+    const ids = (req.query.ids || '')
+      .split(',')
+      .filter(Boolean)
+      .slice(0, BOOKMARKS_MAX_IDS)
+      .filter((id) => mongoose.Types.ObjectId.isValid(id));
     if (!ids.length) return res.json([]);
-    const notes = await Note.find({ _id: { $in: ids } })
+    // Only return notes the requesting user actually owns or can otherwise
+    // see (public / explore-listed / approved-community) — bookmarking is
+    // meant to work across other users' community notes, so this can't be
+    // scoped to ownership alone, but it must never leak a private note.
+    const notes = await Note.find({
+      _id: { $in: ids },
+      $or: [{ userId: req.user._id }, ...NOTE_VISIBLE_TO_ANY_USER],
+    })
       .populate('userId', 'name')
       .lean();
     res.json(notes);
@@ -113,9 +140,8 @@ router.get('/:id/file', async (req, res) => {
     if (!note) return res.status(404).json({ message: 'Note not found' });
     
     if (note.driveLink) {
-      const fileIdMatch = note.driveLink.match(/[-\w]{25,}/);
-      if (!fileIdMatch) return res.status(400).json({ message: 'Invalid Google Drive link' });
-      const fileId = fileIdMatch[0];
+      const fileId = extractDriveFileId(note.driveLink);
+      if (!fileId) return res.status(400).json({ message: 'Invalid Google Drive link' });
       
       try {
         const fetchResponse = await fetchDriveStream(fileId);
@@ -125,7 +151,7 @@ router.get('/:id/file', async (req, res) => {
         
         res.setHeader('Content-Type', contentType);
         if (contentLength) res.setHeader('Content-Length', contentLength);
-        res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+        res.setHeader('Content-Disposition', 'inline; filename="' + sanitizeFilenameForHeader(dispName) + '"');
         res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Content-Disposition');
         
         return Readable.fromWeb(fetchResponse.body).pipe(res);
@@ -145,7 +171,7 @@ router.get('/:id/file', async (req, res) => {
         
         res.setHeader('Content-Type', contentType);
         if (contentLength) res.setHeader('Content-Length', contentLength);
-        res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+        res.setHeader('Content-Disposition', 'inline; filename="' + sanitizeFilenameForHeader(dispName) + '"');
         res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Content-Disposition');
         
         return Readable.fromWeb(fetchRes.body).pipe(res);
@@ -160,7 +186,7 @@ router.get('/:id/file', async (req, res) => {
     const dispName = note.originalName || note.fileName || 'file';
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Length', stat.size);
-    res.setHeader('Content-Disposition', 'inline; filename="' + dispName + '"');
+    res.setHeader('Content-Disposition', 'inline; filename="' + sanitizeFilenameForHeader(dispName) + '"');
     res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Content-Disposition');
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);
@@ -209,14 +235,27 @@ router.post('/', uploadPdf.single('file'), async (req, res) => {
         });
       }
       const result = await uploadBufferToCloudinary(req.file.buffer, req.file.mimetype);
+      const uploadedBytes = result.bytes || req.file.size || 0;
+      // Re-check right after the (slow) Cloudinary upload, before writing the
+      // note — shrinks the window where two concurrent uploads could both
+      // pass the earlier check and put the user over quota. Not fully atomic
+      // without a transaction/lock, but the DB write below is fast, so this
+      // closes almost all of the race.
+      const usedBytesNow = await getUsedStorageBytes(req.user._id);
+      const actualNewTotal = usedBytesNow + uploadedBytes;
+      if (actualNewTotal > limitBytes) {
+        try { await destroyCloudinaryAsset(result.public_id, getResourceType(req.file.mimetype)); } catch {}
+        return res.status(413).json({
+          message: formatStorageMessage(actualNewTotal, limitBytes),
+        });
+      }
       fileName = result.public_id;
       fileUrl = result.secure_url;
       originalName = req.file.originalname || '';
       mimeType = req.file.mimetype || 'application/pdf';
-      size = result.bytes || req.file.size || null;
+      size = uploadedBytes || null;
     } else {
-      const fileIdMatch = driveLink.match(/[-\w]{25,}/);
-      if (!fileIdMatch) return res.status(400).json({ message: 'Invalid Google Drive link format' });
+      if (!extractDriveFileId(driveLink)) return res.status(400).json({ message: 'Invalid Google Drive link format' });
       originalName = 'Drive File';
     }
     
@@ -287,10 +326,14 @@ router.put('/:id/uncontribute', async (req, res) => {
     // Unlink from community space
     note.communitySpaceId = undefined;
     note.communityTopic = undefined;
-    
+
     // Status can optionally be reverted to 'approved' so it just sits in the user's manage page normally
     // but the default flow sets new personal notes to 'approved' anyway.
-    note.status = 'approved'; 
+    note.status = 'approved';
+    // /contribute force-sets isPublic:true for the note's life inside the
+    // space; undo that here so leaving a community also leaves the note
+    // private again rather than staying public forever.
+    note.isPublic = false;
 
     await note.save();
     res.json(note);
@@ -336,6 +379,17 @@ router.put('/:id', uploadPdf.single('file'), async (req, res) => {
       } catch (uploadErr) {
         return res.status(500).json({ message: uploadErr.message || 'Failed to upload file' });
       }
+      const uploadedBytes = result.bytes || req.file.size || 0;
+      // Re-check right after the (slow) upload, before touching the old
+      // asset or saving — shrinks the storage-quota race window (see POST /).
+      const usedBytesNow = await getUsedStorageBytes(req.user._id);
+      const actualNewTotal = usedBytesNow - currentNoteSize + uploadedBytes;
+      if (actualNewTotal > limitBytes) {
+        try { await destroyCloudinaryAsset(result.public_id, getResourceType(req.file.mimetype)); } catch {}
+        return res.status(413).json({
+          message: formatStorageMessage(actualNewTotal, limitBytes),
+        });
+      }
       if (hadCloudinary && !note.driveLink) {
         try {
           await destroyCloudinaryAsset(oldPublicId, getResourceType(note.mimeType));
@@ -353,8 +407,7 @@ router.put('/:id', uploadPdf.single('file'), async (req, res) => {
       note.mimeType = req.file.mimetype || note.mimeType || 'application/pdf';
       note.size = result.bytes || req.file.size || note.size || null;
     } else if (driveLink) {
-      const fileIdMatch = driveLink.match(/[-\w]{25,}/);
-      if (!fileIdMatch) return res.status(400).json({ message: 'Invalid Google Drive link format' });
+      if (!extractDriveFileId(driveLink)) return res.status(400).json({ message: 'Invalid Google Drive link format' });
       
       if (note.fileUrl && !note.driveLink) {
         try {
@@ -477,26 +530,18 @@ router.post('/trash/empty', async (req, res) => {
     res.status(500).json({ message: err.message || 'Failed to empty trash' });
   }
 });
-// POST /api/notes/bulk-delete - Bulk delete notes
+// POST /api/notes/bulk-delete - Bulk move notes to trash (soft-delete, same as single DELETE /:id)
 router.post('/bulk-delete', async (req, res) => {
   try {
     const { noteIds } = req.body;
     if (!Array.isArray(noteIds) || noteIds.length === 0) {
       return res.status(400).json({ message: 'noteIds array is required' });
     }
-    const notes = await Note.find({ _id: { $in: noteIds }, userId: req.user._id });
-    for (const note of notes) {
-      if (note.driveLink) {
-        // No external file to delete
-      } else if (note.fileUrl) {
-        try { await destroyCloudinaryAsset(note.fileName, getResourceType(note.mimeType)); } catch {}
-      } else if (note.fileName) {
-        const filePath = getUploadPath(note.fileName);
-        if (fs.existsSync(filePath)) { try { fs.unlinkSync(filePath); } catch {} }
-      }
-    }
-    await Note.deleteMany({ _id: { $in: notes.map(n => n._id) } });
-    res.json({ message: `${notes.length} note(s) deleted` });
+    const result = await Note.updateMany(
+      { _id: { $in: noteIds }, userId: req.user._id, deletedAt: null },
+      { $set: { deletedAt: new Date() } }
+    );
+    res.json({ message: `${result.modifiedCount} note(s) moved to trash` });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Failed to bulk delete' });
   }

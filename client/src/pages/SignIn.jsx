@@ -35,10 +35,6 @@ export default function SignIn() {
   const from = location.state?.from?.pathname || '/home';
   const initialMode = location.state?.mode === 'signup' ? 'signup' : 'signin';
 
-  if (isAuthenticated) {
-    return <Navigate to={from} replace />;
-  }
-
   const [mode, setModeState] = useState(initialMode);
   const setMode = (m) => {
     setError('');
@@ -145,6 +141,15 @@ export default function SignIn() {
       return () => clearInterval(t);
     }
   }, []);
+
+  // Checked after every hook has run (never before) so the set of hooks
+  // called is identical on every render — an early return above the hooks
+  // would make React throw "Rendered fewer hooks than expected" the moment
+  // isAuthenticated flips true on a re-render (e.g. a cached session
+  // resolving after this page's first paint).
+  if (isAuthenticated) {
+    return <Navigate to={from} replace />;
+  }
 
   return (
     <Layout>

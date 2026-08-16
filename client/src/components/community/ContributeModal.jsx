@@ -52,7 +52,15 @@ export default function ContributeModal({ isOpen, onClose, selectedSubject }) {
     }
   }, [selectedNoteId, userNotes]);
 
-  if (!isOpen) return null;
+  // selectedSubject is derived from the URL's `space` param in the parent —
+  // if that param clears while this modal is open (e.g. browser Back), close
+  // it instead of leaving a modal open with an empty topic list and a submit
+  // that can never succeed.
+  useEffect(() => {
+    if (isOpen && !selectedSubject) onClose();
+  }, [isOpen, selectedSubject, onClose]);
+
+  if (!isOpen || !selectedSubject) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

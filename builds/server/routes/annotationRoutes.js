@@ -1,9 +1,16 @@
 import express from 'express';
 import Annotation from '../models/Annotation.js';
+import Note from '../models/Note.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 router.use(authMiddleware);
+
+const NOTE_VISIBLE_TO_ANY_USER = [
+  { isPublic: true },
+  { listedOnExplore: true },
+  { communitySpaceId: { $ne: null }, status: 'approved' },
+];
 
 // GET /api/annotations/:noteId
 router.get('/:noteId', async (req, res) => {
@@ -25,6 +32,11 @@ router.post('/', async (req, res) => {
     if (!noteId || !pageNumber || x == null || y == null || !text) {
       return res.status(400).json({ message: 'Missing required annotation fields' });
     }
+    const note = await Note.findOne({
+      _id: noteId,
+      $or: [{ userId: req.user._id }, ...NOTE_VISIBLE_TO_ANY_USER],
+    }).select('_id');
+    if (!note) return res.status(404).json({ message: 'Note not found' });
     const annotation = await Annotation.create({
       noteId,
       userId: req.user._id,
