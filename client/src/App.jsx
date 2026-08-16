@@ -3,6 +3,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import { useAuth } from './context/AuthContext';
 import Community from './pages/Community';
+import ScoreCalculator from './pages/ScoreCalculator';
 import Dashboard from './pages/Dashboard';
 import AdminLogin from './pages/AdminLogin';
 import Manage from './pages/Manage';
@@ -37,6 +38,7 @@ export default function App() {
       <Route path="/profile/:userId" element={<PublicProfile />} />
       <Route path="/view/note/:id" element={<PublicNoteView />} />
       <Route path="/community" element={<Community />} />
+      <Route path="/score-calculator" element={<ScoreCalculator />} />
       <Route path="/explore" element={<Navigate to="/community" replace />} />
       <Route path="/home" element={<Navigate to="/dashboard" replace />} />
       <Route

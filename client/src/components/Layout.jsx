@@ -119,6 +119,11 @@ export default function Layout({ children }) {
                       Community
                     </NavLink>
                   </li>
+                  <li className="nav-item">
+                    <NavLink className="nav-link" to="/score-calculator">
+                      Score Calculator
+                    </NavLink>
+                  </li>
                   {user?._id && (
                     <li className="nav-item">
                       <Link className="nav-link small" to={`/profile/${user._id}`} title="Your public profile">
@@ -164,6 +169,11 @@ export default function Layout({ children }) {
                       Community
                     </Link>
                   </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/score-calculator">
+                      Score Calculator
+                    </Link>
+                  </li>
                   <li className="nav-item d-none d-lg-flex align-items-center gap-1 py-2 py-lg-0 pt-lg-0 mt-lg-0">
                     <button
                       type="button"
@@ -205,6 +215,7 @@ export default function Layout({ children }) {
               <h6>Quick Links</h6>
               <ul className="list-unstyled small">
                 <li><Link to="/community">Community</Link></li>
+                <li><Link to="/score-calculator">Score Calculator</Link></li>
                 {isAuthenticated ? (
                   <>
                     <li><Link to="/manage">My Files</Link></li>

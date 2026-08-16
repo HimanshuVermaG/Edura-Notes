@@ -4125,3 +4125,152 @@ textarea:focus-visible {
   color: var(--edura-text-muted) !important;
   opacity: 0.8;
 }
+
+/* Score Calculator */
+:root {
+  --sc-good: #0ca30c;
+  --sc-good-bg: #e8f7e8;
+  --sc-critical: #d03b3b;
+  --sc-critical-bg: #fbe9e9;
+  --sc-warning: #b8860b;
+  --sc-warning-bg: #fff6e2;
+  --sc-muted: #64748b;
+  --sc-muted-bg: #f0efec;
+}
+[data-theme="dark"] {
+  --sc-good: #0ca30c;
+  --sc-good-bg: #123312;
+  --sc-critical: #e66767;
+  --sc-critical-bg: #3a1414;
+  --sc-warning: #fab219;
+  --sc-warning-bg: #332a10;
+  --sc-muted: #94a3b8;
+  --sc-muted-bg: #26251f;
+}
+
+.sc-dropzone {
+  border: 1.5px dashed var(--edura-border);
+  border-radius: var(--edura-radius);
+  padding: 1.5rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  background: var(--edura-bg);
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
+}
+.sc-dropzone:hover,
+.sc-dropzone.sc-dropzone-drag {
+  border-color: var(--edura-primary);
+  background: rgba(37, 99, 235, 0.04);
+}
+.sc-dropzone input[type='file'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.sc-dropzone .sc-dropzone-filename {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--sc-good);
+  font-weight: 600;
+  word-break: break-all;
+}
+.sc-dropzone .sc-dropzone-filename.sc-err {
+  color: var(--sc-critical);
+}
+
+.sc-stat-tile {
+  background: var(--edura-card-bg);
+  border: 1px solid var(--edura-border);
+  border-radius: var(--edura-radius);
+  padding: 0.875rem 1rem;
+}
+.sc-stat-tile .sc-stat-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.sc-stat-tile .sc-stat-lbl {
+  font-size: 0.75rem;
+  color: var(--edura-text-muted);
+  margin-top: 0.125rem;
+}
+.sc-stat-tile.sc-good .sc-stat-num { color: var(--sc-good); }
+.sc-stat-tile.sc-critical .sc-stat-num { color: var(--sc-critical); }
+.sc-stat-tile.sc-muted .sc-stat-num { color: var(--edura-text-muted); }
+.sc-stat-tile.sc-accent .sc-stat-num { color: var(--edura-primary); }
+
+/* Score breakdown: single horizontal stacked bar, status colors, 2px surface gaps */
+.sc-breakdown-bar {
+  display: flex;
+  width: 100%;
+  height: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--edura-card-bg);
+  gap: 2px;
+}
+.sc-breakdown-bar .sc-segment {
+  height: 100%;
+}
+.sc-breakdown-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+.sc-breakdown-legend .sc-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--edura-text);
+}
+.sc-breakdown-legend .sc-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+.sc-breakdown-legend .sc-legend-count {
+  color: var(--edura-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-pill {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.sc-pill.sc-good { background: var(--sc-good-bg); color: var(--sc-good); }
+.sc-pill.sc-critical { background: var(--sc-critical-bg); color: var(--sc-critical); }
+.sc-pill.sc-warning { background: var(--sc-warning-bg); color: var(--sc-warning); }
+.sc-pill.sc-muted { background: var(--sc-muted-bg); color: var(--edura-text-muted); }
+
+.sc-table-scroll {
+  max-height: 480px;
+  overflow: auto;
+  border: 1px solid var(--edura-border);
+  border-radius: var(--edura-radius);
+}
+.sc-table-scroll table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--edura-card-bg);
+  z-index: 1;
+}
+
+@media print {
+  .score-calculator-page .edura-header,
+  .score-calculator-page .edura-footer,
+  .score-calculator-page .no-print {
+    display: none !important;
+  }
+  .score-calculator-page .edura-card {
+    border: 1px solid #ccc;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}

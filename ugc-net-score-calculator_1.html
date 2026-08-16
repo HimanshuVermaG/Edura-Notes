@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UGC NET Score Calculator</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --surface-2:      #ffffff;
+    --page-plane:     #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2a78d6; /* blue */
+    --series-3:       #1baf7a; /* aqua */
+    --good:           #0ca30c;
+    --critical:       #d03b3b;
+    --warning:        #fab219;
+    --muted-fill:     #898781;
+    --good-bg:        #e8f7e8;
+    --critical-bg:    #fbe9e9;
+    --muted-bg:       #f0efec;
+    --warning-bg:     #fff6e2;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --surface-2:      #201f1e;
+      --page-plane:     #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-3:       #199e70;
+      --good:           #0ca30c;
+      --critical:       #e66767;
+      --warning:        #fab219;
+      --muted-fill:     #898781;
+      --good-bg:        #123312;
+      --critical-bg:    #3a1414;
+      --muted-bg:       #26251f;
+      --warning-bg:     #332a10;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --surface-2:      #201f1e;
+    --page-plane:     #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-1:       #3987e5;
+    --series-3:       #199e70;
+    --good:           #0ca30c;
+    --critical:       #e66767;
+    --warning:        #fab219;
+    --muted-fill:     #898781;
+    --good-bg:        #123312;
+    --critical-bg:    #3a1414;
+    --muted-bg:       #26251f;
+    --warning-bg:     #332a10;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page-plane);
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  header.top {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+    margin-bottom: 24px;
+  }
+  header.top h1 { font-size: 22px; margin: 0 0 4px; }
+  header.top p.tagline { margin: 0; color: var(--text-secondary); font-size: 14px; max-width: 560px; }
+  .theme-toggle {
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text-primary);
+    border-radius: 8px; padding: 8px 12px; font-size: 13px; cursor: pointer; white-space: nowrap;
+  }
+
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 15px; margin: 0 0 4px; }
+  .card p.hint { margin: 0 0 14px; color: var(--text-secondary); font-size: 13px; }
+
+  .step-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .step-grid { grid-template-columns: 1fr; } }
+
+  .dropzone {
+    border: 1.5px dashed var(--baseline);
+    border-radius: 10px;
+    padding: 22px 16px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--page-plane);
+    transition: border-color .15s, background .15s;
+    position: relative;
+  }
+  .dropzone:hover, .dropzone.drag { border-color: var(--series-1); background: var(--surface-2); }
+  .dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .dropzone .label { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .dropzone .sub { font-size: 12px; color: var(--text-muted); }
+  .dropzone .filename { margin-top: 8px; font-size: 12px; color: var(--good); font-weight: 600; word-break: break-all; }
+  .dropzone .filename.err { color: var(--critical); }
+
+  details.advanced { margin-top: 4px; }
+  details.advanced summary {
+    cursor: pointer; font-size: 13px; color: var(--text-secondary); font-weight: 600;
+    padding: 6px 0;
+  }
+  .advanced-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 12px;
+    margin-top: 12px;
+  }
+  .field label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+  .field input[type=number] {
+    width: 100%; padding: 7px 9px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text-primary); font-size: 13px;
+  }
+  .check-field { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 11px 20px; border-radius: 9px; border: none; font-size: 14px; font-weight: 600;
+    cursor: pointer; background: var(--series-1); color: #fff;
+  }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.secondary { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border); font-weight: 500; }
+  .actions-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; flex-wrap: wrap; }
+  .error-banner {
+    background: var(--critical-bg); color: var(--critical); border-radius: 8px; padding: 10px 12px;
+    font-size: 13px; margin-top: 10px; display: none; white-space: pre-line;
+  }
+  .error-banner.show { display: block; }
+
+  #results { display: none; }
+  #results.show { display: block; }
+
+  .candidate-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 10px 20px;
+  }
+  .candidate-grid .kv .k { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-bottom: 2px; }
+  .candidate-grid .kv .v { font-size: 14px; font-weight: 600; }
+
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 12px; }
+  .stat-tile {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; text-align: left;
+  }
+  .stat-tile .num { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat-tile .lbl { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .stat-tile.good .num { color: var(--good); }
+  .stat-tile.critical .num { color: var(--critical); }
+  .stat-tile.muted .num { color: var(--text-muted); }
+  .stat-tile.accent .num { color: var(--series-1); }
+
+  .breakdown-row { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+  svg.donut { flex: 0 0 auto; }
+  .legend { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+  .legend .item { display: flex; align-items: center; gap: 8px; }
+  .legend .swatch { width: 10px; height: 10px; border-radius: 2px; flex: 0 0 auto; }
+  .legend .count { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.data-table th, table.data-table td {
+    text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--gridline);
+    font-variant-numeric: tabular-nums;
+  }
+  table.data-table th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; }
+  table.data-table tbody tr:hover { background: var(--page-plane); }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .pill.good { background: var(--good-bg); color: var(--good); }
+  .pill.critical { background: var(--critical-bg); color: var(--critical); }
+  .pill.muted { background: var(--muted-bg); color: var(--text-muted); }
+  .pill.warning { background: var(--warning-bg); color: #8a6300; }
+
+  .table-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .table-toolbar select, .table-toolbar input[type=search] {
+    padding: 7px 9px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text-primary); font-size: 13px;
+  }
+  .table-scroll { max-height: 480px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+  .table-scroll table.data-table thead th { position: sticky; top: 0; background: var(--surface-1); }
+
+  footer.note { margin-top: 24px; font-size: 12px; color: var(--text-muted); text-align: center; }
+
+  @media print {
+    .no-print { display: none !important; }
+    body { background: #fff; }
+    .card { border: 1px solid #ccc; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>UGC NET Score Calculator</h1>
+      <p class="tagline">Upload your official Response Sheet and Answer Key (saved as HTML from the NTA portal) to get an instant, accurate score — works for any subject.</p>
+    </div>
+    <button class="theme-toggle no-print" id="themeToggle" type="button">🌙 Dark</button>
+  </header>
+
+  <div class="card">
+    <h2>1. Upload your files</h2>
+    <p class="hint">Open your Response Sheet and Answer Key pages on the NTA/NIC portal, save each as a webpage (Ctrl/Cmd+S → "Webpage, HTML only"), then upload the two .html files below. Everything is processed locally in your browser — nothing is uploaded anywhere.</p>
+    <div class="step-grid">
+      <div class="dropzone" id="dz-response">
+        <input type="file" id="file-response" accept=".html,.htm">
+        <div class="label">📄 Response Sheet</div>
+        <div class="sub">Click or drag your saved Response Sheet .html file here</div>
+        <div class="filename" id="fn-response"></div>
+      </div>
+      <div class="dropzone" id="dz-key">
+        <input type="file" id="file-key" accept=".html,.htm">
+        <div class="label">🔑 Answer Key</div>
+        <div class="sub">Click or drag your saved (Final/Challenge) Answer Key .html file here</div>
+        <div class="filename" id="fn-key"></div>
+      </div>
+    </div>
+
+    <details class="advanced">
+      <summary>Advanced: marking scheme</summary>
+      <div class="advanced-grid">
+        <div class="field">
+          <label for="marksCorrect">Marks for each correct answer</label>
+          <input type="number" id="marksCorrect" value="2" step="0.5">
+        </div>
+        <div class="field">
+          <label for="marksWrong">Marks deducted for each wrong answer</label>
+          <input type="number" id="marksWrong" value="0" step="0.5" min="0">
+        </div>
+        <div class="field" style="display:flex; align-items:flex-end;">
+          <label class="check-field"><input type="checkbox" id="bonusDropped" checked> Give full marks for questions dropped from the key</label>
+        </div>
+      </div>
+    </details>
+
+    <div class="actions-row" style="margin-top:16px;">
+      <button class="btn" id="calcBtn" disabled>Calculate Score</button>
+      <button class="btn secondary no-print" id="resetBtn">Reset</button>
+    </div>
+    <div class="error-banner" id="errorBanner"></div>
+  </div>
+
+  <div id="results">
+
+    <div class="card">
+      <h2>Candidate Details</h2>
+      <div class="candidate-grid" id="candidateGrid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Score Summary</h2>
+      <div class="stat-row" id="statRow"></div>
+      <div class="breakdown-row">
+        <svg class="donut" id="donutChart" width="140" height="140" viewBox="0 0 140 140"></svg>
+        <div class="legend" id="chartLegend"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Section-wise Breakdown</h2>
+      <div class="table-scroll">
+        <table class="data-table" id="sectionTable">
+          <thead><tr><th>Section</th><th>Questions</th><th>Correct</th><th>Incorrect</th><th>Unattempted</th><th>Marks</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Question-wise Detail</h2>
+      <div class="table-toolbar no-print">
+        <input type="search" id="qSearch" placeholder="Search question ID or section…">
+        <select id="qFilter">
+          <option value="all">All results</option>
+          <option value="correct">Correct</option>
+          <option value="wrong">Incorrect</option>
+          <option value="unattempted">Unattempted</option>
+          <option value="dropped">Dropped / no key</option>
+        </select>
+        <button class="btn secondary" id="exportCsv">⬇ Export CSV</button>
+        <button class="btn secondary" id="printBtn">🖨 Print / Save PDF</button>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="questionTable">
+          <thead><tr><th>#</th><th>Section</th><th>Question ID</th><th>Your Answer</th><th>Correct Answer</th><th>Result</th><th>Marks</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="note">Runs entirely in your browser — your response sheet and answer key are never uploaded to a server.</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- Theme toggle ---------------- */
+  var themeBtn = document.getElementById('themeToggle');
+  function applyTheme(t) {
+    if (t) { document.documentElement.setAttribute('data-theme', t); }
+    else { document.documentElement.removeAttribute('data-theme'); }
+    themeBtn.textContent = (t === 'dark') ? '☀️ Light' : '🌙 Dark';
+  }
+  themeBtn.addEventListener('click', function () {
+    var current = document.documentElement.getAttribute('data-theme');
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+  });
+
+  /* ---------------- File loading ---------------- */
+  var state = { responseText: null, keyText: null, responseName: '', keyName: '' };
+
+  function wireDropzone(dzId, inputId, fnId, onLoaded) {
+    var dz = document.getElementById(dzId);
+    var input = document.getElementById(inputId);
+    var fnEl = document.getElementById(fnId);
+
+    function handleFile(file) {
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        onLoaded(e.target.result, file.name);
+        fnEl.textContent = '✓ ' + file.name;
+        fnEl.classList.remove('err');
+        updateCalcButton();
+      };
+      reader.onerror = function () {
+        fnEl.textContent = 'Could not read file';
+        fnEl.classList.add('err');
+      };
+      reader.readAsText(file);
+    }
+
+    input.addEventListener('change', function (e) {
+      handleFile(e.target.files[0]);
+    });
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add('drag'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove('drag'); });
+    });
+    dz.addEventListener('drop', function (e) {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        input.files = e.dataTransfer.files;
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  wireDropzone('dz-response', 'file-response', 'fn-response', function (text, name) {
+    state.responseText = text; state.responseName = name;
+  });
+  wireDropzone('dz-key', 'file-key', 'fn-key', function (text, name) {
+    state.keyText = text; state.keyName = name;
+  });
+
+  var calcBtn = document.getElementById('calcBtn');
+  function updateCalcButton() {
+    calcBtn.disabled = !(state.responseText && state.keyText);
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    state = { responseText: null, keyText: null, responseName: '', keyName: '' };
+    document.getElementById('file-response').value = '';
+    document.getElementById('file-key').value = '';
+    document.getElementById('fn-response').textContent = '';
+    document.getElementById('fn-key').textContent = '';
+    document.getElementById('results').classList.remove('show');
+    showError('');
+    updateCalcButton();
+  });
+
+  function showError(msg) {
+    var el = document.getElementById('errorBanner');
+    if (!msg) { el.classList.remove('show'); el.textContent = ''; return; }
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  /* ---------------- Parsing: Response Sheet ---------------- */
+  function textOf(el) { return el ? el.textContent.replace(/\s+/g, ' ').trim() : ''; }
+
+  function parseResponseSheet(html) {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+
+    var examTitle = '';
+    var infoPnl = doc.querySelector('.main-info-pnl');
+    var candidate = {};
+    if (infoPnl) {
+      var strongEl = infoPnl.querySelector('strong');
+      examTitle = textOf(strongEl);
+      var rows = infoPnl.querySelectorAll('table tr');
+      rows.forEach(function (tr) {
+        var tds = tr.querySelectorAll('td');
+        if (tds.length >= 2) {
+          var k = textOf(tds[0]);
+          var v = textOf(tds[1]);
+          if (k) candidate[k] = v;
+        }
+      });
+    }
+
+    var questions = [];
+    var sectionContainers = doc.querySelectorAll('.section-cntnr');
+    var containers = sectionContainers.length ? sectionContainers : [doc.body];
+
+    containers.forEach(function (container) {
+      var lblEl = container.querySelector ? container.querySelector('.section-lbl .bold, .section-lbl b, .section-lbl') : null;
+      var sectionName = lblEl ? textOf(lblEl).replace(/^Section\s*:?\s*/i, '') : 'General';
+
+      var qPanels = container.querySelectorAll ? container.querySelectorAll('.question-pnl') : [];
+      qPanels.forEach(function (panel) {
+        var menuTbl = panel.querySelector('.menu-tbl');
+        if (!menuTbl) return;
+        var kv = {};
+        var options = {};
+        menuTbl.querySelectorAll('tr').forEach(function (tr) {
+          var tds = tr.querySelectorAll('td');
+          if (tds.length >= 2) {
+            var k = textOf(tds[0]).replace(/\s*:\s*$/, '').trim();
+            var v = textOf(tds[1]);
+            var optMatch = k.match(/^Option\s+(\d+)\s+ID$/i);
+            if (optMatch) {
+              options[optMatch[1]] = v;
+            } else {
+              kv[k] = v;
+            }
+          }
+        });
+        var qid = kv['Question ID'];
+        if (!qid) return;
+        var status = kv['Status'] || '';
+        var chosen = kv['Chosen Option'] || kv['Given Answer'] || '';
+        questions.push({
+          section: sectionName,
+          questionId: qid,
+          questionType: kv['Question Type'] || '',
+          options: options,
+          status: status,
+          chosenOptionNo: chosen,
+          chosenOptionId: (chosen && options[chosen]) ? options[chosen] : null
+        });
+      });
+    });
+
+    return { examTitle: examTitle, candidate: candidate, questions: questions };
+  }
+
+  /* ---------------- Parsing: Answer Key ---------------- */
+  function parseAnswerKey(html) {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    var tables = doc.querySelectorAll('table');
+    var map = {}; // questionId -> Set of correct option IDs
+    var found = false;
+
+    tables.forEach(function (table) {
+      if (found) return;
+      var headerRow = table.querySelector('tr');
+      if (!headerRow) return;
+      var headerCells = headerRow.querySelectorAll('th,td');
+      if (!headerCells.length) return;
+      var headers = Array.prototype.map.call(headerCells, function (c) { return textOf(c).toLowerCase(); });
+
+      var qIdx = headers.findIndex(function (h) { return h.indexOf('question id') !== -1; });
+      var ansIdx = headers.findIndex(function (h) { return h.indexOf('correct option') !== -1 || h.indexOf('key/answer') !== -1 || h.indexOf('answer key') !== -1; });
+      var secIdx = headers.findIndex(function (h) { return h.indexOf('section') !== -1 || h.indexOf('subject') !== -1; });
+      if (qIdx === -1 || ansIdx === -1) return;
+
+      var rows = table.querySelectorAll('tr');
+      var any = false;
+      for (var i = 1; i < rows.length; i++) {
+        var cells = rows[i].querySelectorAll('td');
+        if (!cells.length || cells.length <= Math.max(qIdx, ansIdx)) continue;
+        var qid = textOf(cells[qIdx]);
+        var ansText = textOf(cells[ansIdx]);
+        if (!qid || !ansText) continue;
+        var ids = ansText.split(/[\s,;]+/).filter(Boolean);
+        map[qid] = { ids: ids, section: secIdx !== -1 ? textOf(cells[secIdx]) : '' };
+        any = true;
+      }
+      if (any) found = true;
+    });
+
+    return { map: map, found: found };
+  }
+
+  /* ---------------- Scoring ---------------- */
+  function computeScore(responseData, keyData, opts) {
+    var marksCorrect = opts.marksCorrect;
+    var marksWrong = opts.marksWrong;
+    var bonusDropped = opts.bonusDropped;
+
+    var rows = [];
+    var totals = { correct: 0, wrong: 0, unattempted: 0, dropped: 0, score: 0, maxScore: 0 };
+    var sections = {}; // name -> {questions,correct,wrong,unattempted,marks}
+
+    responseData.questions.forEach(function (q, idx) {
+      var sec = sections[q.section] || (sections[q.section] = { questions: 0, correct: 0, wrong: 0, unattempted: 0, marks: 0 });
+      sec.questions++;
+      totals.maxScore += marksCorrect;
+
+      var keyEntry = keyData.map[q.questionId];
+      var result, marks = 0, correctDisplay = '—';
+
+      if (!keyEntry) {
+        result = 'dropped';
+        totals.dropped++;
+        if (bonusDropped) { marks = marksCorrect; }
+        sec.marks += marks;
+      } else {
+        // map correct option id(s) back to option number(s) using this question's own option map
+        var correctNos = Object.keys(q.options).filter(function (no) { return keyEntry.ids.indexOf(q.options[no]) !== -1; });
+        correctDisplay = correctNos.length ? correctNos.join(' / ') : keyEntry.ids.join(' / ');
+
+        if (!q.chosenOptionId) {
+          result = 'unattempted';
+          totals.unattempted++;
+          sec.unattempted++;
+        } else if (keyEntry.ids.indexOf(q.chosenOptionId) !== -1) {
+          result = 'correct';
+          marks = marksCorrect;
+          totals.correct++;
+          sec.correct++;
+        } else {
+          result = 'wrong';
+          marks = -Math.abs(marksWrong);
+          totals.wrong++;
+          sec.wrong++;
+        }
+        sec.marks += marks;
+      }
+
+      totals.score += marks;
+      rows.push({
+        no: idx + 1,
+        section: q.section,
+        questionId: q.questionId,
+        yourAnswer: q.chosenOptionNo || '—',
+        correctAnswer: correctDisplay,
+        result: result,
+        marks: marks
+      });
+    });
+
+    return { rows: rows, totals: totals, sections: sections };
+  }
+
+  /* ---------------- Rendering ---------------- */
+  var lastResult = null;
+
+  function renderCandidate(candidate, examTitle) {
+    var grid = document.getElementById('candidateGrid');
+    grid.innerHTML = '';
+    var entries = Object.keys(candidate).map(function (k) { return [k, candidate[k]]; });
+    if (examTitle) entries.unshift(['Exam', examTitle]);
+    entries.forEach(function (pair) {
+      var div = document.createElement('div');
+      div.className = 'kv';
+      div.innerHTML = '<div class="k"></div><div class="v"></div>';
+      div.querySelector('.k').textContent = pair[0];
+      div.querySelector('.v').textContent = pair[1];
+      grid.appendChild(div);
+    });
+  }
+
+  function renderStats(totals) {
+    var row = document.getElementById('statRow');
+    var accuracy = (totals.correct + totals.wrong) ? Math.round((totals.correct / (totals.correct + totals.wrong)) * 1000) / 10 : 0;
+    var tiles = [
+      { cls: 'accent', num: totals.score + ' / ' + totals.maxScore, lbl: 'Score' },
+      { cls: 'good', num: totals.correct, lbl: 'Correct' },
+      { cls: 'critical', num: totals.wrong, lbl: 'Incorrect' },
+      { cls: 'muted', num: totals.unattempted, lbl: 'Unattempted' },
+      { cls: 'accent', num: accuracy + '%', lbl: 'Accuracy (attempted)' }
+    ];
+    if (totals.dropped) tiles.push({ cls: 'muted', num: totals.dropped, lbl: 'Dropped / no key' });
+    row.innerHTML = '';
+    tiles.forEach(function (t) {
+      var div = document.createElement('div');
+      div.className = 'stat-tile ' + t.cls;
+      div.innerHTML = '<div class="num"></div><div class="lbl"></div>';
+      div.querySelector('.num').textContent = t.num;
+      div.querySelector('.lbl').textContent = t.lbl;
+      row.appendChild(div);
+    });
+  }
+
+  function renderDonut(totals) {
+    var data = [
+      { label: 'Correct', value: totals.correct, color: 'var(--good)' },
+      { label: 'Incorrect', value: totals.wrong, color: 'var(--critical)' },
+      { label: 'Unattempted', value: totals.unattempted, color: 'var(--muted-fill)' }
+    ];
+    if (totals.dropped) data.push({ label: 'Dropped', value: totals.dropped, color: 'var(--baseline)' });
+    var total = data.reduce(function (s, d) { return s + d.value; }, 0) || 1;
+
+    var svg = document.getElementById('donutChart');
+    var r = 55, cx = 70, cy = 70, sw = 18;
+    var circumference = 2 * Math.PI * r;
+    var offset = 0;
+    var parts = [];
+    data.forEach(function (d) {
+      var frac = d.value / total;
+      var len = frac * circumference;
+      parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + d.color + '" stroke-width="' + sw +
+        '" stroke-dasharray="' + len + ' ' + (circumference - len) + '" stroke-dashoffset="' + (-offset) +
+        '" transform="rotate(-90 ' + cx + ' ' + cy + ')" stroke-linecap="butt"></circle>');
+      offset += len;
+    });
+    // gaps between segments
+    parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="var(--surface-1)" stroke-width="2"></circle>');
+    var scorePct = Math.round((totals.correct / total) * 100);
+    svg.innerHTML = parts.join('') +
+      '<text x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle" font-size="20" font-weight="700" fill="var(--text-primary)">' + scorePct + '%</text>' +
+      '<text x="' + cx + '" y="' + (cy + 16) + '" text-anchor="middle" font-size="10" fill="var(--text-muted)">correct</text>';
+
+    var legend = document.getElementById('chartLegend');
+    legend.innerHTML = '';
+    data.forEach(function (d) {
+      var item = document.createElement('div');
+      item.className = 'item';
+      item.innerHTML = '<span class="swatch" style="background:' + d.color + '"></span><span></span><span class="count"></span>';
+      item.children[1].textContent = d.label;
+      item.children[2].textContent = d.value;
+      legend.appendChild(item);
+    });
+  }
+
+  function renderSectionTable(sections) {
+    var tbody = document.querySelector('#sectionTable tbody');
+    tbody.innerHTML = '';
+    Object.keys(sections).forEach(function (name) {
+      var s = sections[name];
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td></td><td></td><td></td><td></td><td></td><td></td>';
+      tr.children[0].textContent = name;
+      tr.children[1].textContent = s.questions;
+      tr.children[2].textContent = s.correct;
+      tr.children[3].textContent = s.wrong;
+      tr.children[4].textContent = s.unattempted;
+      tr.children[5].textContent = s.marks;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function pillFor(result) {
+    var map = { correct: ['good', 'Correct'], wrong: ['critical', 'Incorrect'], unattempted: ['muted', 'Unattempted'], dropped: ['warning', 'Dropped'] };
+    var m = map[result] || ['muted', result];
+    return '<span class="pill ' + m[0] + '">' + m[1] + '</span>';
+  }
+
+  function renderQuestionTable(rows) {
+    var filterVal = document.getElementById('qFilter').value;
+    var searchVal = document.getElementById('qSearch').value.trim().toLowerCase();
+    var tbody = document.querySelector('#questionTable tbody');
+    tbody.innerHTML = '';
+    rows.forEach(function (r) {
+      if (filterVal !== 'all' && r.result !== filterVal) return;
+      if (searchVal && r.questionId.toLowerCase().indexOf(searchVal) === -1 && r.section.toLowerCase().indexOf(searchVal) === -1) return;
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td></td><td></td><td></td><td></td><td></td><td></td><td></td>';
+      tr.children[0].textContent = r.no;
+      tr.children[1].textContent = r.section;
+      tr.children[2].textContent = r.questionId;
+      tr.children[3].textContent = r.yourAnswer;
+      tr.children[4].textContent = r.correctAnswer;
+      tr.children[5].innerHTML = pillFor(r.result);
+      tr.children[6].textContent = r.marks;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('qFilter').addEventListener('change', function () { if (lastResult) renderQuestionTable(lastResult.rows); });
+  document.getElementById('qSearch').addEventListener('input', function () { if (lastResult) renderQuestionTable(lastResult.rows); });
+
+  document.getElementById('exportCsv').addEventListener('click', function () {
+    if (!lastResult) return;
+    var lines = [['#', 'Section', 'Question ID', 'Your Answer', 'Correct Answer', 'Result', 'Marks'].join(',')];
+    lastResult.rows.forEach(function (r) {
+      lines.push([r.no, '"' + r.section.replace(/"/g, '""') + '"', r.questionId, r.yourAnswer, '"' + r.correctAnswer + '"', r.result, r.marks].join(','));
+    });
+    var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'ugc-net-score-detail.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('printBtn').addEventListener('click', function () { window.print(); });
+
+  /* ---------------- Main calculate flow ---------------- */
+  calcBtn.addEventListener('click', function () {
+    showError('');
+    if (!state.responseText || !state.keyText) return;
+
+    var responseData, keyData;
+    try {
+      responseData = parseResponseSheet(state.responseText);
+    } catch (e) {
+      showError('Could not parse the Response Sheet file. Please make sure you saved the full Response Sheet page from the NTA portal as HTML.');
+      return;
+    }
+    try {
+      keyData = parseAnswerKey(state.keyText);
+    } catch (e) {
+      showError('Could not parse the Answer Key file. Please make sure you saved the full Answer Key page (with the results table) as HTML.');
+      return;
+    }
+
+    if (!responseData.questions.length) {
+      showError('No questions were found in the Response Sheet file. Please double-check you uploaded the correct saved HTML page.');
+      return;
+    }
+    if (!keyData.found) {
+      showError('No "Question ID" / "Correct Option" table was found in the Answer Key file. Please double-check you uploaded the correct saved HTML page.');
+      return;
+    }
+
+    var opts = {
+      marksCorrect: parseFloat(document.getElementById('marksCorrect').value) || 0,
+      marksWrong: parseFloat(document.getElementById('marksWrong').value) || 0,
+      bonusDropped: document.getElementById('bonusDropped').checked
+    };
+
+    var result = computeScore(responseData, keyData, opts);
+    lastResult = result;
+
+    var matched = responseData.questions.length - result.totals.dropped;
+    if (matched === 0) {
+      showError('None of the Question IDs in your Response Sheet matched the Answer Key. Please check that both files are from the same exam/session.');
+      return;
+    }
+
+    renderCandidate(responseData.candidate, responseData.examTitle);
+    renderStats(result.totals);
+    renderDonut(result.totals);
+    renderSectionTable(result.sections);
+    renderQuestionTable(result.rows);
+
+    document.getElementById('results').classList.add('show');
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+})();
+</script>
+</body>
+</html>
