@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { useSeo } from '../utils/seo';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -36,6 +37,16 @@ export default function SignIn() {
   const initialMode = location.state?.mode === 'signup' ? 'signup' : 'signin';
 
   const [mode, setModeState] = useState(initialMode);
+  // Must stay unconditional (called on every render, same as every other
+  // hook here) — see the comment above the isAuthenticated redirect below
+  // for why this component can't have any conditional early return before
+  // its hooks.
+  useSeo({
+    title: mode === 'signup' ? 'Sign Up' : 'Sign In',
+    description: 'Sign in to Notes Handling to access your notes, or create a free account.',
+    canonicalPath: '/signin',
+    noindex: true,
+  });
   const setMode = (m) => {
     setError('');
     setModeState(m);

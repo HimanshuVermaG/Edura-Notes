@@ -4,6 +4,7 @@ import { Moon, Sun } from 'lucide-react';
 import { api } from '../../api/client';
 import SecureNoteViewerLazy from '../../components/SecureNoteViewerLazy';
 import ErrorBoundary from '../../components/ErrorBoundary';
+import { useSeo } from '../../utils/seo';
 
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3;
@@ -11,6 +12,7 @@ const ZOOM_STEP = 0.25;
 
 export default function AdminNoteView() {
   const { noteId } = useParams();
+  useSeo({ title: 'Admin — View Note', canonicalPath: `/admin/view/note/${noteId}`, noindex: true });
   const navigate = useNavigate();
   const [note, setNote] = useState(null);
   const [error, setError] = useState('');

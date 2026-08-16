@@ -8,6 +8,7 @@ import { buildFolderTree } from '../utils/folderTree';
 import { sortNotes } from '../utils/sortNotes';
 import SortBySelect from '../components/SortBySelect';
 import ViewModeToggle from '../components/ViewModeToggle';
+import { useSeo } from '../utils/seo';
 
 export default function PublicProfile() {
   const { userId } = useParams();
@@ -16,6 +17,18 @@ export default function PublicProfile() {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  useSeo({
+    title: user ? `${user.name}'s Profile` : 'Public Profile',
+    description: user
+      ? (user.bio || `${user.name} shares notes on Notes Handling — browse ${notes.length} note${notes.length === 1 ? '' : 's'}.`)
+      : 'Browse public profiles and shared notes on Notes Handling.',
+    canonicalPath: `/profile/${userId}`,
+    image: user?.picture || undefined,
+    // Loading/error states shouldn't be indexed as if they were the real
+    // profile — only mark it indexable once we've confirmed the user exists.
+    noindex: !user,
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [sortBy, setSortBy] = useState('name');

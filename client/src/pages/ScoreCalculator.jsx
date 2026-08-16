@@ -6,8 +6,14 @@ import ScoreSummary from '../components/scoreCalculator/ScoreSummary';
 import SectionBreakdownTable from '../components/scoreCalculator/SectionBreakdownTable';
 import QuestionDetailTable from '../components/scoreCalculator/QuestionDetailTable';
 import { parseResponseSheet, parseAnswerKey, computeScore } from '../utils/scoreCalculatorEngine';
+import { useSeo } from '../utils/seo';
 
 export default function ScoreCalculator() {
+  useSeo({
+    title: 'UGC NET Score Calculator',
+    description: 'Upload your NTA Response Sheet and Answer Key to get an instant, accurate UGC NET score with section-wise breakdown — runs entirely in your browser.',
+    canonicalPath: '/score-calculator',
+  });
   const [result, setResult] = useState(null);
   const [candidate, setCandidate] = useState(null);
   const [examTitle, setExamTitle] = useState('');

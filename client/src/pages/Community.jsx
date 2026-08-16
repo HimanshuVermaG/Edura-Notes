@@ -9,8 +9,14 @@ import ContributeModal from "../components/community/ContributeModal";
 import SecureNoteModal from "../components/community/SecureNoteModal";
 import GateHomepageSkeleton from "../components/community/GateHomepageSkeleton";
 import Layout from "../components/Layout";
+import { useSeo } from "../utils/seo";
 
 export default function Community() {
+  useSeo({
+    title: 'Community',
+    description: 'Browse subject-based community spaces, discover shared notes, and connect with contributors.',
+    canonicalPath: '/community',
+  });
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [spaces, setSpaces] = useState([]);

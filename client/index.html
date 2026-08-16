@@ -3,7 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Notes Handling</title>
+
+    <!--
+      Default/fallback SEO tags — shown before any page-specific override
+      from client/src/utils/seo.js runs, and to any crawler/bot that doesn't
+      execute JS at all. Per-page content overrides these via useSeo().
+      Domain: https://noteshandling.zya.me (kept in sync with seo.js,
+      prerender.js, robots.txt, and vercel.json's sitemap rewrite).
+    -->
+    <title>Notes Handling — Organize, Share & Discover Study Notes</title>
+    <meta name="description" content="Organize your notes in folders, view PDFs and images in a secure viewer, and share what you learn in community spaces. Free to use." />
+    <link rel="canonical" href="https://noteshandling.zya.me/" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#1e40af" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Notes Handling" />
+    <meta property="og:title" content="Notes Handling — Organize, Share & Discover Study Notes" />
+    <meta property="og:description" content="Organize your notes in folders, view PDFs and images in a secure viewer, and share what you learn in community spaces. Free to use." />
+    <meta property="og:image" content="https://noteshandling.zya.me/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:url" content="https://noteshandling.zya.me/" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Notes Handling — Organize, Share & Discover Study Notes" />
+    <meta name="twitter:description" content="Organize your notes in folders, view PDFs and images in a secure viewer, and share what you learn in community spaces. Free to use." />
+    <meta name="twitter:image" content="https://noteshandling.zya.me/og-image.png" />
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /manage
+Disallow: /notes/
+Disallow: /admin
+
+Sitemap: https://noteshandling.zya.me/sitemap.xml

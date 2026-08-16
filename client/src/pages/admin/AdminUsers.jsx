@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
+import { useSeo } from '../../utils/seo';
 
 const PAGE_SIZES = [10, 20, 50, 100];
 
 export default function AdminUsers() {
+  useSeo({ title: 'Admin — Users', canonicalPath: '/admin/users', noindex: true });
   const [users, setUsers] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);

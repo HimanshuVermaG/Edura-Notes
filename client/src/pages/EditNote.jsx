@@ -5,9 +5,11 @@ import FolderTreeSelect from '../components/FolderTreeSelect';
 import ConfirmModal from '../components/ConfirmModal';
 import { api, apiForm, invalidateBlobCache, getApiUrl } from '../api/client';
 import { isValidDriveLink } from '../utils/driveLink';
+import { useSeo } from '../utils/seo';
 
 export default function EditNote() {
   const { id } = useParams();
+  useSeo({ title: 'Edit Note', canonicalPath: `/notes/${id}/edit`, noindex: true });
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);

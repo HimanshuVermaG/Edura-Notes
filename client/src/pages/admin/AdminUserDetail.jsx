@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/client';
+import { useSeo } from '../../utils/seo';
 
 const FILES_PAGE_SIZES = [10, 20, 50, 100];
 
 export default function AdminUserDetail() {
   const { userId } = useParams();
+  useSeo({ title: 'Admin — User Detail', canonicalPath: `/admin/users/${userId}`, noindex: true });
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const [data, setData] = useState({ user: null, notes: [], notesTotal: 0, notesPage: 1, notesLimit: 10 });

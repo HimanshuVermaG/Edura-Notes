@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { api } from '../api/client';
 import SecureNoteViewerLazy from '../components/SecureNoteViewerLazy';
+import { useSeo } from '../utils/seo';
 
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3;
@@ -16,6 +17,16 @@ export default function PublicNoteView() {
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [invertColors, setInvertColors] = useState(false);
+
+  useSeo({
+    title: note ? note.title : 'Shared Note',
+    description: note
+      ? (note.description || `View "${note.title}" shared on Notes Handling.`)
+      : 'View shared notes on Notes Handling.',
+    canonicalPath: `/view/note/${id}`,
+    // Loading/error/private states shouldn't be indexed as if the note were viewable.
+    noindex: !note,
+  });
 
   const backUrl = note?.userId?._id ? `/profile/${note.userId._id}` : '/';
   const handleBack = useCallback(() => navigate(backUrl), [navigate, backUrl]);

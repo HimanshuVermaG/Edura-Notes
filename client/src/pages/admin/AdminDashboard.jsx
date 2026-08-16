@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import { Edit2, Trash2, CheckCircle, XCircle, FileText, X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useSeo } from '../../utils/seo';
 
 export default function AdminDashboard() {
+  useSeo({ title: 'Admin Dashboard', canonicalPath: '/admin/dashboard', noindex: true });
   const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'requests'
   const [stats, setStats] = useState({ totalUsers: 0, totalNotes: 0, totalUsedBytes: 0 });
   const [loading, setLoading] = useState(true);

@@ -5,8 +5,10 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import FolderList from '../components/FolderList';
 import NoteCard from '../components/NoteCard';
+import { useSeo } from '../utils/seo';
 
 export default function Dashboard() {
+  useSeo({ title: 'My Files', canonicalPath: '/dashboard', noindex: true });
   const { user } = useAuth();
   const [folders, setFolders] = useState([]);
   const [notes, setNotes] = useState([]);

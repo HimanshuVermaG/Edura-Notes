@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { useSeo } from '../utils/seo';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -23,6 +24,7 @@ function ArrowLeftIcon() {
 }
 
 export default function AdminLogin() {
+  useSeo({ title: 'Admin Login', canonicalPath: '/admin/login', noindex: true });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [shakeError, setShakeError] = useState(false);

@@ -1,5 +1,28 @@
 {
   "rewrites": [
+    {
+      "source": "/profile/:userId",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|Slackbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot|Googlebot|bingbot|DuckDuckBot|Baiduspider|YandexBot|Applebot|redditbot|Pinterest|SkypeUriPreview|vkShare|bot|crawler|spider).*"
+        }
+      ],
+      "destination": "/api/prerender?path=/profile/:userId"
+    },
+    {
+      "source": "/view/note/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|Slackbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot|Googlebot|bingbot|DuckDuckBot|Baiduspider|YandexBot|Applebot|redditbot|Pinterest|SkypeUriPreview|vkShare|bot|crawler|spider).*"
+        }
+      ],
+      "destination": "/api/prerender?path=/view/note/:id"
+    },
+    { "source": "/sitemap.xml", "destination": "https://edura-notes-server.vercel.app/api/public/sitemap.xml" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

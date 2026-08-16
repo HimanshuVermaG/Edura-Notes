@@ -11,10 +11,12 @@ import SortBySelect from '../components/SortBySelect';
 import { sortNotes } from '../utils/sortNotes';
 import { getFoldersInTreeOrder } from '../utils/folderTree';
 import { isValidDriveLink } from '../utils/driveLink';
+import { useSeo } from '../utils/seo';
 
 const NOTES_PAGE_SIZES = [10, 20, 50, 100];
 
 export default function Manage() {
+  useSeo({ title: 'Manage Notes', canonicalPath: '/manage', noindex: true });
   const { user } = useAuth();
   const { addToast } = useToast();
   const [folders, setFolders] = useState([]);

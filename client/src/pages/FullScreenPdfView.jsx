@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { api } from '../api/client';
 import SecureNoteViewerLazy from '../components/SecureNoteViewerLazy';
+import { useSeo } from '../utils/seo';
 
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3;
@@ -10,6 +11,7 @@ const ZOOM_STEP = 0.25;
 
 export default function FullScreenPdfView() {
   const { id } = useParams();
+  useSeo({ title: 'View Note', canonicalPath: `/notes/${id}/view`, noindex: true });
   const location = useLocation();
   const navigate = useNavigate();
   const from = location.state?.from || '/manage';

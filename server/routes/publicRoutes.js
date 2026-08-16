@@ -17,6 +17,52 @@ function getMimeType(note) {
 
 const router = express.Router();
 
+// Base URL for absolute <loc> entries in the sitemap. Falls back to the same
+// domain used in client/index.html and client/src/utils/seo.js if
+// CLIENT_ORIGIN isn't set in the server's env — set CLIENT_ORIGIN there for
+// real, this fallback is just a safety net.
+const SITE_ORIGIN = (process.env.CLIENT_ORIGIN || 'https://noteshandling.zya.me').split(',')[0].trim().replace(/\/$/, '');
+
+const NOTE_VISIBLE_TO_ANY_USER = { $or: [{ isPublic: true }, { listedOnExplore: true }, { communitySpaceId: { $ne: null }, status: 'approved' }] };
+
+function xmlEscape(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
+}
+
+function urlEntry(loc, lastmod) {
+  return `  <url>\n    <loc>${xmlEscape(loc)}</loc>${lastmod ? `\n    <lastmod>${new Date(lastmod).toISOString()}</lastmod>` : ''}\n  </url>`;
+}
+
+// GET /api/public/sitemap.xml — lists every currently-public page: the fixed
+// static routes plus every visible note and profile. Reuses the same
+// visibility rule as the rest of this file (isPublic / listedOnExplore /
+// approved-community) so nothing private ever ends up here.
+router.get('/sitemap.xml', async (req, res) => {
+  try {
+    const visibleNotes = await Note.find(NOTE_VISIBLE_TO_ANY_USER).select('_id userId updatedAt').lean();
+    const exploreUsers = await User.find({ profileListedOnExplore: true }).select('_id updatedAt').lean();
+
+    const profileMap = new Map();
+    for (const u of exploreUsers) profileMap.set(String(u._id), u.updatedAt);
+    for (const n of visibleNotes) {
+      const uid = String(n.userId);
+      if (!profileMap.has(uid) || n.updatedAt > profileMap.get(uid)) profileMap.set(uid, n.updatedAt);
+    }
+
+    const staticUrls = ['/', '/community', '/score-calculator'].map((p) => urlEntry(`${SITE_ORIGIN}${p}`));
+    const noteUrls = visibleNotes.map((n) => urlEntry(`${SITE_ORIGIN}/view/note/${n._id}`, n.updatedAt));
+    const profileUrls = Array.from(profileMap.entries()).map(([uid, updatedAt]) => urlEntry(`${SITE_ORIGIN}/profile/${uid}`, updatedAt));
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...profileUrls, ...noteUrls].join('\n')}\n</urlset>\n`;
+
+    res.set('Content-Type', 'application/xml');
+    res.send(xml);
+  } catch (err) {
+    console.error('[publicRoutes] /sitemap.xml error:', err);
+    res.status(500).json({ message: 'Failed to generate sitemap' });
+  }
+});
+
 const EXPLORE_NOTES_MAX_LIMIT = 100;
 const EXPLORE_USERS_MAX_LIMIT = 100;
 
